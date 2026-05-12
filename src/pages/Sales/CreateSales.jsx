@@ -223,6 +223,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast }) {
       <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
         <h2 style="margin: 0; font-size: 20px; text-transform: uppercase;">Classy Couture</h2>
         <p style="margin: 2px 0; font-size: 10px;">Be Unique, Be Classy</p>
+         <p style="margin: 2px 0; font-size: 10px;">Ph : 8606154015</p>
         <div style="margin-top: 8px; font-size: 9px; color: #333;">
           <p style="margin: 2px 0;">ID: ${showReceipt.saleId}</p>
           <p style="margin: 2px 0;">Date: ${new Date(showReceipt.timestamp).toLocaleString()}</p>
@@ -307,7 +308,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast }) {
     if (!showReceipt) return;
 
     let itemsText = showReceipt.items.map(item => `${item.productName} (x${item.qty}) - ₹${item.price}`).join(', ');
-    
+
     let message = `Hi ${showReceipt.client.name}, %0a%0a`;
     message += `Items: ${itemsText}%0a`;
     message += `Grand Total: ₹${parseFloat(showReceipt.total).toFixed(2)}%0a%0a`;
@@ -346,6 +347,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast }) {
       <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
         <h2 style="margin: 0; font-size: 20px; text-transform: uppercase;">Classy Couture</h2>
         <p style="margin: 2px 0; font-size: 10px;">Be Unique, Be Classy</p>
+        <p style="margin: 2px 0; font-size: 10px;">Ph : 8606154015</p>
       </div>
       <div style="margin-bottom: 15px; font-size: 11px;">
         <p style="margin: 2px 0;"><strong>Customer:</strong> ${showReceipt.client.name}</p>
@@ -408,17 +410,17 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast }) {
         <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setCartAlert(null)}></div>
           <div className="relative w-full max-w-sm rounded-[32px] bg-[var(--surface)] p-8 shadow-2xl border border-[var(--border)] animate-in zoom-in duration-300 text-center">
-             <div className={`mb-6 flex h-16 w-16 items-center justify-center rounded-2xl mx-auto ${cartAlert.type === 'error' ? 'bg-red-50 text-red-500' : 'bg-amber-50 text-amber-500'}`}>
-                <Package size={32} />
-             </div>
-             <h3 className="mb-2 text-xl font-bold text-[var(--text)]">{cartAlert.title}</h3>
-             <p className="mb-8 text-[var(--muted)] text-sm leading-relaxed">{cartAlert.message}</p>
-             <button
-               onClick={() => setCartAlert(null)}
-               className="w-full rounded-2xl bg-[var(--text)] py-4 font-bold text-white transition hover:brightness-110 shadow-lg"
-             >
-               Dismiss
-             </button>
+            <div className={`mb-6 flex h-16 w-16 items-center justify-center rounded-2xl mx-auto ${cartAlert.type === 'error' ? 'bg-red-50 text-red-500' : 'bg-amber-50 text-amber-500'}`}>
+              <Package size={32} />
+            </div>
+            <h3 className="mb-2 text-xl font-bold text-[var(--text)]">{cartAlert.title}</h3>
+            <p className="mb-8 text-[var(--muted)] text-sm leading-relaxed">{cartAlert.message}</p>
+            <button
+              onClick={() => setCartAlert(null)}
+              className="w-full rounded-2xl bg-[var(--text)] py-4 font-bold text-white transition hover:brightness-110 shadow-lg"
+            >
+              Dismiss
+            </button>
           </div>
         </div>
       )}
@@ -468,6 +470,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast }) {
                 <img src="/logo-black.png" alt="Logo" className="w-28 h-32 mx-auto mb-4 object-contain" />
                 <h3 className="text-xl font-bold uppercase tracking-tight">Classy Couture</h3>
                 <p className="text-[10px] font-medium">Be Unique, Be Classy</p>
+                <p style={{ margin: '2px 0', fontSize: '10px' }}>Ph : 8606154015</p>
                 <div className="mt-2 text-[10px] text-gray-500">
                   <p>Order ID: {showReceipt.saleId}</p>
                   <p>{new Date(showReceipt.timestamp).toLocaleString()}</p>
@@ -522,13 +525,13 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast }) {
                 <Download size={20} /> Print Bill
               </button>
               <button onClick={handleShare} className="flex items-center justify-center gap-3 rounded-2xl border-2 border-[var(--border)] py-4 font-bold transition hover:bg-[var(--soft)] text-[var(--accent)]">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" /></svg>
                 Share File
               </button>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <button onClick={handleSMS} className="flex items-center justify-center gap-3 rounded-2xl bg-[var(--text)] py-4 font-bold text-white shadow-xl transition hover:brightness-110">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                 Send SMS
               </button>
               <button onClick={handleWhatsApp} className="flex items-center justify-center gap-3 rounded-2xl bg-[#25D366] py-4 font-bold text-white shadow-xl shadow-[#25D366]/20 transition hover:brightness-95">
@@ -581,7 +584,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast }) {
                     </span>
                   )}
                 </div>
-                
+
                 <div className="flex flex-wrap gap-3">
                   {orders.filter(o => o.clientName === selectedClient.name && o.status === 'Completed' && !cart.some(ci => ci.orderId === o.id)).map(o => (
                     <button
@@ -600,11 +603,11 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast }) {
                       <Plus size={16} className="text-[var(--accent)] transition-transform group-hover:rotate-90" />
                     </button>
                   ))}
-                  
+
                   {orders.filter(o => o.clientName === selectedClient.name && o.status === 'Completed' && !cart.some(ci => ci.orderId === o.id)).length === 0 && (
                     <div className="flex w-full items-center gap-2 text-xs font-medium text-[var(--muted)] italic py-2">
-                       <CheckCircle size={14} className="text-green-500 opacity-50" />
-                       No pending collections for this client.
+                      <CheckCircle size={14} className="text-green-500 opacity-50" />
+                      No pending collections for this client.
                     </div>
                   )}
                 </div>
@@ -791,9 +794,9 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast }) {
                       className="flex w-full items-center justify-between rounded-xl p-3 text-left transition hover:bg-[var(--soft)]"
                       onClick={() => {
                         if (selectedClient && selectedClient.id !== c.id && cart.length > 0) {
-                           // Automatically clear cart if changing client to avoid logic mistake
-                           setCart([]);
-                           if (showGlobalToast) showGlobalToast('Cart Cleared', 'Cart was cleared because you switched to a different client.');
+                          // Automatically clear cart if changing client to avoid logic mistake
+                          setCart([]);
+                          if (showGlobalToast) showGlobalToast('Cart Cleared', 'Cart was cleared because you switched to a different client.');
                         }
                         setSelectedClient(c);
                         setClientSearch(c.name);

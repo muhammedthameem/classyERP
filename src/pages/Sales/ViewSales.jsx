@@ -58,7 +58,7 @@ function ViewSalesPage({ themeStyle, showGlobalToast, highlightSaleId, setHighli
       if (index !== -1) {
         const page = Math.floor(index / itemsPerPage) + 1;
         setCurrentPageNum(page);
-        
+
         setTimeout(() => {
           const row = rowRefs.current[highlightSaleId];
           if (row) {
@@ -115,7 +115,7 @@ function ViewSalesPage({ themeStyle, showGlobalToast, highlightSaleId, setHighli
             </thead>
             <tbody>
               {paginatedSales.map(sale => (
-                <tr 
+                <tr
                   key={sale.id}
                   ref={el => rowRefs.current[sale.saleId] = el}
                   className={`transition-all duration-1000 ${highlightSaleId === sale.saleId ? 'bg-[var(--accent-soft)]/50 ring-2 ring-[var(--accent)] ring-inset' : ''}`}
@@ -208,6 +208,7 @@ function ViewSalesPage({ themeStyle, showGlobalToast, highlightSaleId, setHighli
                   <img src="/logo-black.png" alt="Logo" className="w-28 h-32 mx-auto mb-4 object-contain" />
                   <h3 className="text-xl font-bold uppercase tracking-tight">Classy Couture</h3>
                   <p className="text-[10px] font-medium">Be Unique, Be Classy</p>
+                  <p style={{ margin: '2px 0', fontSize: '10px' }}>Ph : 8606154015</p>
                   <div className="mt-2 text-[10px] text-gray-500">
                     <p>Order ID: {viewSale.saleId}</p>
                     <p>{new Date(viewSale.timestamp).toLocaleString()}</p>
@@ -285,6 +286,7 @@ function ViewSalesPage({ themeStyle, showGlobalToast, highlightSaleId, setHighli
                         <img src="/logo-black.png" style="width: 80px; height: auto; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;" />
                         <h2 style="margin: 0; font-size: 20px; text-transform: uppercase; font-weight: bold;">Classy Couture</h2>
                         <p style="margin: 2px 0; font-size: 10px;">Be Unique, Be Classy</p>
+                        <p style="margin: 2px 0; font-size: 10px;">Ph : 8606154015</p>
                         <div style="margin-top: 8px; font-size: 9px; color: #333;">
                           <p style="margin: 2px 0;">ID: ${viewSale.saleId}</p>
                           <p style="margin: 2px 0;">Date: ${new Date(viewSale.timestamp).toLocaleString()}</p>
