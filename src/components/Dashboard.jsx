@@ -123,57 +123,57 @@ function Dashboard({ onLogout, user }) {
         const data = docSnap.data()
         
         // Update States and LocalStorage
-        if (data.users) {
+        if (data.users && Array.isArray(data.users)) {
           setUsers(data.users)
-          localStorage.setItem('erp_users', JSON.stringify(data.users))
         }
-        if (data.designations) {
+        if (data.designations && Array.isArray(data.designations)) {
           setDesignations(data.designations)
-          localStorage.setItem('erp_designations', JSON.stringify(data.designations))
         }
-        if (data.clients) {
+        if (data.clients && Array.isArray(data.clients)) {
           setClients(data.clients)
-          localStorage.setItem('clients', JSON.stringify(data.clients))
         }
-        if (data.orders) {
+        if (data.orders && Array.isArray(data.orders)) {
           setOrders(data.orders)
-          localStorage.setItem('orders', JSON.stringify(data.orders))
         }
-        if (data.inventory) {
+        if (data.inventory && Array.isArray(data.inventory)) {
           setInventory(data.inventory)
-          localStorage.setItem('inventory', JSON.stringify(data.inventory))
         }
-        if (data.sales) {
+        if (data.sales && Array.isArray(data.sales)) {
           setSales(data.sales)
-          localStorage.setItem('sales', JSON.stringify(data.sales))
         }
-        if (data.activities) {
+        if (data.activities && Array.isArray(data.activities)) {
           setActivities(data.activities)
-          localStorage.setItem('activities', JSON.stringify(data.activities))
         }
-        if (data.orderTypes) {
+        if (data.orderTypes && Array.isArray(data.orderTypes)) {
           setOrderTypes(data.orderTypes)
-          localStorage.setItem('orderTypes', JSON.stringify(data.orderTypes))
         }
-        if (data.productTypes) {
+        if (data.productTypes && Array.isArray(data.productTypes)) {
           setProductTypes(data.productTypes)
-          localStorage.setItem('productTypes', JSON.stringify(data.productTypes))
         }
-        if (data.inventoryUnits) {
+        if (data.inventoryUnits && Array.isArray(data.inventoryUnits)) {
           setInventoryUnits(data.inventoryUnits)
-          localStorage.setItem('inventoryUnits', JSON.stringify(data.inventoryUnits))
         }
-        setCloudLoaded(true)
-      } else {
-        // First time setup if doc doesn't exist
         setCloudLoaded(true)
       }
     }, (error) => {
       console.log("Firebase Sync Error:", error)
+      setCloudLoaded(true) // Fallback to local data if cloud fails
     })
 
     return () => unsubscribe()
   }, [])
+
+  // LOCAL PERSISTENCE FALLBACKS
+  useEffect(() => { localStorage.setItem('erp_users', JSON.stringify(users)) }, [users])
+  useEffect(() => { localStorage.setItem('erp_designations', JSON.stringify(designations)) }, [designations])
+  useEffect(() => { localStorage.setItem('activities', JSON.stringify(activities)) }, [activities])
+  useEffect(() => { localStorage.setItem('clients', JSON.stringify(clients)) }, [clients])
+  useEffect(() => { localStorage.setItem('orders', JSON.stringify(orders)) }, [orders])
+  useEffect(() => { localStorage.setItem('inventory', JSON.stringify(inventory)) }, [inventory])
+  useEffect(() => { localStorage.setItem('sales', JSON.stringify(sales)) }, [sales])
+  useEffect(() => { localStorage.setItem('orderTypes', JSON.stringify(orderTypes)) }, [orderTypes])
+  useEffect(() => { localStorage.setItem('productTypes', JSON.stringify(productTypes)) }, [productTypes])
+  useEffect(() => { localStorage.setItem('inventoryUnits', JSON.stringify(inventoryUnits)) }, [inventoryUnits])
 
   // SAVE TO FIREBASE
   useEffect(() => {

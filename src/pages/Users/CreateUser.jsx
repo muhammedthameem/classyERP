@@ -104,7 +104,7 @@ function CreateUserPage({ themeStyle, setCurrentPage, showGlobalToast, users, se
               />
               {showDesignationDropdown && (
                 <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] shadow-lg">
-                  {designations
+                  {(designations || [])
                     .filter(d => d.toLowerCase().includes(designationSearch.toLowerCase()))
                     .map((d) => (
                       <button
