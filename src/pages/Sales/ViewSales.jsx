@@ -90,7 +90,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightS
           <h1 className="text-3xl font-semibold">View Sales</h1>
           <p className="mt-2 text-sm text-[var(--muted)]">Track all boutique transactions and manage records.</p>
         </div>
-        <button 
+        <button
           onClick={() => setCurrentPage('create-sales')}
           className="flex items-center gap-2 rounded-xl bg-[var(--accent)] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95"
         >
@@ -99,7 +99,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightS
       </div>
 
       <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
-        <div className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+        <div className="mb-6 h-11 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
           <label className="flex flex-1 h-11 sm:max-w-md items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm focus-within:border-[var(--accent)] transition-colors">
             <Search size={18} />
             <input
