@@ -3,8 +3,19 @@ import { orders } from '../utils/constants'
 
 function LoginScreen({ onLogin }) {
   const [mode, setMode] = useState('login')
-  const [email, setEmail] = useState('admin@classy.com')
-  const [password, setPassword] = useState('admin123')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('erp_remember_email')
+    const savedPassword = localStorage.getItem('erp_remember_password')
+    if (savedEmail && savedPassword) {
+      setEmail(savedEmail)
+      setPassword(savedPassword)
+      setRememberMe(true)
+    }
+  }, [])
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -12,6 +23,14 @@ function LoginScreen({ onLogin }) {
     event.preventDefault()
     setMessage('')
     setIsLoading(true)
+
+    if (rememberMe) {
+      localStorage.setItem('erp_remember_email', email)
+      localStorage.setItem('erp_remember_password', password)
+    } else {
+      localStorage.removeItem('erp_remember_email')
+      localStorage.removeItem('erp_remember_password')
+    }
 
     // Artificial delay for premium feel
     setTimeout(() => {
@@ -82,7 +101,7 @@ function LoginScreen({ onLogin }) {
             </div>
             <div>
               <p className="text-sm uppercase tracking-[0.28em] text-[#e6c9b8]">
-                Classy Boutique
+                Classy Couture
               </p>
               <h1 className="text-2xl font-semibold">Designer ERP Studio</h1>
             </div>
@@ -139,7 +158,7 @@ function LoginScreen({ onLogin }) {
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  placeholder="admin@classy.com"
+                  placeholder="Enter Email"
                   required
                 />
               </label>
@@ -153,13 +172,18 @@ function LoginScreen({ onLogin }) {
                       type="password"
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
-                      placeholder="admin123"
+                      placeholder="Enter Password"
                       required
                     />
                   </label>
                   <div className="flex items-center justify-between text-sm">
                     <label className="flex items-center gap-2 text-stone-600">
-                      <input className="h-4 w-4 accent-[#9b4d3a]" type="checkbox" defaultChecked />
+                      <input
+                        className="h-4 w-4 accent-[#9b4d3a]"
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                      />
                       Remember me
                     </label>
                     <button
