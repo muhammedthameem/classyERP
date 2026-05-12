@@ -105,7 +105,7 @@ function LoginScreen({ onLogin }) {
               <p className="text-sm uppercase tracking-[0.28em] text-[#e6c9b8]">
                 Classy Couture
               </p>
-              <h1 className="text-2xl font-semibold">Designer ERP Studio</h1>
+              <h1 className="text-2xl font-semibold">Boutique ERP System</h1>
             </div>
           </div>
 

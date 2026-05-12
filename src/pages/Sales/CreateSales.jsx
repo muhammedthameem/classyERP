@@ -191,7 +191,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast }) {
     localStorage.setItem('sales', JSON.stringify(sales));
 
     if (showGlobalToast) showGlobalToast('Sale Processed', `Sale ${newSale.saleId} for ₹${parseFloat(newSale.total).toFixed(2)} (${newSale.client.name})`);
-    setShowReceipt(newSale);
+    setCurrentPage('view-sales');
     setCart([]);
     setSelectedClient(null);
     setClientSearch('');

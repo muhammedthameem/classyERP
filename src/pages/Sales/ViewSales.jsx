@@ -99,8 +99,8 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightS
       </div>
 
       <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
-        <div className="mb-6 h-11 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <label className="flex flex-1 h-11 sm:max-w-md items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm focus-within:border-[var(--accent)] transition-colors">
+        <div className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <label className="flex sm:flex-1 h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm focus-within:border-[var(--accent)] transition-colors">
             <Search size={18} />
             <input
               type="text"

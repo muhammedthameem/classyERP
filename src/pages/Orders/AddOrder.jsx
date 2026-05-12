@@ -205,6 +205,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast }) {
     setDeliveryDate('')
     setPhotoPreview(null)
     setNotes('')
+    setCurrentPage('view-orders')
   }
 
   const allProductTypes = Array.from(new Set([

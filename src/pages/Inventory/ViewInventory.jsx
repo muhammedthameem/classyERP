@@ -89,7 +89,7 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, setSelectedInventoryIte
           <p className="mt-2 text-sm text-[var(--muted)]">Manage and search all inventory items</p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <label className="flex flex-1 h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm">
+          <label className="flex sm:flex-1 h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm">
             <Search size={17} />
             <input
               className="w-full bg-transparent outline-none placeholder:text-stone-400"

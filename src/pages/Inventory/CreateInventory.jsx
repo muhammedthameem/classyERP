@@ -97,6 +97,7 @@ function CreateInventoryPage({ themeStyle, setCurrentPage, showGlobalToast }) {
     setDiscount('');
     setVendorName('');
     setNote('');
+    setCurrentPage('view-inventory');
   };
 
   return (

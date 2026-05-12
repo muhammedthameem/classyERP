@@ -130,6 +130,8 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast }) {
       localStorage.setItem('prefillOrderProduct', product)
       setCurrentPage('add-order')
       setIsConverting(false)
+    } else {
+      setCurrentPage('view-clients')
     }
 
     setPersonalDetails({ name: '', address: '', mobile: '' })

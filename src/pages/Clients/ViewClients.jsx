@@ -24,7 +24,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
 
   const sortedClients = [...filteredClients].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
   const totalPages = Math.ceil(sortedClients.length / itemsPerPage)
-  
+
   // Scroll to highlight logic
   useEffect(() => {
     if (highlightClientId) {
@@ -32,7 +32,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
       if (index !== -1) {
         const page = Math.floor(index / itemsPerPage) + 1;
         setCurrentPageNum(page);
-        
+
         setTimeout(() => {
           const row = rowRefs.current[highlightClientId];
           if (row) {
@@ -245,7 +245,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
           <p className="mt-2 text-sm text-[var(--muted)]">Manage and search all client records</p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <label className="flex flex-1 h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm">
+          <label className="flex sm:flex-1 h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm">
             <Search size={17} />
             <input
               className="w-full bg-transparent outline-none placeholder:text-stone-400"
@@ -283,7 +283,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
             <tbody>
               {paginatedClients.length > 0 ? (
                 paginatedClients.map((client) => (
-                  <tr 
+                  <tr
                     key={client.id || client.mobile}
                     ref={el => rowRefs.current[client.id] = el}
                     className={`group transition-all duration-1000 ${highlightClientId === client.id ? 'bg-[var(--accent-soft)]/50 ring-2 ring-[var(--accent)] ring-inset' : ''}`}
