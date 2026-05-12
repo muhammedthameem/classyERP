@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #f7f2ec;
+  color: #24201f;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+#root {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Global Interactive Cursors */
+button, 
+select, 
+a, 
+label,
+input[type="button"], 
+input[type="submit"], 
+input[type="reset"],
+[role="button"] {
+  cursor: pointer;
+}
+
+/* Universal Table Styles */
+.erp-table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.erp-table {
+  width: 100%;
+  text-align: left;
+  white-space: nowrap;
+  border-collapse: collapse;
+}
+
+.erp-table thead tr {
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background-color: var(--surface);
+  z-index: 10;
+}
+
+.erp-table thead th {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+.erp-table tbody tr {
+  font-size: 0.75rem; /* text-xs */
+  transition-property: background-color;
+  transition-duration: 200ms;
+}
+
+.erp-table tr:hover {
+  background-color: color-mix(in srgb, var(--soft), transparent 30%);
+}
+
+/* Measurement Grid System */
+.measurement-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.measurement-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 1fr;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  transition: background-color 0.2s;
+}
+
+.measurement-row:hover {
+  background-color: var(--soft);
+}
+
+.measurement-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.measurement-value-container {
+  display: contents;
+}
+
+.measurement-input-group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* Prevents grid items from overflowing */
+}
+
+.measurement-input-group input,
+.measurement-input-group span {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.measurement-input-label {
+  display: none; /* Desktop: rely on row header or placeholder */
+}
+
+@media (max-width: 640px) {
+  .measurement-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    padding: 1rem;
+    background-color: var(--surface-strong);
+    border: 1px solid var(--border);
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden; /* Safety */
+  }
+
+  .measurement-label {
+    grid-column: span 2;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .measurement-input-label {
+    display: block;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+    margin-left: 4px;
+  }
+}
+
+.erp-table tbody td {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.erp-table tbody {
+  border-top: 1px solid var(--border);
+}
+
+.erp-table tbody tr:not(:last-child) {
+  border-bottom: 1px solid var(--border);
+}
+
+/* Premium Global Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 10px;
+}
+
+/* Show scrollbar thumb on hover */
+*:hover::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted), transparent 70%);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted) !important;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

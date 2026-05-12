@@ -1,0 +1,402 @@
+import React, { useState, useEffect, useRef } from 'react'
+import { ChevronLeft, ChevronRight, Search, TrendingUp, Eye, Trash2, Download } from 'lucide-react'
+import html2pdf from 'html2pdf.js'
+import { orders } from '../../utils/constants'
+
+function ViewSalesPage({ themeStyle, showGlobalToast, highlightSaleId, setHighlightSaleId }) {
+  const rowRefs = useRef({});
+  const [sales, setSales] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewSale, setViewSale] = useState(null);
+  const [saleToDelete, setSaleToDelete] = useState(null);
+
+  useEffect(() => {
+    setSales(JSON.parse(localStorage.getItem('sales') || '[]').reverse());
+  }, []);
+
+  const handleDeleteConfirm = () => {
+    if (!saleToDelete) return;
+
+    const id = saleToDelete.id;
+    const updatedSales = sales.filter(s => s.id !== id);
+
+    // Restore Inventory & Orders
+    const inventoryData = JSON.parse(localStorage.getItem('inventory') || '[]');
+    const ordersData = JSON.parse(localStorage.getItem('orders') || '[]');
+
+    let updatedInventory = [...inventoryData];
+    let updatedOrders = [...ordersData];
+
+    saleToDelete.items.forEach(soldItem => {
+      if (soldItem.type === 'order') {
+        updatedOrders = updatedOrders.map(o => o.id === soldItem.orderId ? { ...o, status: 'Completed' } : o);
+      } else {
+        updatedInventory = updatedInventory.map(p => p.id === soldItem.id ? { ...p, quantity: p.quantity + soldItem.qty } : p);
+      }
+    });
+
+    // Save back
+    const salesToSave = [...updatedSales].reverse();
+    localStorage.setItem('sales', JSON.stringify(salesToSave));
+    localStorage.setItem('inventory', JSON.stringify(updatedInventory));
+    localStorage.setItem('orders', JSON.stringify(updatedOrders));
+
+    setSales(updatedSales);
+    setSaleToDelete(null);
+    if (showGlobalToast) showGlobalToast('Sale Deleted', 'Stock/Order status restored successfully.');
+  };
+
+  const filteredSales = sales.filter(s =>
+    (s.saleId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (s.client?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Scroll to highlight logic
+  useEffect(() => {
+    if (highlightSaleId) {
+      const index = filteredSales.findIndex(s => s.saleId === highlightSaleId);
+      if (index !== -1) {
+        const page = Math.floor(index / itemsPerPage) + 1;
+        setCurrentPageNum(page);
+        
+        setTimeout(() => {
+          const row = rowRefs.current[highlightSaleId];
+          if (row) {
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => {
+              if (setHighlightSaleId) setHighlightSaleId(null);
+            }, 3000);
+          }
+        }, 300);
+      }
+    }
+  }, [highlightSaleId, filteredSales]);
+
+  // Pagination Logic
+  const [currentPageNum, setCurrentPageNum] = useState(1);
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(filteredSales.length / itemsPerPage);
+  const paginatedSales = filteredSales.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage);
+
+  return (
+    <div style={themeStyle} className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-[var(--accent)] mb-1">
+            <TrendingUp size={16} /> Sales History
+          </p>
+          <h1 className="text-3xl font-semibold">View Sales</h1>
+          <p className="mt-2 text-sm text-[var(--muted)]">Track all boutique transactions and manage records.</p>
+        </div>
+      </div>
+
+      <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
+        <div className="mb-6 relative max-w-md">
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
+          <input
+            type="text"
+            placeholder="Search by Sale ID or Client..."
+            className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] py-2.5 pl-12 pr-4 outline-none focus:border-[var(--accent)]"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        <div className="erp-table-container">
+          <table className="erp-table">
+            <thead>
+              <tr>
+                <th>Date & ID</th>
+                <th>Client</th>
+                <th>Items Sold</th>
+                <th className="text-right">Total Amount</th>
+                <th className="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedSales.map(sale => (
+                <tr 
+                  key={sale.id}
+                  ref={el => rowRefs.current[sale.saleId] = el}
+                  className={`transition-all duration-1000 ${highlightSaleId === sale.saleId ? 'bg-[var(--accent-soft)]/50 ring-2 ring-[var(--accent)] ring-inset' : ''}`}
+                >
+                  <td>
+                    <p className="font-bold text-[var(--text)]">{sale.saleId}</p>
+                    <p className="text-[10px] text-[var(--muted)] uppercase font-semibold">{new Date(sale.timestamp).toLocaleString()}</p>
+                  </td>
+                  <td>
+                    <p className="font-semibold text-[var(--text)]">{sale.client?.name || 'Guest'}</p>
+                  </td>
+                  <td>
+                    <div className="max-w-[200px] overflow-hidden flex flex-wrap gap-1">
+                      {sale.items.map((item, idx) => (
+                        <span key={idx} className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-bold ${item.type === 'order' ? 'bg-purple-100 text-purple-700' : 'bg-[var(--accent-soft)] text-[var(--accent)]'}`}>
+                          {item.qty}x {item.productName}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="text-right">
+                    <p className="text-lg font-black text-[var(--accent)]">₹{parseFloat(sale.total).toFixed(2)}</p>
+                  </td>
+                  <td>
+                    <div className="flex justify-center gap-2">
+                      <button onClick={() => setViewSale(sale)} className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white transition" title="View Details">
+                        <Eye size={16} />
+                      </button>
+                      <button onClick={() => setSaleToDelete(sale)} className="grid h-8 w-8 place-items-center rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition" title="Delete Sale">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filteredSales.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="text-center text-[var(--muted)] font-medium">No sales records found</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-between border-t border-[var(--border)] pt-4">
+            <span className="text-sm text-[var(--muted)]">Showing {(currentPageNum - 1) * itemsPerPage + 1} to {Math.min(currentPageNum * itemsPerPage, filteredSales.length)} of {filteredSales.length}</span>
+            <div className="flex gap-2">
+              <button
+                disabled={currentPageNum === 1}
+                onClick={() => setCurrentPageNum(prev => prev - 1)}
+                className="grid h-8 w-8 place-items-center rounded-lg border border-[var(--border)] transition hover:bg-[var(--soft)] disabled:opacity-50 text-[var(--text)]"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                disabled={currentPageNum === totalPages}
+                onClick={() => setCurrentPageNum(prev => prev + 1)}
+                className="grid h-8 w-8 place-items-center rounded-lg border border-[var(--border)] transition hover:bg-[var(--soft)] disabled:opacity-50 text-[var(--text)]"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* View Sale Modal */}
+      {viewSale && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setViewSale(null)}></div>
+          <div className="relative w-full max-w-2xl rounded-3xl bg-[var(--surface)] p-8 shadow-2xl border border-[var(--border)] animate-in fade-in zoom-in duration-200 overflow-y-auto max-h-[90vh]">
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <img src="/logo-black.png" alt="Logo" className="w-16 h-16 object-contain" />
+                <div>
+                  <h3 className="text-2xl font-bold text-[var(--text)]">Sale Details</h3>
+                  <p className="text-sm text-[var(--muted)]">{viewSale.saleId} • {new Date(viewSale.timestamp).toLocaleString()}</p>
+                </div>
+              </div>
+              <button onClick={() => setViewSale(null)} className="h-10 w-10 grid place-items-center rounded-xl hover:bg-[var(--soft)] transition">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+
+            <div className="mb-8 space-y-6">
+              {/* Receipt Visual Container */}
+              <div id="printable-bill-view" className="mb-8 bg-white p-4 text-black shadow-inner overflow-hidden mx-auto" style={{ width: '80mm', minHeight: '120mm', fontFamily: 'monospace' }}>
+                <div className="text-center mb-4 border-b-2 border-dashed border-gray-300 pb-4">
+                  <img src="/logo-black.png" alt="Logo" className="w-28 h-32 mx-auto mb-4 object-contain" />
+                  <h3 className="text-xl font-bold uppercase tracking-tight">Classy Couture</h3>
+                  <p className="text-[10px] font-medium">Be Unique, Be Classy</p>
+                  <div className="mt-2 text-[10px] text-gray-500">
+                    <p>Order ID: {viewSale.saleId}</p>
+                    <p>{new Date(viewSale.timestamp).toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div className="mb-4 text-[11px]">
+                  <p className="font-bold">Customer: {viewSale.client?.name || 'Guest'}</p>
+                  {viewSale.client?.phone && <p>Tel: {viewSale.client.phone}</p>}
+                </div>
+
+                <table className="w-full text-[10px] mb-4">
+                  <thead>
+                    <tr className="border-b border-dashed border-gray-300 text-left">
+                      <th className="py-1 min-w-[100px]">Item</th>
+                      <th className="py-1 text-center px-2">Qty</th>
+                      <th className="py-1 text-right px-2 whitespace-nowrap">Disc (%)</th>
+                      <th className="py-1 text-right px-2 whitespace-nowrap">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-dashed divide-gray-200">
+                    {viewSale.items.map((item, idx) => (
+                      <tr key={idx}>
+                        <td className="py-2 pr-1">
+                          <p className="font-bold">{item.productName}</p>
+                          <p className="text-[8px] opacity-70">Rate: ₹{item.rate}</p>
+                        </td>
+                        <td className="py-2 text-center px-2">{item.qty}</td>
+                        <td className="py-2 text-right px-2">{item.discount || 0}%</td>
+                        <td className="py-2 text-right px-2 font-bold">₹{((item.qty * item.price) * (1 - (item.discount || 0) / 100)).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div className="border-t-2 border-dashed border-gray-300 pt-3 space-y-1">
+                  <div className="flex justify-between text-sm font-black">
+                    <span>Grand Total</span>
+                    <span>₹{parseFloat(viewSale.total).toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div className="text-center mt-6 text-[9px] text-gray-500 italic border-t border-dashed border-gray-200 pt-4">
+                  <p className="font-bold text-black mb-1">Thank you for shopping!</p>
+                  <p>Your elegance is our priority.</p>
+                  <p>Please visit again for more unique designs.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => {
+                    if (showGlobalToast) showGlobalToast('Preparing Receipt', 'Generating your professional bill...');
+
+                    const container = document.createElement('div');
+                    container.style.width = '80mm';
+                    container.style.padding = '5mm';
+                    container.style.color = '#000';
+                    container.style.fontFamily = 'monospace';
+
+                    let itemsHtml = viewSale.items.map(item => `
+                      <tr>
+                        <td style="padding: 4px 0; border-bottom: 1px dashed #eee;">
+                          <div style="font-weight: bold; font-size: 11px;">${item.productName}</div>
+                          <div style="font-size: 9px; color: #666;">Rate: ₹${item.rate}</div>
+                        </td>
+                        <td style="text-align: center; font-size: 11px; padding: 4px 8px;">${item.qty}</td>
+                        <td style="text-align: right; font-size: 11px; padding: 4px 8px;">${item.discount || 0}%</td>
+                        <td style="text-align: right; font-size: 11px; font-weight: bold; padding: 4px 8px;">₹${((item.qty * item.price) * (1 - (item.discount || 0) / 100)).toFixed(2)}</td>
+                      </tr>
+                    `).join('');
+
+                    container.innerHTML = `
+                      <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
+                        <img src="/logo-black.png" style="width: 80px; height: auto; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;" />
+                        <h2 style="margin: 0; font-size: 20px; text-transform: uppercase; font-weight: bold;">Classy Couture</h2>
+                        <p style="margin: 2px 0; font-size: 10px;">Be Unique, Be Classy</p>
+                        <div style="margin-top: 8px; font-size: 9px; color: #333;">
+                          <p style="margin: 2px 0;">ID: ${viewSale.saleId}</p>
+                          <p style="margin: 2px 0;">Date: ${new Date(viewSale.timestamp).toLocaleString()}</p>
+                        </div>
+                      </div>
+
+                      <div style="margin-bottom: 15px; font-size: 11px;">
+                        <p style="margin: 2px 0;"><strong>Customer:</strong> ${viewSale.client?.name || 'Guest'}</p>
+                        ${viewSale.client?.phone ? `<p style="margin: 2px 0;"><strong>Tel:</strong> ${viewSale.client.phone}</p>` : ''}
+                      </div>
+
+                      <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                        <thead>
+                          <tr style="border-bottom: 1px dashed #000; font-size: 10px; text-align: left;">
+                            <th style="padding: 5px 0; min-width: 30mm;">Item</th>
+                            <th style="text-align: center; padding: 5px 8px; white-space: nowrap;">Qty</th>
+                            <th style="text-align: right; padding: 5px 8px; white-space: nowrap;">Disc (%)</th>
+                            <th style="text-align: right; padding: 5px 8px; white-space: nowrap;">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${itemsHtml}
+                        </tbody>
+                      </table>
+
+                      <div style="border-top: 2px dashed #000; padding-top: 10px; margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 900;">
+                          <span>Grand Total</span>
+                          <span>₹${parseFloat(viewSale.total).toFixed(2)}</span>
+                        </div>
+                      </div>
+
+                      <div style="text-align: center; margin-top: 30px; font-size: 10px; border-top: 1px dashed #ccc; padding-top: 15px; font-style: italic; color: #555;">
+                        <p style="margin: 2px 0; font-weight: bold; color: #000;">Thank you for shopping!</p>
+                        <p style="margin: 2px 0;">Your elegance is our priority.</p>
+                        <p style="margin: 2px 0;">Please visit again for more unique designs.</p>
+                      </div>
+                    `;
+
+                    const opt = {
+                      margin: 0,
+                      filename: `Receipt_${viewSale.saleId}.pdf`,
+                      image: { type: 'jpeg', quality: 1 },
+                      html2canvas: { scale: 3, useCORS: true },
+                      jsPDF: { unit: 'mm', format: [80, 200], orientation: 'portrait' }
+                    };
+
+                    html2pdf().set(opt).from(container).save().then(() => {
+                      if (showGlobalToast) showGlobalToast('Success', 'Receipt downloaded successfully.');
+                    });
+                  }}
+                  className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--border)] py-3 text-sm font-bold transition hover:bg-[var(--soft)]"
+                >
+                  <Download size={18} /> Print Bill
+                </button>
+                <button
+                  onClick={() => {
+                    const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
+                    let msg = `*✨ INVOICE: ${viewSale.saleId} ✨*%0A`;
+                    msg += `*------------------------------*%0A`;
+                    msg += `Hello *${viewSale.client?.name || 'Guest'}*,%0A`;
+                    msg += `${greeting}%0A%0A`;
+
+                    msg += `*ORDER SUMMARY:*%0A`;
+                    viewSale.items.forEach(i => {
+                      msg += `• ${i.productName} (x${i.qty}) - ₹${i.price}%0A`;
+                    });
+
+                    msg += `%0A*Grand Total: ₹${viewSale.total}*%0A`;
+                    msg += `*------------------------------*%0A`;
+                    msg += `*Visit again for more unique designs!*%0A`;
+                    msg += `_Classy Couture - Be Unique, Be Classy_`;
+
+                    const phone = viewSale.client?.phone ? viewSale.client.phone.replace(/[^0-9]/g, '') : '';
+                    const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
+                    window.open(`https://wa.me/${formattedPhone}?text=${msg}`, '_blank');
+                  }}
+                  className="flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] py-3 text-sm font-bold text-white shadow-lg shadow-[#25D366]/20 transition hover:brightness-95"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="fill-white"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-11.4 8.38 8.38 0 0 1 3.8.9L22 4Z" /></svg>
+                  WhatsApp
+                </button>
+              </div>
+            </div>
+
+            <button onClick={() => setViewSale(null)} className="w-full rounded-2xl bg-[var(--accent)] py-4 font-bold text-white shadow-xl shadow-[var(--accent)]/30 transition hover:brightness-95">Close Details</button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {saleToDelete && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSaleToDelete(null)}></div>
+          <div className="relative w-full max-w-md rounded-3xl bg-[var(--surface)] p-8 shadow-2xl border border-[var(--border)] animate-in fade-in zoom-in duration-200">
+            <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-500 mx-auto">
+              <Trash2 size={32} />
+            </div>
+            <h3 className="mb-2 text-center text-xl font-bold text-[var(--text)]">Confirm Deletion</h3>
+            <p className="mb-8 text-center text-[var(--muted)] leading-relaxed">
+              Are you sure you want to delete sale <span className="font-bold text-[var(--text)]">{saleToDelete.saleId}</span>?
+              Stock for inventory items will be restored and orders will be reverted to 'Completed' status.
+            </p>
+            <div className="flex gap-4">
+              <button onClick={() => setSaleToDelete(null)} className="flex-1 rounded-xl border border-[var(--border)] py-3 font-bold text-[var(--text)] transition hover:bg-[var(--soft)]">Cancel</button>
+              <button onClick={handleDeleteConfirm} className="flex-1 rounded-xl bg-red-500 py-3 font-bold text-white transition hover:bg-red-600 shadow-lg shadow-red-200">Delete Sale</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default ViewSalesPage;
