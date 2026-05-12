@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 import { orders } from '../utils/constants'
 
 function LoginScreen({ onLogin }) {
@@ -6,6 +7,7 @@ function LoginScreen({ onLogin }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('erp_remember_email')
@@ -134,7 +136,7 @@ function LoginScreen({ onLogin }) {
               <img src="/logo-black.png" alt="CB" className="h-full w-full object-contain" />
             </div>
             <p className="text-sm uppercase tracking-[0.28em] text-[#9b4d3a]">
-              Classy Boutique
+              Classy Couture
             </p>
           </div>
 
@@ -167,14 +169,23 @@ function LoginScreen({ onLogin }) {
                 <>
                   <label className="block">
                     <span className="text-sm font-medium text-stone-700">Password</span>
-                    <input
-                      className="mt-2 w-full rounded-md border border-[#dfd2c7] bg-[#fbf8f5] px-4 py-3 outline-none transition focus:border-[#9b4d3a] focus:ring-4 focus:ring-[#9b4d3a]/10"
-                      type="password"
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      placeholder="Enter Password"
-                      required
-                    />
+                    <div className="relative mt-2">
+                      <input
+                        className="w-full rounded-md border border-[#dfd2c7] bg-[#fbf8f5] px-4 py-3 pr-12 outline-none transition focus:border-[#9b4d3a] focus:ring-4 focus:ring-[#9b4d3a]/10"
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        placeholder="Enter Password"
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-[#9b4d3a] transition-colors"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                    </div>
                   </label>
                   <div className="flex items-center justify-between text-sm">
                     <label className="flex items-center gap-2 text-stone-600">
