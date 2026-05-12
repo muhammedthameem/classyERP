@@ -712,8 +712,22 @@ function Dashboard({ onLogout, user }) {
 
                 {!cloudLoaded ? (
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {[1, 2, 3, 4].map(i => (
-                      <div key={i} className="h-32 animate-pulse rounded-[24px] bg-[var(--surface)] border border-[var(--border)] opacity-50" />
+                    {[
+                      { label: 'Revenue', icon: TrendingUp },
+                      { label: 'Orders', icon: ShoppingBag },
+                      { label: 'Clients', icon: UsersRound },
+                      { label: 'Inventory', icon: Package }
+                    ].map((item, i) => (
+                      <div key={i} className="relative overflow-hidden rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm opacity-60">
+                        <div className="mb-5 flex items-center justify-between">
+                          <div className="h-11 w-11 animate-pulse rounded-xl bg-[var(--soft)] flex items-center justify-center text-[var(--muted)]">
+                            <item.icon size={20} />
+                          </div>
+                          <div className="h-6 w-12 animate-pulse rounded-full bg-[var(--soft)]" />
+                        </div>
+                        <div className="h-4 w-20 animate-pulse rounded bg-[var(--soft)] mb-3" />
+                        <div className="h-8 w-32 animate-pulse rounded bg-[var(--soft)]" />
+                      </div>
                     ))}
                   </div>
                 ) : (
