@@ -1,19 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react'
 import { Bell, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Crown, Gem, LayoutDashboard, LogOut, Menu, Moon, Package, Palette, Search, Settings, ShieldCheck, ShoppingBag, Sparkles, Sun, TrendingUp, UsersRound, BarChart3 } from 'lucide-react'
 import { formatDateTimeDDMMYY, boutiqueThemes, appearanceTokens, navItems, stats, orders, products, staffActivities } from '../utils/constants'
-import CreateUserPage from '../pages/Users/CreateUser'
-import ViewUsersPage from '../pages/Users/ViewUsers'
-import AddClientsPage from '../pages/Clients/AddClients'
-import ViewClientsPage from '../pages/Clients/ViewClients'
-import ClientDetailPage from '../pages/Clients/ClientDetail'
-import AddOrderPage from '../pages/Orders/AddOrder'
-import ViewOrdersPage from '../pages/Orders/ViewOrders'
-import CreateInventoryPage from '../pages/Inventory/CreateInventory'
-import ViewInventoryPage from '../pages/Inventory/ViewInventory'
-import InventoryDetailPage from '../pages/Inventory/InventoryDetail'
-import CreateSalesPage from '../pages/Sales/CreateSales'
-import ViewSalesPage from '../pages/Sales/ViewSales'
-import ReportsPage from '../pages/Reports/Reports'
+const CreateUserPage = lazy(() => import('../pages/Users/CreateUser'))
+const ViewUsersPage = lazy(() => import('../pages/Users/ViewUsers'))
+const AddClientsPage = lazy(() => import('../pages/Clients/AddClients'))
+const ViewClientsPage = lazy(() => import('../pages/Clients/ViewClients'))
+const ClientDetailPage = lazy(() => import('../pages/Clients/ClientDetail'))
+const AddOrderPage = lazy(() => import('../pages/Orders/AddOrder'))
+const ViewOrdersPage = lazy(() => import('../pages/Orders/ViewOrders'))
+const CreateInventoryPage = lazy(() => import('../pages/Inventory/CreateInventory'))
+const ViewInventoryPage = lazy(() => import('../pages/Inventory/ViewInventory'))
+const InventoryDetailPage = lazy(() => import('../pages/Inventory/InventoryDetail'))
+const CreateSalesPage = lazy(() => import('../pages/Sales/CreateSales'))
+const ViewSalesPage = lazy(() => import('../pages/Sales/ViewSales'))
+const ReportsPage = lazy(() => import('../pages/Reports/Reports'))
 import AccountDetailsModal from './AccountDetailsModal'
 
 import { db } from '../firebase'
@@ -263,11 +263,9 @@ function Dashboard({ onLogout, user }) {
   const liveActivities = activities.slice(0, 4)
 
   // Global Search Logic
-  const getSearchResults = () => {
+  const searchResults = React.useMemo(() => {
     if (!globalSearch.trim()) return { clients: [], orders: [], inventory: [], sales: [] }
     const q = globalSearch.toLowerCase()
-
-    // Check permissions
     const isAdmin = user?.role === 'Admin'
 
     return {
@@ -276,8 +274,7 @@ function Dashboard({ onLogout, user }) {
       inventory: isAdmin ? allInventory.filter(p => p.productName?.toLowerCase().includes(q) || p.productId?.toLowerCase().includes(q)).slice(0, 4) : [],
       sales: isAdmin ? allSales.filter(s => s.saleId?.toLowerCase().includes(q) || s.client?.name?.toLowerCase().includes(q)).slice(0, 4) : []
     }
-  }
-  const searchResults = getSearchResults()
+  }, [globalSearch, allClients, allOrders, allInventory, allSales, user?.role])
   const hasSearchResults = Object.values(searchResults).some(arr => arr.length > 0)
 
   return (
@@ -713,26 +710,34 @@ function Dashboard({ onLogout, user }) {
                   </div>
                 </section>
 
-                <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  {liveStats.map((stat) => {
-                    const Icon = stat.icon
-                    return (
-                      <article key={stat.label} className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur transition hover:-translate-y-0.5">
-                        <div className="mb-5 flex items-center justify-between">
-                          <span className="grid h-11 w-11 place-items-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
-                            <Icon size={21} />
-                          </span>
-                          <span className="rounded-full bg-[var(--soft)] px-3 py-1 text-xs font-semibold text-[var(--jewel)]">
-                            Live
-                          </span>
-                        </div>
-                        <p className="text-sm text-[var(--muted)]">{stat.label}</p>
-                        <h3 className="mt-3 text-3xl font-semibold">{stat.value}</h3>
-                        <p className="mt-2 text-sm font-medium text-[var(--jewel)]">{stat.note}</p>
-                      </article>
-                    )
-                  })}
-                </section>
+                {!cloudLoaded ? (
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    {[1, 2, 3, 4].map(i => (
+                      <div key={i} className="h-32 animate-pulse rounded-[24px] bg-[var(--surface)] border border-[var(--border)] opacity-50" />
+                    ))}
+                  </div>
+                ) : (
+                  <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    {liveStats.map((stat) => {
+                      const Icon = stat.icon
+                      return (
+                        <article key={stat.label} className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur transition hover:-translate-y-0.5">
+                          <div className="mb-5 flex items-center justify-between">
+                            <span className="grid h-11 w-11 place-items-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
+                              <Icon size={21} />
+                            </span>
+                            <span className="rounded-full bg-[var(--soft)] px-3 py-1 text-xs font-semibold text-[var(--jewel)]">
+                              Live
+                            </span>
+                          </div>
+                          <p className="text-sm text-[var(--muted)]">{stat.label}</p>
+                          <h3 className="mt-3 text-3xl font-semibold">{stat.value}</h3>
+                          <p className="mt-2 text-sm font-medium text-[var(--jewel)]">{stat.note}</p>
+                        </article>
+                      )
+                    })}
+                  </section>
+                )}
 
                 <section className={`grid gap-6 ${user?.role === 'Admin' ? 'xl:grid-cols-[1.45fr_0.8fr]' : 'grid-cols-1'}`}>
                   <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
@@ -829,19 +834,31 @@ function Dashboard({ onLogout, user }) {
                 </section>
               </>
             )}
-            {currentPage === 'add-order' && <AddOrderPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} />}
-            {currentPage === 'view-orders' && <ViewOrdersPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightOrderId={highlightOrderId} setHighlightOrderId={setHighlightOrderId} />}
-            {currentPage === 'add-clients' && <AddClientsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} />}
-            {currentPage === 'view-clients' && <ViewClientsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} setSelectedClient={setSelectedClient} setClientDetailMode={setClientDetailMode} showGlobalToast={showGlobalToast} currentUser={user} highlightClientId={highlightClientId} setHighlightClientId={setHighlightClientId} />}
-            {currentPage === 'client-detail' && <ClientDetailPage themeStyle={themeStyle} client={selectedClient} setCurrentPage={setCurrentPage} setSelectedClient={setSelectedClient} initialMode={clientDetailMode} setClientDetailMode={setClientDetailMode} showGlobalToast={showGlobalToast} currentUser={user} />}
-            {currentPage === 'create-inventory' && <CreateInventoryPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} />}
-            {currentPage === 'view-inventory' && <ViewInventoryPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} setSelectedInventoryItem={setSelectedInventoryItem} setInventoryDetailMode={setInventoryDetailMode} highlightInventoryId={highlightInventoryId} setHighlightInventoryId={setHighlightInventoryId} />}
-            {currentPage === 'inventory-detail' && <InventoryDetailPage themeStyle={themeStyle} item={selectedInventoryItem} setCurrentPage={setCurrentPage} setSelectedInventoryItem={setSelectedInventoryItem} initialMode={inventoryDetailMode} setInventoryDetailMode={setInventoryDetailMode} showGlobalToast={showGlobalToast} currentUser={user} />}
-            {currentPage === 'create-sales' && <CreateSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} />}
-            {currentPage === 'view-sales' && <ViewSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightSaleId={highlightSaleId} setHighlightSaleId={setHighlightSaleId} />}
-            {currentPage === 'reports' && <ReportsPage themeStyle={themeStyle} showGlobalToast={showGlobalToast} currentUser={user} />}
-            {currentPage === 'create-user' && <CreateUserPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} users={users} setUsers={setUsers} designations={designations} setDesignations={setDesignations} currentUser={user} />}
-            {currentPage === 'view-users' && <ViewUsersPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} users={users} setUsers={setUsers} designations={designations} setDesignations={setDesignations} currentUser={user} />}
+            <Suspense fallback={
+              <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
+                <div className="relative h-16 w-16">
+                  <div className="absolute inset-0 rounded-full border-4 border-[var(--accent-soft)]"></div>
+                  <div className="absolute inset-0 animate-spin rounded-full border-4 border-[var(--accent)] border-t-transparent"></div>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-bold uppercase tracking-widest text-[var(--accent)]"></p>
+                </div>
+              </div>
+            }>
+              {currentPage === 'add-order' && <AddOrderPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} />}
+              {currentPage === 'view-orders' && <ViewOrdersPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightOrderId={highlightOrderId} setHighlightOrderId={setHighlightOrderId} />}
+              {currentPage === 'add-clients' && <AddClientsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} />}
+              {currentPage === 'view-clients' && <ViewClientsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} setSelectedClient={setSelectedClient} setClientDetailMode={setClientDetailMode} showGlobalToast={showGlobalToast} currentUser={user} highlightClientId={highlightClientId} setHighlightClientId={setHighlightClientId} />}
+              {currentPage === 'client-detail' && <ClientDetailPage themeStyle={themeStyle} client={selectedClient} setCurrentPage={setCurrentPage} setSelectedClient={setSelectedClient} initialMode={clientDetailMode} setClientDetailMode={setClientDetailMode} showGlobalToast={showGlobalToast} currentUser={user} />}
+              {currentPage === 'create-inventory' && <CreateInventoryPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} />}
+              {currentPage === 'view-inventory' && <ViewInventoryPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} setSelectedInventoryItem={setSelectedInventoryItem} setInventoryDetailMode={setInventoryDetailMode} highlightInventoryId={highlightInventoryId} setHighlightInventoryId={setHighlightInventoryId} />}
+              {currentPage === 'inventory-detail' && <InventoryDetailPage themeStyle={themeStyle} item={selectedInventoryItem} setCurrentPage={setCurrentPage} setSelectedInventoryItem={setSelectedInventoryItem} initialMode={inventoryDetailMode} setInventoryDetailMode={setInventoryDetailMode} showGlobalToast={showGlobalToast} currentUser={user} />}
+              {currentPage === 'create-sales' && <CreateSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} />}
+              {currentPage === 'view-sales' && <ViewSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightSaleId={highlightSaleId} setHighlightSaleId={setHighlightSaleId} />}
+              {currentPage === 'reports' && <ReportsPage themeStyle={themeStyle} showGlobalToast={showGlobalToast} currentUser={user} />}
+              {currentPage === 'create-user' && <CreateUserPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} users={users} setUsers={setUsers} designations={designations} setDesignations={setDesignations} currentUser={user} />}
+              {currentPage === 'view-users' && <ViewUsersPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} users={users} setUsers={setUsers} designations={designations} setDesignations={setDesignations} currentUser={user} />}
+            </Suspense>
           </div>
         </div>
       </div>
