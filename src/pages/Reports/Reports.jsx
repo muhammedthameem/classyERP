@@ -4,11 +4,7 @@ import html2pdf from 'html2pdf.js'
 import { stats, orders } from '../../utils/constants'
 import ReportStatCard from '../../components/ReportStatCard'
 
-function ReportsPage({ themeStyle, showGlobalToast }) {
-  const [sales, setSales] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [clients, setClients] = useState([]);
-  const [inventory, setInventory] = useState([]);
+function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inventory }) {
   const [filter, setFilter] = useState('all'); // all, today, month, custom
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -19,10 +15,6 @@ function ReportsPage({ themeStyle, showGlobalToast }) {
   const itemsPerPage = 10;
 
   useEffect(() => {
-    setSales(JSON.parse(localStorage.getItem('sales') || '[]'));
-    setOrders(JSON.parse(localStorage.getItem('orders') || '[]'));
-    setClients(JSON.parse(localStorage.getItem('clients') || '[]'));
-    setInventory(JSON.parse(localStorage.getItem('inventory') || '[]'));
     // Reset pages when filter changes
     setSalesPage(1);
     setOrdersPage(1);

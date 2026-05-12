@@ -1,41 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { ChevronDown, CircleDollarSign, Package, Search, Sparkles } from 'lucide-react'
 
-function CreateInventoryPage({ themeStyle, setCurrentPage, showGlobalToast }) {
+function CreateInventoryPage({ themeStyle, setCurrentPage, showGlobalToast, inventory, setInventory, productTypes, setProductTypes, inventoryUnits, setInventoryUnits }) {
   const [productId, setProductId] = useState('');
   const [productName, setProductName] = useState('');
   const [productType, setProductType] = useState('');
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [typeSearch, setTypeSearch] = useState('');
-  const [productTypesList, setProductTypesList] = useState(() => {
-    const saved = localStorage.getItem("productTypes")
-    if (saved) return JSON.parse(saved)
-    return [
-      "Shirt", "T-Shirt", "Blouse", "Kurta", "Pants", "Jeans", "Trousers", "Dress", "Saree",
-      "Salwar Kameez", "Lehenga", "Blazer", "Suit", "Jacket", "Coat", "Skirt", "Shorts",
-      "Sweater", "Cardigan", "Anarkali",
-    ]
-  })
-
-  useEffect(() => {
-    const inv = JSON.parse(localStorage.getItem('inventory') || '[]')
-    const invTypes = Array.from(new Set(inv.map(i => i.productType).filter(Boolean)))
-    const combined = Array.from(new Set([...productTypesList, ...invTypes]))
-    if (combined.length !== productTypesList.length) {
-      setProductTypesList(combined)
-    }
-  }, [])
 
   const [note, setNote] = useState('');
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('nos');
   const [showUnitDropdown, setShowUnitDropdown] = useState(false);
   const [unitSearch, setUnitSearch] = useState('');
-  const [unitsList, setUnitsList] = useState(() => {
-    const saved = localStorage.getItem("inventoryUnits")
-    if (saved) return JSON.parse(saved)
-    return ["nos", "mtr", "kg", "yd", "set"]
-  })
 
   const [purchasePrice, setPurchasePrice] = useState('');
   const [totalPurchasePrice, setTotalPurchasePrice] = useState('');
@@ -53,10 +30,6 @@ function CreateInventoryPage({ themeStyle, setCurrentPage, showGlobalToast }) {
     const discAmt = (b * (parseFloat(discount) || 0)) / 100;
     return b + taxAmt - discAmt;
   };
-
-  useEffect(() => {
-    localStorage.setItem("inventoryUnits", JSON.stringify(unitsList))
-  }, [unitsList])
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -80,9 +53,7 @@ function CreateInventoryPage({ themeStyle, setCurrentPage, showGlobalToast }) {
       createdAt: new Date().toISOString()
     };
 
-    const existingInventory = JSON.parse(localStorage.getItem('inventory') || '[]');
-    const updatedInventory = [...existingInventory, newInventoryItem];
-    localStorage.setItem('inventory', JSON.stringify(updatedInventory));
+    setInventory([...inventory, newInventoryItem]);
 
     if (showGlobalToast) showGlobalToast('Stock Added', `New item: ${productName} (${productId})`);
 
@@ -164,7 +135,7 @@ function CreateInventoryPage({ themeStyle, setCurrentPage, showGlobalToast }) {
                       />
                     </div>
                     <div className="max-h-60 overflow-y-auto pr-1 space-y-1">
-                      {productTypesList.filter(type => type.toLowerCase().includes(typeSearch.toLowerCase())).map(type => (
+                      {productTypes.filter(type => type.toLowerCase().includes(typeSearch.toLowerCase())).map(type => (
                         <button
                           key={type}
                           type="button"
@@ -179,15 +150,13 @@ function CreateInventoryPage({ themeStyle, setCurrentPage, showGlobalToast }) {
                         </button>
                       ))}
 
-                      {typeSearch && !productTypesList.some(type => type.toLowerCase() === typeSearch.toLowerCase()) && (
+                      {typeSearch && !productTypes.some(type => type.toLowerCase() === typeSearch.toLowerCase()) && (
                         <button
                           type="button"
                           className="flex w-full items-center gap-2 rounded-xl bg-[var(--accent-soft)] px-4 py-3 text-left text-sm font-semibold text-[var(--accent)] transition hover:brightness-95 mt-1"
                           onClick={() => {
                             const newType = typeSearch.trim()
-                            const updatedTypes = [...productTypesList, newType]
-                            setProductTypesList(updatedTypes)
-                            localStorage.setItem("productTypes", JSON.stringify(updatedTypes))
+                            setProductTypes([...productTypes, newType])
                             setProductType(newType)
                             setShowTypeDropdown(false)
                             if (showGlobalToast) showGlobalToast('Success!', `Added new product type: ${newType}`)
@@ -258,7 +227,7 @@ function CreateInventoryPage({ themeStyle, setCurrentPage, showGlobalToast }) {
                         autoFocus
                       />
                       <div className="max-h-40 overflow-y-auto space-y-1">
-                        {unitsList.filter(u => u.toLowerCase().includes(unitSearch.toLowerCase())).map(u => (
+                        {inventoryUnits.filter(u => u.toLowerCase().includes(unitSearch.toLowerCase())).map(u => (
                           <button
                             key={u}
                             type="button"
@@ -277,7 +246,7 @@ function CreateInventoryPage({ themeStyle, setCurrentPage, showGlobalToast }) {
                             className="w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-[var(--accent)] hover:bg-[var(--accent-soft)]"
                             onClick={() => {
                               const newUnit = unitSearch.toLowerCase().trim()
-                              setUnitsList([...unitsList, newUnit])
+                              setInventoryUnits([...inventoryUnits, newUnit])
                               setUnit(newUnit)
                               setShowUnitDropdown(false)
                             }}

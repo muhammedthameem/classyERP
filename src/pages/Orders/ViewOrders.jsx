@@ -2,9 +2,8 @@ import React, { useState, useEffect, useRef } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2, Plus } from 'lucide-react'
 import { formatDateDDMMYY, getIndianDate, orders } from '../../utils/constants'
 
-function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId }) {
+function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders }) {
   const rowRefs = useRef({});
-  const [orders, setOrders] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPageNum, setCurrentPageNum] = useState(1)
   const itemsPerPage = 10
@@ -25,23 +24,8 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
   const [dateFilter, setDateFilter] = useState('All') // All, Today, Tomorrow, Week, Custom
   const [customDate, setCustomDate] = useState(getIndianDate())
 
-  useEffect(() => {
-    let savedOrders = JSON.parse(localStorage.getItem('orders') || '[]')
-    if (savedOrders.length === 0) {
-      savedOrders = [
-        { id: 1001, clientName: 'Anaya Rao', product: 'Bridal lehenga', orderType: 'Customisation', price: '₹2,450', orderDate: '2026-05-01', deliveryDate: '2026-06-15', status: 'Not Ready' },
-        { id: 1002, clientName: 'Mira Patel', product: 'Evening gown', orderType: 'Stitching', price: '₹980', orderDate: '2026-05-03', deliveryDate: '2026-05-20', status: 'In Progress', startDate: '2026-05-04' },
-        { id: 1003, clientName: 'Sofia Khan', product: 'Silk saree blouse', orderType: 'Alteration', price: '₹420', orderDate: '2026-05-04', deliveryDate: '2026-05-10', status: 'In Progress', startDate: '2026-05-04' },
-        { id: 1004, clientName: 'Nora Shah', product: 'Reception dress', orderType: 'Customisation', price: '₹1,320', orderDate: '2026-05-05', deliveryDate: '2026-05-25', status: 'Closed', startDate: '2026-05-06' },
-      ]
-      localStorage.setItem('orders', JSON.stringify(savedOrders))
-    }
-    setOrders(savedOrders)
-  }, [])
-
   const saveOrders = (newOrders) => {
     setOrders(newOrders)
-    localStorage.setItem('orders', JSON.stringify(newOrders))
   }
 
   const handleDeleteConfirm = () => {
@@ -480,25 +464,29 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
             />
           </label>
         </div>
-        <div className="flex flex-col gap-2 w-full sm:w-auto">
-          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] px-1">Delivery Tracker:</span>
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
-            {['All', 'Today', 'Tomorrow', 'Week', 'Custom'].map((df) => (
-              <button
-                key={df}
-                onClick={() => setDateFilter(df)}
-                className={`px-5 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${dateFilter === df ? 'bg-[var(--accent)] text-white shadow-lg' : 'bg-[var(--soft)] text-[var(--muted)] hover:text-[var(--text)]'}`}
-              >
-                {df}
-              </button>
-            ))}
+        <div className="flex flex-col gap-2 w-full lg:w-auto">
+          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] px-1">Delivery Tracker</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex h-11 items-center gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth">
+              {['All', 'Today', 'Tomorrow', 'Week', 'Custom'].map((df) => (
+                <button
+                  key={df}
+                  onClick={() => setDateFilter(df)}
+                  className={`h-9 px-4 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all flex items-center justify-center ${dateFilter === df ? 'bg-[var(--accent)] text-white shadow-md' : 'bg-[var(--soft)] text-[var(--muted)] hover:text-[var(--text)]'}`}
+                >
+                  {df}
+                </button>
+              ))}
+            </div>
             {dateFilter === 'Custom' && (
-              <input
-                type="date"
-                value={customDate}
-                onChange={(e) => setCustomDate(e.target.value)}
-                className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-xs font-bold outline-none focus:border-[var(--accent)] h-[38px] min-w-[130px]"
-              />
+              <div className="w-full sm:w-auto animate-in slide-in-from-right-2 duration-300">
+                <input
+                  type="date"
+                  value={customDate}
+                  onChange={(e) => setCustomDate(e.target.value)}
+                  className="w-full sm:w-auto rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-[11px] font-bold outline-none focus:border-[var(--accent)] h-9 shadow-sm"
+                />
+              </div>
             )}
           </div>
         </div>

@@ -1,12 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight, Package, Search, Eye, Pencil, Trash2 } from 'lucide-react'
 
-function ViewInventoryPage({ themeStyle, setCurrentPage, setSelectedInventoryItem, setInventoryDetailMode, showGlobalToast, highlightInventoryId, setHighlightInventoryId }) {
+function ViewInventoryPage({ themeStyle, setCurrentPage, setSelectedInventoryItem, setInventoryDetailMode, showGlobalToast, highlightInventoryId, setHighlightInventoryId, inventory, setInventory }) {
   const rowRefs = useRef({});
-  const [inventory, setInventory] = useState(() => {
-    const saved = localStorage.getItem('inventory');
-    return saved ? JSON.parse(saved) : [];
-  });
   const [searchQuery, setSearchQuery] = useState('');
   const [itemToDelete, setItemToDelete] = useState(null);
 
@@ -46,7 +42,6 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, setSelectedInventoryIte
   const handleDeleteConfirm = () => {
     if (itemToDelete) {
       const updated = inventory.filter(item => item.id !== itemToDelete.id);
-      localStorage.setItem('inventory', JSON.stringify(updated));
       setInventory(updated);
       setItemToDelete(null);
       if (showGlobalToast) showGlobalToast('Deleted!', 'Inventory item deleted successfully.');

@@ -3,10 +3,7 @@ import { Package, Search, TrendingUp, UsersRound, Trash2, Download, ShoppingCart
 import html2pdf from 'html2pdf.js'
 import { orders } from '../../utils/constants'
 
-function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast }) {
-  const [inventory, setInventory] = useState([]);
-  const [clients, setClients] = useState([]);
-  const [orders, setOrders] = useState([]);
+function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventory, setInventory, clients, orders, setOrders, sales, setSales }) {
   const [cart, setCart] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [stockWarning, setStockWarning] = useState(null);
@@ -18,11 +15,6 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast }) {
   const [showReceipt, setShowReceipt] = useState(null);
   const [cartAlert, setCartAlert] = useState(null); // { title: '', message: '', type: 'warning'|'error' }
 
-  useEffect(() => {
-    setInventory(JSON.parse(localStorage.getItem('inventory') || '[]'));
-    setClients(JSON.parse(localStorage.getItem('clients') || '[]'));
-    setOrders(JSON.parse(localStorage.getItem('orders') || '[]'));
-  }, []);
 
   useEffect(() => {
     if (cart.length === 0) {
@@ -166,10 +158,9 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast }) {
       return o;
     });
 
-    localStorage.setItem('inventory', JSON.stringify(updatedInventory));
-    localStorage.setItem('orders', JSON.stringify(updatedOrders));
+    setInventory(updatedInventory);
+    setOrders(updatedOrders);
 
-    const sales = JSON.parse(localStorage.getItem('sales') || '[]');
     const newSale = {
       id: Date.now(),
       saleId: `SALE-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -187,8 +178,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast }) {
       total: calculateSubtotal(),
       timestamp: new Date().toISOString()
     };
-    sales.push(newSale);
-    localStorage.setItem('sales', JSON.stringify(sales));
+    setSales([...sales, newSale]);
 
     if (showGlobalToast) showGlobalToast('Sale Processed', `Sale ${newSale.saleId} for ₹${parseFloat(newSale.total).toFixed(2)} (${newSale.client.name})`);
     setCurrentPage('view-sales');

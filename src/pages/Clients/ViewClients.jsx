@@ -3,14 +3,10 @@ import { ChevronLeft, ChevronRight, Search, UsersRound, Eye, Pencil, Trash2, Dow
 import html2pdf from 'html2pdf.js'
 import { formatDateDDMMYY } from '../../utils/constants'
 
-function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setClientDetailMode, showGlobalToast, currentUser, highlightClientId, setHighlightClientId }) {
+function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setClientDetailMode, showGlobalToast, currentUser, highlightClientId, setHighlightClientId, clients, setClients }) {
   const rowRefs = useRef({})
   const [searchQuery, setSearchQuery] = useState('')
   const [clientToDelete, setClientToDelete] = useState(null)
-  const [clients, setClients] = useState(() => {
-    const saved = localStorage.getItem('clients')
-    return saved ? JSON.parse(saved) : []
-  })
 
   const filteredClients = clients.filter(client =>
     (client.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -222,9 +218,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
               <button
                 className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
                 onClick={() => {
-                  const saved = JSON.parse(localStorage.getItem('clients') || '[]')
-                  const updated = saved.filter(c => c.mobile !== clientToDelete.mobile)
-                  localStorage.setItem('clients', JSON.stringify(updated))
+                  const updated = clients.filter(c => c.mobile !== clientToDelete.mobile)
                   setClients(updated)
                   setClientToDelete(null)
                   if (showGlobalToast) showGlobalToast('Deleted!', 'Client successfully deleted.')

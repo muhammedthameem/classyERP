@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { ChevronDown, Package, Search, Settings, UsersRound } from 'lucide-react'
 import { products } from '../../utils/constants'
 
-function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast }) {
+function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, setClients }) {
   const [personalDetails, setPersonalDetails] = useState({ name: '', address: '', mobile: '' })
   const [showTopMeasurements, setShowTopMeasurements] = useState(true)
   const [showBottomMeasurements, setShowBottomMeasurements] = useState(false)
@@ -103,14 +103,14 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast }) {
       createdAt: new Date().toISOString()
     }
 
-    const existingClients = JSON.parse(localStorage.getItem('clients') || '[]')
+    const existingClients = [...clients]
     const existingClientIndex = existingClients.findIndex(c => c.mobile === personalDetails.mobile)
 
     if (existingClientIndex >= 0) {
       existingClients[existingClientIndex].measurements.push(measurementData)
       existingClients[existingClientIndex].name = personalDetails.name
       existingClients[existingClientIndex].address = personalDetails.address
-      localStorage.setItem('clients', JSON.stringify(existingClients))
+      setClients(existingClients)
     } else {
       const clientData = {
         id: Date.now(),
@@ -118,8 +118,7 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast }) {
         measurements: [measurementData],
         createdAt: new Date().toISOString()
       }
-      const updatedClients = [...existingClients, clientData]
-      localStorage.setItem('clients', JSON.stringify(updatedClients))
+      setClients([...existingClients, clientData])
     }
 
     console.log('Client data saved:', measurementData)

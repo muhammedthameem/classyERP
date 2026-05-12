@@ -3,16 +3,12 @@ import { ChevronLeft, ChevronRight, Search, TrendingUp, Eye, Trash2, Download, P
 import html2pdf from 'html2pdf.js'
 import { orders } from '../../utils/constants'
 
-function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightSaleId, setHighlightSaleId }) {
+function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightSaleId, setHighlightSaleId, sales, setSales, inventory, setInventory, orders, setOrders }) {
   const rowRefs = useRef({});
-  const [sales, setSales] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewSale, setViewSale] = useState(null);
   const [saleToDelete, setSaleToDelete] = useState(null);
 
-  useEffect(() => {
-    setSales(JSON.parse(localStorage.getItem('sales') || '[]').reverse());
-  }, []);
 
   const handleDeleteConfirm = () => {
     if (!saleToDelete) return;
@@ -20,12 +16,8 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightS
     const id = saleToDelete.id;
     const updatedSales = sales.filter(s => s.id !== id);
 
-    // Restore Inventory & Orders
-    const inventoryData = JSON.parse(localStorage.getItem('inventory') || '[]');
-    const ordersData = JSON.parse(localStorage.getItem('orders') || '[]');
-
-    let updatedInventory = [...inventoryData];
-    let updatedOrders = [...ordersData];
+    let updatedInventory = [...inventory];
+    let updatedOrders = [...orders];
 
     saleToDelete.items.forEach(soldItem => {
       if (soldItem.type === 'order') {
@@ -35,13 +27,9 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightS
       }
     });
 
-    // Save back
-    const salesToSave = [...updatedSales].reverse();
-    localStorage.setItem('sales', JSON.stringify(salesToSave));
-    localStorage.setItem('inventory', JSON.stringify(updatedInventory));
-    localStorage.setItem('orders', JSON.stringify(updatedOrders));
-
     setSales(updatedSales);
+    setInventory(updatedInventory);
+    setOrders(updatedOrders);
     setSaleToDelete(null);
     if (showGlobalToast) showGlobalToast('Sale Deleted', 'Stock/Order status restored successfully.');
   };

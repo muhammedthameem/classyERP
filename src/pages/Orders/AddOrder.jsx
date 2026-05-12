@@ -3,12 +3,12 @@ import { ChevronDown, Search, Settings, ShoppingBag, Pencil, Trash2, Plus, Packa
 import { formatDateDDMMYY, getIndianDate, orders, products } from '../../utils/constants'
 import CustomDatePicker from '../../components/CustomDatePicker'
 
-function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast }) {
+function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, setOrders, clients, inventory, orderTypes, setOrderTypes }) {
   const [clientName, setClientName] = useState('')
   const [showClientDropdown, setShowClientDropdown] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
-  const [clientsList, setClientsList] = useState([])
-  const [allOrders, setAllOrders] = useState([])
+  const [clientsList, setClientsList] = useState(clients)
+  const [allOrders, setAllOrders] = useState(orders)
 
   // Global order metadata
   const [orderDate, setOrderDate] = useState(getIndianDate())
@@ -34,8 +34,6 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast }) {
     }
   ])
 
-  const [inventory, setInventory] = useState([])
-  const [orderTypesList, setOrderTypesList] = useState([])
   const [productTypesList, setProductTypesList] = useState(() => {
     const saved = localStorage.getItem("productTypes")
     if (saved) return JSON.parse(saved)
@@ -63,10 +61,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast }) {
   const [dropdownLimit, setDropdownLimit] = useState(15)
 
   useEffect(() => {
-    setClientsList(JSON.parse(localStorage.getItem("clients") || "[]"))
-    setOrderTypesList(JSON.parse(localStorage.getItem("orderTypes") || "[\"Customisation\", \"Stitching\"]"))
-    const inv = JSON.parse(localStorage.getItem('inventory') || '[]')
-    setInventory(inv)
+    setClientsList(clients)
+    setAllOrders(orders)
 
     const savedLimit = localStorage.getItem("dailyOrderLimit")
     if (savedLimit) setDailyOrderLimit(parseInt(savedLimit, 10))
@@ -78,9 +74,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast }) {
       setClientName(prefillClient)
       localStorage.removeItem("prefillOrderClientName")
     }
-
-    setAllOrders(JSON.parse(localStorage.getItem("orders") || "[]"))
-  }, [])
+  }, [clients, orders])
 
   const addOrderItem = () => {
     setOrderItems(prev => [...prev, {
@@ -152,8 +146,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast }) {
       }
     }
 
-    const existingOrders = JSON.parse(localStorage.getItem('orders') || '[]')
-    const ordersOnDate = existingOrders.filter(o => o.deliveryDate === deliveryDate).length
+    const ordersOnDate = orders.filter(o => o.deliveryDate === deliveryDate).length
     const limitForDate = specificDateLimits[deliveryDate] !== undefined ? specificDateLimits[deliveryDate] : dailyOrderLimit
 
     if (ordersOnDate + orderItems.length > limitForDate) {
@@ -180,8 +173,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast }) {
       status: 'Not Ready'
     }))
 
-    const updatedOrders = [...existingOrders, ...newOrders]
-    localStorage.setItem('orders', JSON.stringify(updatedOrders))
+    setOrders([...orders, ...newOrders])
 
     if (showGlobalToast) showGlobalToast('Success', `${orderItems.length} product(s) added for ${clientName}`);
     
@@ -519,7 +511,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast }) {
                               autoFocus
                             />
                             <div className="max-h-48 overflow-y-auto space-y-1">
-                              {orderTypesList.filter(t => t.toLowerCase().includes(typeSearch.toLowerCase())).map(t => (
+                              {orderTypes.filter(t => t.toLowerCase().includes(typeSearch.toLowerCase())).map(t => (
                                 <button
                                   key={t}
                                   type="button"

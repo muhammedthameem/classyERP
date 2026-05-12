@@ -21,7 +21,8 @@ import { db } from '../firebase'
 import {
   doc,
   setDoc,
-  getDoc
+  getDoc,
+  onSnapshot
 } from 'firebase/firestore'
 
 function Dashboard({ onLogout, user }) {
@@ -106,62 +107,72 @@ function Dashboard({ onLogout, user }) {
     return uniqueUsers;
   })
   const [designations, setDesignations] = useState(() => JSON.parse(localStorage.getItem('erp_designations') || '["Admin", "Manager", "Designer", "Sales Staff", "Tailor"]'))
+  const [clients, setClients] = useState(() => JSON.parse(localStorage.getItem('clients') || '[]'))
+  const [orders, setOrders] = useState(() => JSON.parse(localStorage.getItem('orders') || '[]'))
+  const [inventory, setInventory] = useState(() => JSON.parse(localStorage.getItem('inventory') || '[]'))
+  const [sales, setSales] = useState(() => JSON.parse(localStorage.getItem('sales') || '[]'))
+  const [orderTypes, setOrderTypes] = useState(() => JSON.parse(localStorage.getItem('orderTypes') || '["Customisation", "Stitching"]'))
+  const [productTypes, setProductTypes] = useState(() => JSON.parse(localStorage.getItem('productTypes') || '[]'))
+  const [inventoryUnits, setInventoryUnits] = useState(() => JSON.parse(localStorage.getItem('inventoryUnits') || '["nos", "mtr", "kg", "yd", "set"]'))
 
-  // LOAD FROM FIREBASE
+  // REAL-TIME SYNC FROM FIREBASE
   useEffect(() => {
-    const loadCloudData = async () => {
-      try {
-        const docRef = doc(db, "erpData", "main")
-        const docSnap = await getDoc(docRef)
-
-        if (docSnap.exists()) {
-          const data = docSnap.data()
-
-          // USERS
-          if (data.users) {
-            setUsers(data.users)
-            localStorage.setItem('erp_users', JSON.stringify(data.users))
-          }
-
-          // DESIGNATIONS
-          if (data.designations) {
-            setDesignations(data.designations)
-            localStorage.setItem('erp_designations', JSON.stringify(data.designations))
-          }
-
-          // CLIENTS
-          if (data.clients) {
-            localStorage.setItem('clients', JSON.stringify(data.clients))
-          }
-
-          // ORDERS
-          if (data.orders) {
-            localStorage.setItem('orders', JSON.stringify(data.orders))
-          }
-
-          // INVENTORY
-          if (data.inventory) {
-            localStorage.setItem('inventory', JSON.stringify(data.inventory))
-          }
-
-          // SALES
-          if (data.sales) {
-            localStorage.setItem('sales', JSON.stringify(data.sales))
-          }
-
-          // ACTIVITIES
-          if (data.activities) {
-            localStorage.setItem('activities', JSON.stringify(data.activities))
-          }
+    const docRef = doc(db, "erpData", "main")
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data()
+        
+        // Update States and LocalStorage
+        if (data.users) {
+          setUsers(data.users)
+          localStorage.setItem('erp_users', JSON.stringify(data.users))
         }
-
+        if (data.designations) {
+          setDesignations(data.designations)
+          localStorage.setItem('erp_designations', JSON.stringify(data.designations))
+        }
+        if (data.clients) {
+          setClients(data.clients)
+          localStorage.setItem('clients', JSON.stringify(data.clients))
+        }
+        if (data.orders) {
+          setOrders(data.orders)
+          localStorage.setItem('orders', JSON.stringify(data.orders))
+        }
+        if (data.inventory) {
+          setInventory(data.inventory)
+          localStorage.setItem('inventory', JSON.stringify(data.inventory))
+        }
+        if (data.sales) {
+          setSales(data.sales)
+          localStorage.setItem('sales', JSON.stringify(data.sales))
+        }
+        if (data.activities) {
+          setActivities(data.activities)
+          localStorage.setItem('activities', JSON.stringify(data.activities))
+        }
+        if (data.orderTypes) {
+          setOrderTypes(data.orderTypes)
+          localStorage.setItem('orderTypes', JSON.stringify(data.orderTypes))
+        }
+        if (data.productTypes) {
+          setProductTypes(data.productTypes)
+          localStorage.setItem('productTypes', JSON.stringify(data.productTypes))
+        }
+        if (data.inventoryUnits) {
+          setInventoryUnits(data.inventoryUnits)
+          localStorage.setItem('inventoryUnits', JSON.stringify(data.inventoryUnits))
+        }
         setCloudLoaded(true)
-      } catch (error) {
-        console.log("Firebase Load Error:", error)
+      } else {
+        // First time setup if doc doesn't exist
+        setCloudLoaded(true)
       }
-    }
+    }, (error) => {
+      console.log("Firebase Sync Error:", error)
+    })
 
-    loadCloudData()
+    return () => unsubscribe()
   }, [])
 
   // SAVE TO FIREBASE
@@ -170,16 +181,6 @@ function Dashboard({ onLogout, user }) {
 
     const saveCloudData = async () => {
       try {
-        const clients = JSON.parse(localStorage.getItem('clients') || '[]')
-        const orders = JSON.parse(localStorage.getItem('orders') || '[]')
-        const inventory = JSON.parse(localStorage.getItem('inventory') || '[]')
-        const sales = JSON.parse(localStorage.getItem('sales') || '[]')
-        const activitiesData = JSON.parse(localStorage.getItem('activities') || '[]')
-
-        // SAVE LOCAL
-        localStorage.setItem('erp_users', JSON.stringify(users))
-        localStorage.setItem('erp_designations', JSON.stringify(designations))
-
         // SAVE CLOUD
         await setDoc(doc(db, "erpData", "main"), {
           users,
@@ -188,17 +189,21 @@ function Dashboard({ onLogout, user }) {
           orders,
           inventory,
           sales,
-          activities: activitiesData
-        })
-
+          activities,
+          orderTypes,
+          productTypes,
+          inventoryUnits
+        }, { merge: true })
         console.log("Cloud Sync Success")
       } catch (error) {
         console.log("Cloud Save Error:", error)
       }
     }
 
-    saveCloudData()
-  }, [users, designations, activities, cloudLoaded])
+    // Debounce or just save on every relevant state change
+    const timeout = setTimeout(saveCloudData, 1000)
+    return () => clearTimeout(timeout)
+  }, [users, designations, clients, orders, inventory, sales, activities, orderTypes, productTypes, inventoryUnits])
 
   const activeSidebarPage = currentPage === 'client-detail' ? 'view-clients' : (currentPage === 'inventory-detail' ? 'view-inventory' : currentPage)
 
@@ -246,10 +251,10 @@ function Dashboard({ onLogout, user }) {
   const currentUserEmail = loggedInUserInList ? loggedInUserInList.email : (user?.email || 'admin@classy.com')
 
   // Live Data Calculations
-  const allOrders = JSON.parse(localStorage.getItem('orders') || '[]')
-  const allClients = JSON.parse(localStorage.getItem('clients') || '[]')
-  const allInventory = JSON.parse(localStorage.getItem('inventory') || '[]')
-  const allSales = JSON.parse(localStorage.getItem('sales') || '[]')
+  const allOrders = orders
+  const allClients = clients
+  const allInventory = inventory
+  const allSales = sales
 
   const liveStats = [
     { label: 'Total Revenue', value: `₹${allSales.reduce((acc, s) => acc + (parseFloat(s.totalAmount) || 0), 0).toLocaleString()}`, note: 'Real-time sales', icon: TrendingUp, adminOnly: true },
@@ -859,17 +864,17 @@ function Dashboard({ onLogout, user }) {
                 </div>
               </div>
             }>
-              {currentPage === 'add-order' && <AddOrderPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} />}
-              {currentPage === 'view-orders' && <ViewOrdersPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightOrderId={highlightOrderId} setHighlightOrderId={setHighlightOrderId} />}
-              {currentPage === 'add-clients' && <AddClientsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} />}
-              {currentPage === 'view-clients' && <ViewClientsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} setSelectedClient={setSelectedClient} setClientDetailMode={setClientDetailMode} showGlobalToast={showGlobalToast} currentUser={user} highlightClientId={highlightClientId} setHighlightClientId={setHighlightClientId} />}
-              {currentPage === 'client-detail' && <ClientDetailPage themeStyle={themeStyle} client={selectedClient} setCurrentPage={setCurrentPage} setSelectedClient={setSelectedClient} initialMode={clientDetailMode} setClientDetailMode={setClientDetailMode} showGlobalToast={showGlobalToast} currentUser={user} />}
-              {currentPage === 'create-inventory' && <CreateInventoryPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} />}
-              {currentPage === 'view-inventory' && <ViewInventoryPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} setSelectedInventoryItem={setSelectedInventoryItem} setInventoryDetailMode={setInventoryDetailMode} highlightInventoryId={highlightInventoryId} setHighlightInventoryId={setHighlightInventoryId} />}
-              {currentPage === 'inventory-detail' && <InventoryDetailPage themeStyle={themeStyle} item={selectedInventoryItem} setCurrentPage={setCurrentPage} setSelectedInventoryItem={setSelectedInventoryItem} initialMode={inventoryDetailMode} setInventoryDetailMode={setInventoryDetailMode} showGlobalToast={showGlobalToast} currentUser={user} />}
-              {currentPage === 'create-sales' && <CreateSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} />}
-              {currentPage === 'view-sales' && <ViewSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightSaleId={highlightSaleId} setHighlightSaleId={setHighlightSaleId} />}
-              {currentPage === 'reports' && <ReportsPage themeStyle={themeStyle} showGlobalToast={showGlobalToast} currentUser={user} />}
+                {currentPage === 'add-order' && <AddOrderPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} orders={orders} setOrders={setOrders} clients={clients} inventory={inventory} orderTypes={orderTypes} setOrderTypes={setOrderTypes} />}
+              {currentPage === 'view-orders' && <ViewOrdersPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightOrderId={highlightOrderId} setHighlightOrderId={setHighlightOrderId} orders={orders} setOrders={setOrders} />}
+              {currentPage === 'add-clients' && <AddClientsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} clients={clients} setClients={setClients} />}
+              {currentPage === 'view-clients' && <ViewClientsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} setSelectedClient={setSelectedClient} setClientDetailMode={setClientDetailMode} showGlobalToast={showGlobalToast} currentUser={user} highlightClientId={highlightClientId} setHighlightClientId={setHighlightClientId} clients={clients} setClients={setClients} />}
+              {currentPage === 'client-detail' && <ClientDetailPage themeStyle={themeStyle} client={selectedClient} setCurrentPage={setCurrentPage} setSelectedClient={setSelectedClient} initialMode={clientDetailMode} setClientDetailMode={setClientDetailMode} showGlobalToast={showGlobalToast} currentUser={user} clients={clients} setClients={setClients} />}
+                {currentPage === 'create-inventory' && <CreateInventoryPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} inventory={inventory} setInventory={setInventory} productTypes={productTypes} setProductTypes={setProductTypes} inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits} />}
+              {currentPage === 'view-inventory' && <ViewInventoryPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} setSelectedInventoryItem={setSelectedInventoryItem} setInventoryDetailMode={setInventoryDetailMode} highlightInventoryId={highlightInventoryId} setHighlightInventoryId={setHighlightInventoryId} inventory={inventory} setInventory={setInventory} />}
+              {currentPage === 'inventory-detail' && <InventoryDetailPage themeStyle={themeStyle} item={selectedInventoryItem} setCurrentPage={setCurrentPage} setSelectedInventoryItem={setSelectedInventoryItem} initialMode={inventoryDetailMode} setInventoryDetailMode={setInventoryDetailMode} showGlobalToast={showGlobalToast} currentUser={user} inventory={inventory} setInventory={setInventory} />}
+              {currentPage === 'create-sales' && <CreateSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} sales={sales} setSales={setSales} clients={clients} orders={orders} setOrders={setOrders} inventory={inventory} setInventory={setInventory} />}
+              {currentPage === 'view-sales' && <ViewSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightSaleId={highlightSaleId} setHighlightSaleId={setHighlightSaleId} sales={sales} setSales={setSales} inventory={inventory} setInventory={setInventory} orders={orders} setOrders={setOrders} />}
+              {currentPage === 'reports' && <ReportsPage themeStyle={themeStyle} showGlobalToast={showGlobalToast} currentUser={user} sales={sales} orders={orders} clients={clients} inventory={inventory} />}
               {currentPage === 'create-user' && <CreateUserPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} users={users} setUsers={setUsers} designations={designations} setDesignations={setDesignations} currentUser={user} />}
               {currentPage === 'view-users' && <ViewUsersPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} users={users} setUsers={setUsers} designations={designations} setDesignations={setDesignations} currentUser={user} />}
             </Suspense>
