@@ -83,7 +83,7 @@ function ReportsPage({ themeStyle, showGlobalToast }) {
         <p style="margin: 15px 0 0 0; font-size: 14px; color: #374151;">Filter: <strong>${filter.toUpperCase()}</strong> | Date: <strong>${new Date().toLocaleDateString()}</strong></p>
       </div>
 
-      <div style="display: grid; grid-template-cols: repeat(4, 1fr); gap: 20px; margin-bottom: 40px;">
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 40px;">
         <div style="background: #f0fdf4; border: 1px solid #bcf0da; padding: 15px; border-radius: 12px; text-align: center;">
           <p style="margin: 0; font-size: 10px; color: #166534; font-weight: 800; text-transform: uppercase;">Total Revenue</p>
           <p style="margin: 5px 0 0 0; font-size: 20px; font-weight: 900; color: #14532d;">₹${stats.totalRevenue.toLocaleString()}</p>
@@ -226,30 +226,40 @@ function ReportsPage({ themeStyle, showGlobalToast }) {
 
   return (
     <div style={themeStyle} className="space-y-8 animate-in fade-in duration-500 pb-20">
-      <div className="flex flex-wrap items-center justify-between gap-6">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-[var(--accent)] mb-1">
-            <BarChart3 size={16} /> Business Intelligence
+            <BarChart3 size={16} /> Business Analytics
           </p>
-          <h1 className="text-2xl font-semibold sm:text-3xl">Reports & Analytics</h1>
+          <h1 className="text-3xl font-semibold">Reports & Insights</h1>
+          <p className="mt-2 text-sm text-[var(--muted)]">Analyze your boutique performance and financial growth.</p>
         </div>
+        <button
+          onClick={downloadPDF}
+          className="flex items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 active:scale-95"
+        >
+          <Download size={18} /> Export Full Report
+        </button>
+      </div>
 
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex gap-1 rounded-2xl bg-[var(--surface-strong)] p-1.5 border border-[var(--border)] shadow-sm">
-            {['all', 'today', 'month', 'custom'].map((f) => (
+      <div className="rounded-[32px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: 'all', label: 'All Time' },
+              { id: 'today', label: 'Today' },
+              { id: 'month', label: 'This Month' },
+              { id: 'custom', label: 'Custom Range' }
+            ].map(btn => (
               <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all capitalize ${filter === f ? 'bg-[var(--accent)] text-white shadow-md' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+                key={btn.id}
+                onClick={() => setFilter(btn.id)}
+                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${filter === btn.id ? 'bg-[var(--accent)] text-white shadow-lg' : 'bg-[var(--soft)] text-[var(--muted)] hover:text-[var(--text)]'}`}
               >
-                {f}
+                {btn.label}
               </button>
             ))}
           </div>
-
-          <button onClick={downloadPDF} className="flex items-center gap-2 rounded-2xl bg-[var(--text)] px-6 py-3 text-sm font-bold text-white shadow-xl transition hover:brightness-110">
-            <Download size={18} /> Download PDF
-          </button>
         </div>
       </div>
 
@@ -285,7 +295,7 @@ function ReportsPage({ themeStyle, showGlobalToast }) {
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h3 className="text-xl font-bold">Purchase Analysis</h3>
-                <p className="text-xs text-[var(--muted)]">Filtered entries: {filteredInventory.length}</p>
+                <p className="text-xs text-[var(--muted)]">Filtered entries: ${filteredInventory.length}</p>
               </div>
               <button onClick={() => downloadCSV('inventory')} className="flex items-center gap-2 rounded-xl bg-[var(--soft)] px-4 py-2 text-xs font-bold text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white">
                 <Download size={14} /> Export CSV
@@ -326,12 +336,12 @@ function ReportsPage({ themeStyle, showGlobalToast }) {
         </div>
 
         <div className="grid gap-8 lg:grid-cols-2">
-          {/* Sales Summary Table */}
+          {/* Sales Analysis Table */}
           <section className="rounded-[32px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] lg:p-8">
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h3 className="text-xl font-bold">Sales Analysis</h3>
-                <p className="text-xs text-[var(--muted)]">Filtered results: {filteredSales.length}</p>
+                <p className="text-xs text-[var(--muted)]">Filtered results: ${filteredSales.length}</p>
               </div>
               <button onClick={() => downloadCSV('sales')} className="flex items-center gap-2 rounded-xl bg-[var(--soft)] px-4 py-2 text-xs font-bold text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white">
                 <Download size={14} /> Export CSV
@@ -367,7 +377,7 @@ function ReportsPage({ themeStyle, showGlobalToast }) {
 
             {totalSalesPages > 1 && (
               <div className="mt-6 flex items-center justify-between border-t border-[var(--border)] pt-4">
-                <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Page {salesPage} of {totalSalesPages}</span>
+                <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Page ${salesPage} of ${totalSalesPages}</span>
                 <div className="flex gap-2">
                   <button
                     disabled={salesPage === 1}
@@ -388,12 +398,12 @@ function ReportsPage({ themeStyle, showGlobalToast }) {
             )}
           </section>
 
-          {/* Orders Summary Table */}
+          {/* Order Tracking Table */}
           <section className="rounded-[32px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] lg:p-8">
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h3 className="text-xl font-bold">Order Tracking</h3>
-                <p className="text-xs text-[var(--muted)]">Filtered results: {filteredOrders.length}</p>
+                <p className="text-xs text-[var(--muted)]">Filtered results: ${filteredOrders.length}</p>
               </div>
               <button onClick={() => downloadCSV('orders')} className="flex items-center gap-2 rounded-xl bg-[var(--soft)] px-4 py-2 text-xs font-bold text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white">
                 <Download size={14} /> Export CSV
@@ -412,7 +422,7 @@ function ReportsPage({ themeStyle, showGlobalToast }) {
                 <tbody>
                   {paginatedOrders.map(o => (
                     <tr key={o.id}>
-                      <td className="font-bold">#{o.id}</td>
+                      <td className="font-bold">#${o.id}</td>
                       <td>{o.product}</td>
                       <td>
                         <span className={`rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase ${o.status === 'Completed' ? 'bg-green-100 text-green-700' : o.status === 'Sold' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
@@ -433,7 +443,7 @@ function ReportsPage({ themeStyle, showGlobalToast }) {
 
             {totalOrdersPages > 1 && (
               <div className="mt-6 flex items-center justify-between border-t border-[var(--border)] pt-4">
-                <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Page {ordersPage} of {totalOrdersPages}</span>
+                <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Page ${ordersPage} of ${totalOrdersPages}</span>
                 <div className="flex gap-2">
                   <button
                     disabled={ordersPage === 1}

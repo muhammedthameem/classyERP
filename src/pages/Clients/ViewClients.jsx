@@ -13,9 +13,10 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
   })
 
   const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.mobile.includes(searchQuery) ||
-    client.address.toLowerCase().includes(searchQuery.toLowerCase())
+    (client.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (client.mobile || '').includes(searchQuery) ||
+    (client.address || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (client.clientProduct || '').toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const [currentPageNum, setCurrentPageNum] = useState(1)
@@ -235,16 +236,19 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
           </div>
         </div>
       )}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
+          <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-[var(--accent)] mb-1">
+            <UsersRound size={16} /> CRM Database
+          </p>
           <h1 className="text-3xl font-semibold">View Clients</h1>
           <p className="mt-2 text-sm text-[var(--muted)]">Manage and search all client records</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="flex h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <label className="flex flex-1 h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm">
             <Search size={17} />
             <input
-              className="w-full sm:w-64 bg-transparent outline-none placeholder:text-stone-400"
+              className="w-full bg-transparent outline-none placeholder:text-stone-400"
               placeholder="Search clients..."
               type="search"
               value={searchQuery}
@@ -253,7 +257,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
           </label>
           {currentUser?.role === 'Admin' && (
             <button
-              className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 whitespace-nowrap"
+              className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 active:scale-95 whitespace-nowrap"
               onClick={() => setCurrentPage('add-clients')}
             >
               <UsersRound size={18} />

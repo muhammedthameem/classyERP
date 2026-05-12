@@ -11,9 +11,9 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, setSelectedInventoryIte
   const [itemToDelete, setItemToDelete] = useState(null);
 
   const filteredInventory = inventory.filter(item =>
-    item.productId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.productType.toLowerCase().includes(searchQuery.toLowerCase())
+    (item.productId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (item.productName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (item.productType || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Scroll to highlight logic
@@ -80,7 +80,7 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, setSelectedInventoryIte
         </div>
       )}
 
-      <div className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-[var(--accent)] mb-1">
             <Package size={16} /> Fabric & Supplies
@@ -88,11 +88,11 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, setSelectedInventoryIte
           <h1 className="text-3xl font-semibold">View Inventory</h1>
           <p className="mt-2 text-sm text-[var(--muted)]">Manage and search all inventory items</p>
         </div>
-        <div className="flex items-center gap-3">
-          <label className="flex max-w-[285px] h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <label className="flex flex-1 h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm">
             <Search size={17} />
             <input
-              className="w-64 bg-transparent outline-none placeholder:text-stone-400"
+              className="w-full bg-transparent outline-none placeholder:text-stone-400"
               placeholder="Search by ID, name, type..."
               type="search"
               value={searchQuery}
@@ -100,10 +100,10 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, setSelectedInventoryIte
             />
           </label>
           <button
-            className="flex items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95"
+            className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 active:scale-95 whitespace-nowrap"
             onClick={() => setCurrentPage('create-inventory')}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <Package size={18} />
             Add New Item
           </button>
         </div>

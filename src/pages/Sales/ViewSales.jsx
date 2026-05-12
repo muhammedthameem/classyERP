@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ChevronLeft, ChevronRight, Search, TrendingUp, Eye, Trash2, Download } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Search, TrendingUp, Eye, Trash2, Download, Plus } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
 import { orders } from '../../utils/constants'
 
-function ViewSalesPage({ themeStyle, showGlobalToast, highlightSaleId, setHighlightSaleId }) {
+function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightSaleId, setHighlightSaleId }) {
   const rowRefs = useRef({});
   const [sales, setSales] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,10 +46,12 @@ function ViewSalesPage({ themeStyle, showGlobalToast, highlightSaleId, setHighli
     if (showGlobalToast) showGlobalToast('Sale Deleted', 'Stock/Order status restored successfully.');
   };
 
-  const filteredSales = sales.filter(s =>
-    (s.saleId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (s.client?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredSales = sales.filter(s => {
+    const sId = (s.saleId || '').toString().toLowerCase();
+    const cName = (s.client?.name || s.client || '').toString().toLowerCase();
+    const query = searchQuery.toLowerCase();
+    return sId.includes(query) || cName.includes(query);
+  });
 
   // Scroll to highlight logic
   useEffect(() => {
@@ -88,18 +90,26 @@ function ViewSalesPage({ themeStyle, showGlobalToast, highlightSaleId, setHighli
           <h1 className="text-3xl font-semibold">View Sales</h1>
           <p className="mt-2 text-sm text-[var(--muted)]">Track all boutique transactions and manage records.</p>
         </div>
+        <button 
+          onClick={() => setCurrentPage('create-sales')}
+          className="flex items-center gap-2 rounded-xl bg-[var(--accent)] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95"
+        >
+          <TrendingUp size={18} /> New Transaction
+        </button>
       </div>
 
       <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
-        <div className="mb-6 relative max-w-md">
-          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
-          <input
-            type="text"
-            placeholder="Search by Sale ID or Client..."
-            className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] py-2.5 pl-12 pr-4 outline-none focus:border-[var(--accent)]"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <label className="flex flex-1 h-11 sm:max-w-md items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm focus-within:border-[var(--accent)] transition-colors">
+            <Search size={18} />
+            <input
+              type="text"
+              placeholder="Search by Sale ID or Client..."
+              className="w-full bg-transparent outline-none placeholder:text-stone-400 font-medium"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </label>
         </div>
 
         <div className="erp-table-container">

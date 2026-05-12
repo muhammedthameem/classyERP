@@ -542,7 +542,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast }) {
           </div>
         </div>
       )}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
           <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-[var(--accent)] mb-1">
             <TrendingUp size={16} /> Checkout Terminal
@@ -552,18 +552,18 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast }) {
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+      <div className="grid gap-6 grid-cols-1 xl:grid-cols-[1.5fr_1fr]">
         <div className="space-y-6">
           {/* Selection Source Toggle */}
-          <div className="flex gap-2 rounded-2xl bg-[var(--surface-strong)] p-1.5 border border-[var(--border)] w-fit">
+          <div className="flex flex-wrap gap-2 rounded-2xl bg-[var(--surface-strong)] p-1.5 border border-[var(--border)] w-full sm:w-fit">
             <button
-              className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${selectionMode === 'inventory' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+              className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${selectionMode === 'inventory' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
               onClick={() => { setSelectionMode('inventory'); setProductSearch(''); }}
             >
               Inventory Items
             </button>
             <button
-              className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${selectionMode === 'orders' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+              className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${selectionMode === 'orders' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
               onClick={() => { setSelectionMode('orders'); setProductSearch(''); }}
             >
               Finished Orders

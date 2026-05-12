@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { CalendarDays, ChevronLeft, ChevronRight, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2 } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2, Plus } from 'lucide-react'
 import { formatDateDDMMYY, getIndianDate, orders } from '../../utils/constants'
 
 function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId }) {
@@ -395,16 +395,16 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
         </div>
       )}
 
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-semibold">Orders</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Orders History</h1>
           <p className="mt-2 text-sm text-[var(--muted)]">View and manage all active studio orders.</p>
         </div>
         <button
-          className="flex items-center gap-2 rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95"
+          className="flex items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 active:scale-95"
           onClick={() => setCurrentPage('add-order')}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <Plus size={18} />
           Add New Order
         </button>
       </div>
@@ -467,61 +467,53 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
           </button>
         ))}
       </div>
-
-      <section id="orders-table" className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur overflow-hidden">
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div className="w-full sm:flex-1">
-            <span className="mb-2 block text-[10px] font-black uppercase tracking-wider text-[var(--muted)]">Quick Search</span>
-            <div className="relative">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex-1 w-full sm:max-w-md">
+          <label className="flex h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm focus-within:border-[var(--accent)] transition-colors">
+            <Search size={18} />
+            <input
+              className="w-full bg-transparent outline-none placeholder:text-stone-400 font-medium"
+              placeholder="Search client, product or ID..."
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </label>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] mr-1 hidden sm:block">Delivery Tracker:</span>
+          <div className="flex flex-wrap items-center gap-2">
+            {['All', 'Today', 'Tomorrow', 'Week', 'Custom'].map((df) => (
+              <button
+                key={df}
+                onClick={() => setDateFilter(df)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${dateFilter === df ? 'bg-[var(--accent)] text-white shadow-md' : 'bg-[var(--soft)] text-[var(--muted)] hover:text-[var(--text)]'}`}
+              >
+                {df}
+              </button>
+            ))}
+            {dateFilter === 'Custom' && (
               <input
-                type="text"
-                placeholder="Search by ID, client..."
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value)
-                  setCurrentPageNum(1)
-                }}
+                type="date"
+                value={customDate}
+                onChange={(e) => setCustomDate(e.target.value)}
+                className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-xs font-bold outline-none focus:border-[var(--accent)]"
               />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2 min-w-0">
-            <span className="text-[10px] font-black uppercase tracking-wider text-[var(--muted)]">Delivery Tracker</span>
-            <div className="flex items-center gap-1 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] p-1 overflow-x-auto custom-scrollbar whitespace-nowrap">
-              {[
-                { id: 'All', label: 'All Dates' },
-                { id: 'Today', label: 'Today' },
-                { id: 'Tomorrow', label: 'Tomorrow' },
-                { id: 'Week', label: 'Next 7 Days' },
-                { id: 'Custom', label: dateFilter === 'Custom' ? formatDateDDMMYY(customDate) : 'Pick Date' }
-              ].map(df => (
-                <button
-                  key={df.id}
-                  onClick={() => { setDateFilter(df.id); setCurrentPageNum(1) }}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all shrink-0 ${dateFilter === df.id ? 'bg-[var(--accent)] text-white shadow-sm' : 'text-[var(--muted)] hover:bg-[var(--soft)]'}`}
-                >
-                  {df.label}
-                </button>
-              ))}
-              {dateFilter === 'Custom' && (
-                <div className="ml-2 flex-shrink-0 animate-in fade-in slide-in-from-left-2 duration-300">
-                  <input
-                    type="date"
-                    className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-xs font-bold outline-none focus:border-[var(--accent)]"
-                    value={customDate}
-                    onChange={(e) => {
-                      setCustomDate(e.target.value)
-                      setCurrentPageNum(1)
-                    }}
-                  />
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
+      </div>
 
+      <section id="orders-table" className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur overflow-hidden">
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-sm font-semibold text-[var(--text)]">
+            {filteredOrders.length} {filteredOrders.length === 1 ? 'order' : 'orders'} found
+            {dateFilter !== 'All' && <span className="text-[var(--muted)] ml-1">for {dateFilter === 'Custom' ? customDate : dateFilter}</span>}
+          </p>
+          <p className="text-xs text-[var(--muted)] font-medium uppercase tracking-wider">
+            {activeFilter !== 'All' ? activeFilter : 'All Statuses'}
+          </p>
+        </div>
         <div className="erp-table-container">
           <table className="erp-table">
             <thead>
