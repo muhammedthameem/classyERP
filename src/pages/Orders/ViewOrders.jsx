@@ -468,7 +468,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
         ))}
       </div>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex-1 w-full sm:max-w-md">
+        <div className="sm:flex-1 w-full sm:max-w-md">
           <label className="flex h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm focus-within:border-[var(--accent)] transition-colors">
             <Search size={18} />
             <input
@@ -480,14 +480,14 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
             />
           </label>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] mr-1 hidden sm:block">Delivery Tracker:</span>
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col gap-2 w-full sm:w-auto">
+          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] px-1">Delivery Tracker:</span>
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
             {['All', 'Today', 'Tomorrow', 'Week', 'Custom'].map((df) => (
               <button
                 key={df}
                 onClick={() => setDateFilter(df)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${dateFilter === df ? 'bg-[var(--accent)] text-white shadow-md' : 'bg-[var(--soft)] text-[var(--muted)] hover:text-[var(--text)]'}`}
+                className={`px-5 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${dateFilter === df ? 'bg-[var(--accent)] text-white shadow-lg' : 'bg-[var(--soft)] text-[var(--muted)] hover:text-[var(--text)]'}`}
               >
                 {df}
               </button>
@@ -497,7 +497,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                 type="date"
                 value={customDate}
                 onChange={(e) => setCustomDate(e.target.value)}
-                className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-xs font-bold outline-none focus:border-[var(--accent)]"
+                className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-xs font-bold outline-none focus:border-[var(--accent)] h-[38px] min-w-[130px]"
               />
             )}
           </div>
