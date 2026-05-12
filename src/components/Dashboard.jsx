@@ -16,7 +16,16 @@ import ViewSalesPage from '../pages/Sales/ViewSales'
 import ReportsPage from '../pages/Reports/Reports'
 import AccountDetailsModal from './AccountDetailsModal'
 
+import { db } from '../firebase'
+
+import {
+  doc,
+  setDoc,
+  getDoc
+} from 'firebase/firestore'
+
 function Dashboard({ onLogout, user }) {
+  const [cloudLoaded, setCloudLoaded] = useState(false)
   const [showAccountMenu, setShowAccountMenu] = useState(false)
   const [showAccountPanel, setShowAccountPanel] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
@@ -29,6 +38,8 @@ function Dashboard({ onLogout, user }) {
   const [showAllNotifications, setShowAllNotifications] = useState(false)
   const [notificationsPage, setNotificationsPage] = useState(1)
   const notificationsPerPage = 10
+
+
 
   const showGlobalToast = (title, message) => {
     setGlobalToast({ title, message })
@@ -96,13 +107,98 @@ function Dashboard({ onLogout, user }) {
   })
   const [designations, setDesignations] = useState(() => JSON.parse(localStorage.getItem('erp_designations') || '["Admin", "Manager", "Designer", "Sales Staff", "Tailor"]'))
 
+  // LOAD FROM FIREBASE
   useEffect(() => {
-    localStorage.setItem('erp_users', JSON.stringify(users))
-  }, [users])
+    const loadCloudData = async () => {
+      try {
+        const docRef = doc(db, "erpData", "main")
+        const docSnap = await getDoc(docRef)
 
+        if (docSnap.exists()) {
+          const data = docSnap.data()
+
+          // USERS
+          if (data.users) {
+            setUsers(data.users)
+            localStorage.setItem('erp_users', JSON.stringify(data.users))
+          }
+
+          // DESIGNATIONS
+          if (data.designations) {
+            setDesignations(data.designations)
+            localStorage.setItem('erp_designations', JSON.stringify(data.designations))
+          }
+
+          // CLIENTS
+          if (data.clients) {
+            localStorage.setItem('clients', JSON.stringify(data.clients))
+          }
+
+          // ORDERS
+          if (data.orders) {
+            localStorage.setItem('orders', JSON.stringify(data.orders))
+          }
+
+          // INVENTORY
+          if (data.inventory) {
+            localStorage.setItem('inventory', JSON.stringify(data.inventory))
+          }
+
+          // SALES
+          if (data.sales) {
+            localStorage.setItem('sales', JSON.stringify(data.sales))
+          }
+
+          // ACTIVITIES
+          if (data.activities) {
+            localStorage.setItem('activities', JSON.stringify(data.activities))
+          }
+        }
+
+        setCloudLoaded(true)
+      } catch (error) {
+        console.log("Firebase Load Error:", error)
+      }
+    }
+
+    loadCloudData()
+  }, [])
+
+  // SAVE TO FIREBASE
   useEffect(() => {
-    localStorage.setItem('erp_designations', JSON.stringify(designations))
-  }, [designations])
+    if (!cloudLoaded) return
+
+    const saveCloudData = async () => {
+      try {
+        const clients = JSON.parse(localStorage.getItem('clients') || '[]')
+        const orders = JSON.parse(localStorage.getItem('orders') || '[]')
+        const inventory = JSON.parse(localStorage.getItem('inventory') || '[]')
+        const sales = JSON.parse(localStorage.getItem('sales') || '[]')
+        const activitiesData = JSON.parse(localStorage.getItem('activities') || '[]')
+
+        // SAVE LOCAL
+        localStorage.setItem('erp_users', JSON.stringify(users))
+        localStorage.setItem('erp_designations', JSON.stringify(designations))
+
+        // SAVE CLOUD
+        await setDoc(doc(db, "erpData", "main"), {
+          users,
+          designations,
+          clients,
+          orders,
+          inventory,
+          sales,
+          activities: activitiesData
+        })
+
+        console.log("Cloud Sync Success")
+      } catch (error) {
+        console.log("Cloud Save Error:", error)
+      }
+    }
+
+    saveCloudData()
+  }, [users, designations, activities, cloudLoaded])
 
   const activeSidebarPage = currentPage === 'client-detail' ? 'view-clients' : (currentPage === 'inventory-detail' ? 'view-inventory' : currentPage)
 

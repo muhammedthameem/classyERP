@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore"
+import { db } from "../firebase"
 
 function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyle }) {
   const [currentPassword, setCurrentPassword] = useState('')
@@ -14,17 +16,19 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
     setMessage('')
     setIsLoading(true)
 
-    setTimeout(() => {
-      const allUsers = JSON.parse(localStorage.getItem('erp_users') || '[]')
-      const userIndex = allUsers.findIndex(u => u.email === email)
+    try {
+      const userRef = doc(db, "erp_users", email)
+      const userSnap = await getDoc(userRef)
 
-      if (userIndex === -1 && email !== 'admin@classy.com') {
+      if (!userSnap.exists() && email !== 'admin@classy.com') {
         setMessage('User not found in system record.')
         setIsLoading(false)
         return
       }
 
-      const targetUser = allUsers[userIndex] || { password: 'admin123' }
+      const targetUser = userSnap.exists()
+        ? userSnap.data()
+        : { password: 'admin123' }
 
       if (currentPassword !== targetUser.password) {
         setMessage('Current password is incorrect.')
@@ -38,69 +42,137 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
         return
       }
 
-      if (userIndex !== -1) {
-        allUsers[userIndex].password = newPassword
-        localStorage.setItem('erp_users', JSON.stringify(allUsers))
+      if (userSnap.exists()) {
+        await updateDoc(userRef, {
+          password: newPassword
+        })
       } else {
-        const admin = {
+        await setDoc(userRef, {
           id: 'admin',
           name: name,
           email: email,
           designation: 'Admin',
           password: newPassword,
           createdAt: new Date().toISOString()
-        }
-        localStorage.setItem('erp_users', JSON.stringify([...allUsers, admin]))
+        })
       }
 
       setMessage('Password changed successfully. Logging out...')
-      setTimeout(onChanged, 1500)
-      setIsLoading(false)
-    }, 800)
+
+      setTimeout(() => {
+        onChanged()
+      }, 1500)
+
+    } catch (error) {
+      console.error(error)
+      setMessage('Something went wrong.')
+    }
+
+    setIsLoading(false)
   }
 
   return (
     <div className="fixed inset-0 z-[110] grid place-items-center bg-black/50 px-4 backdrop-blur-sm">
       <div className="w-full max-w-lg rounded-[32px] border border-[var(--border)] bg-[var(--surface-strong)] p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-        <button className="absolute top-6 right-6 text-[var(--muted)] hover:text-[var(--text)] transition" onClick={onClose}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+
+        <button
+          className="absolute top-6 right-6 text-[var(--muted)] hover:text-[var(--text)] transition"
+          onClick={onClose}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
         </button>
-        
+
         <h2 className="text-2xl font-bold mb-2">Account Details</h2>
-        <p className="text-sm text-[var(--muted)] mb-8">Manage your profile and security settings.</p>
-        
+
+        <p className="text-sm text-[var(--muted)] mb-8">
+          Manage your profile and security settings.
+        </p>
+
         <div className="space-y-6">
+
           <div className="grid gap-4 sm:grid-cols-2">
+
             <div className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
-              <p className="text-xs font-bold uppercase tracking-widest text-[var(--muted)] mb-1">Signed in as</p>
-              <p className="text-lg font-bold text-[var(--text)]">{name}</p>
-              <p className="text-sm text-[var(--muted)]">{email}</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-[var(--muted)] mb-1">
+                Signed in as
+              </p>
+
+              <p className="text-lg font-bold text-[var(--text)]">
+                {name}
+              </p>
+
+              <p className="text-sm text-[var(--muted)]">
+                {email}
+              </p>
             </div>
+
             <div className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
-              <p className="text-xs font-bold uppercase tracking-widest text-[var(--muted)] mb-1">Designation</p>
-              <p className="text-lg font-bold text-[var(--accent)]">{fullUser?.designation || 'Admin'}</p>
-              <p className="text-sm text-[var(--muted)]">Active Staff</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-[var(--muted)] mb-1">
+                Designation
+              </p>
+
+              <p className="text-lg font-bold text-[var(--accent)]">
+                {fullUser?.designation || 'Admin'}
+              </p>
+
+              <p className="text-sm text-[var(--muted)]">
+                Active Staff
+              </p>
             </div>
+
             <div className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
-              <p className="text-xs font-bold uppercase tracking-widest text-[var(--muted)] mb-1">Phone Number</p>
-              <p className="text-base font-bold">{fullUser?.phone || 'N/A'}</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-[var(--muted)] mb-1">
+                Phone Number
+              </p>
+
+              <p className="text-base font-bold">
+                {fullUser?.phone || 'N/A'}
+              </p>
             </div>
+
             <div className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
-              <p className="text-xs font-bold uppercase tracking-widest text-[var(--muted)] mb-1">Member Since</p>
-              <p className="text-base font-bold">{fullUser?.createdAt ? new Date(fullUser.createdAt).toLocaleDateString() : 'N/A'}</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-[var(--muted)] mb-1">
+                Member Since
+              </p>
+
+              <p className="text-base font-bold">
+                {fullUser?.createdAt
+                  ? new Date(fullUser.createdAt).toLocaleDateString()
+                  : 'N/A'}
+              </p>
             </div>
+
             <div className="sm:col-span-2 p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
-              <p className="text-xs font-bold uppercase tracking-widest text-[var(--muted)] mb-1">Address</p>
-              <p className="text-sm font-medium">{fullUser?.address || 'No address provided.'}</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-[var(--muted)] mb-1">
+                Address
+              </p>
+
+              <p className="text-sm font-medium">
+                {fullUser?.address || 'No address provided.'}
+              </p>
             </div>
+
           </div>
-          
-          <form onSubmit={submitChangePassword} className="space-y-4 border-t border-[var(--border)] pt-6">
-            <p className="text-xs font-bold uppercase tracking-widest text-[var(--muted)] mb-2">Change Password</p>
-            
+
+          <form
+            onSubmit={submitChangePassword}
+            className="space-y-4 border-t border-[var(--border)] pt-6"
+          >
+
+            <p className="text-xs font-bold uppercase tracking-widest text-[var(--muted)] mb-2">
+              Change Password
+            </p>
+
             <div className="grid gap-4 sm:grid-cols-2">
+
               <label className="block">
-                <span className="text-xs font-medium text-[var(--muted)]">Current Password</span>
+                <span className="text-xs font-medium text-[var(--muted)]">
+                  Current Password
+                </span>
+
                 <input
                   className="mt-1.5 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 outline-none transition focus:border-[var(--accent)]"
                   type="password"
@@ -109,9 +181,12 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
                   required
                 />
               </label>
-              
+
               <label className="block">
-                <span className="text-xs font-medium text-[var(--muted)]">New Password</span>
+                <span className="text-xs font-medium text-[var(--muted)]">
+                  New Password
+                </span>
+
                 <input
                   className="mt-1.5 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 outline-none transition focus:border-[var(--accent)]"
                   type="password"
@@ -121,15 +196,22 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
                   minLength={6}
                 />
               </label>
+
             </div>
-            
+
             {message && (
-              <p className={`text-sm font-medium ${message.includes('successfully') ? 'text-green-600' : 'text-red-600'}`}>
+              <p
+                className={`text-sm font-medium ${message.includes('successfully')
+                    ? 'text-green-600'
+                    : 'text-red-600'
+                  }`}
+              >
                 {message}
               </p>
             )}
-            
+
             <div className="pt-4 flex gap-3">
+
               <button
                 type="button"
                 onClick={onClose}
@@ -137,6 +219,7 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
               >
                 Cancel
               </button>
+
               <button
                 type="submit"
                 disabled={isLoading}
@@ -144,12 +227,15 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
               >
                 {isLoading ? 'Updating...' : 'Update Password'}
               </button>
+
             </div>
+
           </form>
+
         </div>
       </div>
     </div>
   )
 }
 
-export default AccountDetailsModal;
+export default AccountDetailsModal
