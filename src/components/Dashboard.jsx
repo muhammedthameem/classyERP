@@ -108,7 +108,6 @@ function Dashboard({
 
     const saveCloudData = async () => {
       try {
-        // SAVE CLOUD
         await setDoc(doc(db, "erpData", "main"), {
           users,
           designations,
@@ -123,7 +122,10 @@ function Dashboard({
         }, { merge: true })
         console.log("Cloud Sync Success")
       } catch (error) {
-        console.log("Cloud Save Error:", error)
+        console.error("Cloud Save Error:", error)
+        if (showGlobalToast) {
+          showGlobalToast('Sync Error', `Could not save to cloud: ${error.message}`);
+        }
       }
     }
 
