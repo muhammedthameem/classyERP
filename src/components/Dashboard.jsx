@@ -111,13 +111,13 @@ function Dashboard({
     const saveCloudData = async (isManual = false) => {
       try {
         const batch = [];
-        
+
         // 1. Save Small Lists (Users, Inventory, Activities, Config)
         // Only save if the list has items (prevents wiping from a fresh device)
         if (users.length > 0 || isManual) batch.push(setDoc(doc(db, "erpData", "users"), { list: users }, { merge: true }));
         if (inventory.length > 0 || isManual) batch.push(setDoc(doc(db, "erpData", "inventory"), { list: inventory }, { merge: true }));
         if (activities.length > 0 || isManual) batch.push(setDoc(doc(db, "erpData", "activities"), { list: activities }, { merge: true }));
-        
+
         batch.push(setDoc(doc(db, "erpData", "config"), {
           designations,
           orderTypes,
@@ -131,13 +131,13 @@ function Dashboard({
             batch.push(setDoc(doc(db, "orders", (o.id || o.orderId).toString()), o, { merge: true }));
           });
         }
-        
+
         if (sales.length > 0 || isManual) {
           sales.filter(s => s && (s.id || s.saleId)).forEach(s => {
             batch.push(setDoc(doc(db, "sales", (s.id || s.saleId).toString()), s, { merge: true }));
           });
         }
-        
+
         if (clients.length > 0 || isManual) {
           clients.filter(c => c && (c.id || c.clientId || c.phone)).forEach(c => {
             batch.push(setDoc(doc(db, "clients", (c.id || c.clientId || c.phone || Date.now()).toString()), c, { merge: true }));
@@ -342,16 +342,6 @@ function Dashboard({
           ))}
         </nav>
 
-        {!isSidebarCollapsed && (
-          <div className="mt-auto border-t border-[var(--border)] p-5">
-              <p className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest">
-                Classy ERP v1.0.5
-              </p>
-              <p className="text-[8px] text-[var(--accent)] font-medium">
-                Project: classyerp
-              </p>
-            </div>
-        )}
       </aside>
 
       <div className={`min-w-0 bg-[var(--page-bg)] ${transitionClass} ${sidebarWidth}`}>
@@ -368,18 +358,6 @@ function Dashboard({
               <div className="hidden sm:block">
                 <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--accent)] lg:text-sm">
                   <Sparkles size={14} /> Designer dashboard
-                  <span className="flex items-center gap-1.5 ml-2 border-l border-[var(--border)] pl-2">
-                    <span className={`h-1.5 w-1.5 rounded-full ${cloudLoaded ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-yellow-500 animate-pulse'}`}></span>
-                    <span className="text-[9px] tracking-normal lowercase font-bold text-[var(--muted)]">
-                      {cloudLoaded ? 'cloud synced' : 'connecting...'}
-                    </span>
-                  </span>
-                  <button 
-                    onClick={() => saveCloudData(true)}
-                    className="ml-4 rounded-md bg-[var(--surface-strong)] px-2 py-0.5 text-[8px] font-bold text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white transition-colors"
-                  >
-                    Force Upload
-                  </button>
                 </p>
                 <h1 className="text-lg font-semibold lg:text-3xl">{currentUserName || 'Admin'}</h1>
               </div>
