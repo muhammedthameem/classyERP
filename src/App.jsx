@@ -54,15 +54,31 @@ function App() {
           if (colId === 'clients') setClients(list)
         }
         
-        // Final fallback to the old "main" document if cloud collections are empty
+        // Robust merge logic: Combine cloud collections with old "main" data
         getDoc(doc(db, "erpData", "main")).then(mainSnap => {
           if (mainSnap.exists()) {
             const mainData = mainSnap.data()
-            if (querySnapshot.empty) {
-              if (colId === 'orders' && mainData.orders) setOrders(mainData.orders)
-              if (colId === 'sales' && mainData.sales) setSales(mainData.sales)
-              if (colId === 'clients' && mainData.clients) setClients(mainData.clients)
+            if (colId === 'orders') {
+              const oldList = mainData.orders || []
+              // Filter out duplicates (prefer new collection over old main)
+              const combined = [...list, ...oldList.filter(o => !list.some(no => no.id === o.id))]
+              setOrders(combined)
             }
+            if (colId === 'sales') {
+              const oldList = mainData.sales || []
+              const combined = [...list, ...oldList.filter(s => !list.some(ns => ns.id === s.id))]
+              setSales(combined)
+            }
+            if (colId === 'clients') {
+              const oldList = mainData.clients || []
+              const combined = [...list, ...oldList.filter(c => !list.some(nc => nc.id === c.id))]
+              setClients(combined)
+            }
+          } else {
+            // No old data, just use the collection list
+            if (colId === 'orders') setOrders(list)
+            if (colId === 'sales') setSales(list)
+            if (colId === 'clients') setClients(list)
           }
           setCloudLoaded(true)
         })
