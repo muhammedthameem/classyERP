@@ -107,6 +107,7 @@ function Dashboard({
     if (!cloudLoaded) return
 
     const saveCloudData = async () => {
+      console.log("DEBUG: Attempting Cloud Save...");
       try {
         await setDoc(doc(db, "erpData", "main"), {
           users,
@@ -120,16 +121,16 @@ function Dashboard({
           productTypes,
           inventoryUnits
         }, { merge: true })
-        console.log("Cloud Sync Success")
+        console.log("DEBUG: Cloud Sync Success ✅");
       } catch (error) {
-        console.error("Cloud Save Error:", error)
+        console.error("DEBUG: Cloud Save Error ❌:", error.message);
         if (showGlobalToast) {
           showGlobalToast('Sync Error', `Could not save to cloud: ${error.message}`);
         }
       }
     }
 
-    // Debounce or just save on every relevant state change
+    console.log("DEBUG: Setting Sync Timeout...");
     const timeout = setTimeout(saveCloudData, 1000)
     return () => clearTimeout(timeout)
   }, [users, designations, clients, orders, inventory, sales, activities, orderTypes, productTypes, inventoryUnits, cloudLoaded])
@@ -333,6 +334,12 @@ function Dashboard({
               <div className="hidden sm:block">
                 <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--accent)] lg:text-sm">
                   <Sparkles size={14} /> Designer dashboard
+                  <span className="flex items-center gap-1.5 ml-2 border-l border-[var(--border)] pl-2">
+                    <span className={`h-1.5 w-1.5 rounded-full ${cloudLoaded ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-yellow-500 animate-pulse'}`}></span>
+                    <span className="text-[9px] tracking-normal lowercase font-bold text-[var(--muted)]">
+                      {cloudLoaded ? 'cloud synced' : 'connecting...'}
+                    </span>
+                  </span>
                 </p>
                 <h1 className="text-lg font-semibold lg:text-3xl">{currentUserName || 'Admin'}</h1>
               </div>
