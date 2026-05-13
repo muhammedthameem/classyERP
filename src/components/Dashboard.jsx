@@ -127,12 +127,8 @@ function Dashboard({
           inventoryUnits
         }), { merge: true }));
 
-        // Bulk Save to main doc as backup only (Stop individual collection loop here to save speed)
-        batch.push(setDoc(doc(db, "erpData", "main"), clean({
-          orders: orders.slice(0, 500),
-          sales: sales.slice(0, 500),
-          clients: clients.slice(0, 500)
-        }), { merge: true }));
+        // Removed bulk main backup to save on quota. 
+        // Collections (Sales/Orders/Clients) now handle their own instant sync.
 
         if (batch.length > 0) {
           await Promise.all(batch);
