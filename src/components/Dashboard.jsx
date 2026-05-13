@@ -344,13 +344,13 @@ function Dashboard({
 
         {!isSidebarCollapsed && (
           <div className="mt-auto border-t border-[var(--border)] p-5">
-            <p className="text-[10px] font-bold tracking-widest text-[var(--muted)] uppercase">
-              Classy ERP v1.0.5
-            </p>
-            <p className="text-[8px] font-medium text-[var(--accent)]">
-              Professional Cloud Edition
-            </p>
-          </div>
+              <p className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest">
+                Classy ERP v1.0.5
+              </p>
+              <p className="text-[8px] text-[var(--accent)] font-medium">
+                Project: classyerp
+              </p>
+            </div>
         )}
       </aside>
 
