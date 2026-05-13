@@ -22,11 +22,13 @@ import {
   doc,
   setDoc,
   getDoc,
-  onSnapshot
+  onSnapshot,
+  collection,
+  writeBatch
 } from 'firebase/firestore'
 
-function Dashboard({ 
-  onLogout, user, 
+function Dashboard({
+  onLogout, user,
   users, setUsers,
   designations, setDesignations,
   clients, setClients,
@@ -107,25 +109,30 @@ function Dashboard({
     if (!cloudLoaded) return
 
     const saveCloudData = async () => {
-      console.log("DEBUG: Attempting Cloud Save (Multi-Doc)...");
+      console.log("DEBUG: Attempting Cloud Save (Collections Mode)...");
       try {
-        const batch = [
+        // 1. Save Small Lists (Users, Inventory, Activities, Config)
+        const singles = [
           setDoc(doc(db, "erpData", "users"), { list: users }, { merge: true }),
-          setDoc(doc(db, "erpData", "clients"), { list: clients }, { merge: true }),
-          setDoc(doc(db, "erpData", "orders"), { list: orders }, { merge: true }),
           setDoc(doc(db, "erpData", "inventory"), { list: inventory }, { merge: true }),
-          setDoc(doc(db, "erpData", "sales"), { list: sales }, { merge: true }),
           setDoc(doc(db, "erpData", "activities"), { list: activities }, { merge: true }),
-          setDoc(doc(db, "erpData", "config"), { 
-            designations, 
-            orderTypes, 
-            productTypes, 
-            inventoryUnits 
+          setDoc(doc(db, "erpData", "config"), {
+            designations,
+            orderTypes,
+            productTypes,
+            inventoryUnits
           }, { merge: true })
         ];
-        
-        await Promise.all(batch);
-        console.log("DEBUG: Cloud Sync Success ✅ (Data Split)");
+
+        // 2. Save Large Collections (Orders, Sales, Clients)
+        // We use individual setDoc for each item to bypass document size limits
+        const ordersBatch = orders.map(o => setDoc(doc(db, "orders", o.id.toString()), o, { merge: true }));
+        const salesBatch = sales.map(s => setDoc(doc(db, "sales", s.id.toString()), s, { merge: true }));
+        const clientsBatch = clients.map(c => setDoc(doc(db, "clients", c.id.toString()), c, { merge: true }));
+
+        await Promise.all([...singles, ...ordersBatch, ...salesBatch, ...clientsBatch]);
+
+        console.log("DEBUG: Cloud Sync Success ✅ (Professional Collection Mode)");
       } catch (error) {
         console.error("DEBUG: Cloud Save Error ❌:", error.message);
         if (showGlobalToast) {
@@ -804,12 +811,12 @@ function Dashboard({
                 </div>
               </div>
             }>
-                {currentPage === 'add-order' && <AddOrderPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} orders={orders} setOrders={setOrders} clients={clients} inventory={inventory} setInventory={setInventory} orderTypes={orderTypes} setOrderTypes={setOrderTypes} />}
+              {currentPage === 'add-order' && <AddOrderPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} orders={orders} setOrders={setOrders} clients={clients} inventory={inventory} setInventory={setInventory} orderTypes={orderTypes} setOrderTypes={setOrderTypes} />}
               {currentPage === 'view-orders' && <ViewOrdersPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightOrderId={highlightOrderId} setHighlightOrderId={setHighlightOrderId} orders={orders} setOrders={setOrders} inventory={inventory} setInventory={setInventory} />}
               {currentPage === 'add-clients' && <AddClientsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} clients={clients} setClients={setClients} />}
               {currentPage === 'view-clients' && <ViewClientsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} setSelectedClient={setSelectedClient} setClientDetailMode={setClientDetailMode} showGlobalToast={showGlobalToast} currentUser={user} highlightClientId={highlightClientId} setHighlightClientId={setHighlightClientId} clients={clients} setClients={setClients} />}
               {currentPage === 'client-detail' && <ClientDetailPage themeStyle={themeStyle} client={selectedClient} setCurrentPage={setCurrentPage} setSelectedClient={setSelectedClient} initialMode={clientDetailMode} setClientDetailMode={setClientDetailMode} showGlobalToast={showGlobalToast} currentUser={user} clients={clients} setClients={setClients} />}
-                {currentPage === 'create-inventory' && <CreateInventoryPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} inventory={inventory} setInventory={setInventory} productTypes={productTypes} setProductTypes={setProductTypes} inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits} />}
+              {currentPage === 'create-inventory' && <CreateInventoryPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} inventory={inventory} setInventory={setInventory} productTypes={productTypes} setProductTypes={setProductTypes} inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits} />}
               {currentPage === 'view-inventory' && <ViewInventoryPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} setSelectedInventoryItem={setSelectedInventoryItem} setInventoryDetailMode={setInventoryDetailMode} highlightInventoryId={highlightInventoryId} setHighlightInventoryId={setHighlightInventoryId} inventory={inventory} setInventory={setInventory} />}
               {currentPage === 'inventory-detail' && <InventoryDetailPage themeStyle={themeStyle} item={selectedInventoryItem} setCurrentPage={setCurrentPage} setSelectedInventoryItem={setSelectedInventoryItem} initialMode={inventoryDetailMode} setInventoryDetailMode={setInventoryDetailMode} showGlobalToast={showGlobalToast} currentUser={user} inventory={inventory} setInventory={setInventory} />}
               {currentPage === 'create-sales' && <CreateSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} sales={sales} setSales={setSales} clients={clients} setClients={setClients} orders={orders} setOrders={setOrders} inventory={inventory} setInventory={setInventory} />}

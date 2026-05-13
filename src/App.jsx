@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import LoginScreen from './components/LoginScreen'
 import Dashboard from './components/Dashboard'
 import { db } from './firebase'
-import { doc, onSnapshot, getDoc } from 'firebase/firestore'
+import { doc, onSnapshot, getDoc, collection, setDoc, writeBatch } from 'firebase/firestore'
 
 function App() {
   // SHARED STATES
@@ -20,16 +20,14 @@ function App() {
 
   // REAL-TIME SYNC FROM FIREBASE
   useEffect(() => {
-    const docsToSync = ['users', 'clients', 'orders', 'inventory', 'sales', 'activities', 'config']
-    const unsubscribes = docsToSync.map(docId => {
+    // 1. Sync Single Documents (Config, Users, Inventory, Activities)
+    const singleDocs = ['users', 'inventory', 'activities', 'config']
+    const unsubSingles = singleDocs.map(docId => {
       return onSnapshot(doc(db, "erpData", docId), (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data()
           if (docId === 'users' && data.list) setUsers(data.list)
-          if (docId === 'clients' && data.list) setClients(data.list)
-          if (docId === 'orders' && data.list) setOrders(data.list)
           if (docId === 'inventory' && data.list) setInventory(data.list)
-          if (docId === 'sales' && data.list) setSales(data.list)
           if (docId === 'activities' && data.list) setActivities(data.list)
           if (docId === 'config') {
             if (data.designations) setDesignations(data.designations)
@@ -38,26 +36,33 @@ function App() {
             if (data.inventoryUnits) setInventoryUnits(data.inventoryUnits)
           }
         }
-        // Fallback for old "main" document if it exists (Migration support)
-        if (docId === 'users') {
-          getDoc(doc(db, "erpData", "main")).then(mainSnap => {
-            if (mainSnap.exists()) {
-              const mainData = mainSnap.data()
-              // If the new docs are empty but main has data, use main
-              if (!docSnap.exists()) {
-                if (mainData.users) setUsers(mainData.users)
-                // ... other fields will be handled by their respective onSnapshots or a one-time migration
-              }
-            }
-            setCloudLoaded(true)
-          })
-        }
+      }, (error) => console.log(`Sync Error (${docId}):`, error))
+    })
+
+    // 2. Sync Collections (Orders, Sales, Clients)
+    const collectionsToSync = ['orders', 'sales', 'clients']
+    const unsubCollections = collectionsToSync.map(colId => {
+      return onSnapshot(collection(db, colId), (querySnapshot) => {
+        const list = []
+        querySnapshot.forEach((doc) => {
+          list.push(doc.data())
+        })
+        if (colId === 'orders') setOrders(list)
+        if (colId === 'sales') setSales(list)
+        if (colId === 'clients') setClients(list)
+        
+        // Finalize loading after first batch of collections
+        setCloudLoaded(true)
       }, (error) => {
-        console.log(`Firebase Sync Error (${docId}):`, error)
+        console.log(`Sync Error (${colId}):`, error)
         setCloudLoaded(true)
       })
     })
-    return () => unsubscribes.forEach(unsub => unsub())
+
+    return () => {
+      unsubSingles.forEach(unsub => unsub())
+      unsubCollections.forEach(unsub => unsub())
+    }
   }, [])
 
   // LOCAL PERSISTENCE
