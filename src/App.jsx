@@ -39,31 +39,33 @@ function App() {
       }, (error) => { })
     })
 
-    // 2. Sync Collections (Orders, Sales, Clients) - Optimized with Limits
-    const collectionsToSync = [
-      { id: 'orders', q: query(collection(db, 'orders'), orderBy('id', 'desc'), limit(100)) },
-      { id: 'sales', q: query(collection(db, 'sales'), orderBy('id', 'desc'), limit(100)) },
-      { id: 'clients', q: query(collection(db, 'clients'), limit(500)) } // Clients are smaller, can sync more
-    ]
-
-    const unsubCollections = collectionsToSync.map(({ id: colId, q }) => {
-      return onSnapshot(q, (querySnapshot) => {
+    // 2. Sync Collections (Orders, Sales, Clients)
+    const collectionsToSync = ['orders', 'sales', 'clients']
+    const unsubCollections = collectionsToSync.map(colId => {
+      return onSnapshot(collection(db, colId), (querySnapshot) => {
         if (!querySnapshot.empty) {
           const list = []
           querySnapshot.forEach((doc) => {
             list.push(doc.data())
           })
-          if (colId === 'orders') setOrders(prev => {
-            // Merge logic to ensure we don't lose local state if needed, 
-            // but for simple sync, we just set the latest 100
-            return list
-          })
+          if (colId === 'orders') setOrders(list)
           if (colId === 'sales') setSales(list)
           if (colId === 'clients') setClients(list)
         }
-        setCloudLoaded(true)
+        
+        // Final fallback to the old "main" document if cloud collections are empty
+        getDoc(doc(db, "erpData", "main")).then(mainSnap => {
+          if (mainSnap.exists()) {
+            const mainData = mainSnap.data()
+            if (querySnapshot.empty) {
+              if (colId === 'orders' && mainData.orders) setOrders(mainData.orders)
+              if (colId === 'sales' && mainData.sales) setSales(mainData.sales)
+              if (colId === 'clients' && mainData.clients) setClients(mainData.clients)
+            }
+          }
+          setCloudLoaded(true)
+        })
       }, (error) => {
-        console.error(`Sync Error (${colId}):`, error.message)
         setCloudLoaded(true)
       })
     })
