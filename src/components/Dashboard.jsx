@@ -107,21 +107,25 @@ function Dashboard({
     if (!cloudLoaded) return
 
     const saveCloudData = async () => {
-      console.log("DEBUG: Attempting Cloud Save...");
+      console.log("DEBUG: Attempting Cloud Save (Multi-Doc)...");
       try {
-        await setDoc(doc(db, "erpData", "main"), {
-          users,
-          designations,
-          clients,
-          orders,
-          inventory,
-          sales,
-          activities,
-          orderTypes,
-          productTypes,
-          inventoryUnits
-        }, { merge: true })
-        console.log("DEBUG: Cloud Sync Success ✅");
+        const batch = [
+          setDoc(doc(db, "erpData", "users"), { list: users }, { merge: true }),
+          setDoc(doc(db, "erpData", "clients"), { list: clients }, { merge: true }),
+          setDoc(doc(db, "erpData", "orders"), { list: orders }, { merge: true }),
+          setDoc(doc(db, "erpData", "inventory"), { list: inventory }, { merge: true }),
+          setDoc(doc(db, "erpData", "sales"), { list: sales }, { merge: true }),
+          setDoc(doc(db, "erpData", "activities"), { list: activities }, { merge: true }),
+          setDoc(doc(db, "erpData", "config"), { 
+            designations, 
+            orderTypes, 
+            productTypes, 
+            inventoryUnits 
+          }, { merge: true })
+        ];
+        
+        await Promise.all(batch);
+        console.log("DEBUG: Cloud Sync Success ✅ (Data Split)");
       } catch (error) {
         console.error("DEBUG: Cloud Save Error ❌:", error.message);
         if (showGlobalToast) {
