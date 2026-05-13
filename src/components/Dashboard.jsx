@@ -132,7 +132,7 @@ function Dashboard({
     // Debounce or just save on every relevant state change
     const timeout = setTimeout(saveCloudData, 1000)
     return () => clearTimeout(timeout)
-  }, [users, designations, clients, orders, inventory, sales, activities, orderTypes, productTypes, inventoryUnits])
+  }, [users, designations, clients, orders, inventory, sales, activities, orderTypes, productTypes, inventoryUnits, cloudLoaded])
 
   const activeSidebarPage = currentPage === 'client-detail' ? 'view-clients' : (currentPage === 'inventory-detail' ? 'view-inventory' : currentPage)
 
