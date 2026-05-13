@@ -39,7 +39,8 @@ function Dashboard({
   orderTypes, setOrderTypes,
   productTypes, setProductTypes,
   inventoryUnits, setInventoryUnits,
-  cloudLoaded
+  cloudLoaded,
+  saveSale, saveOrder, saveClient
 }) {
   const [showAccountMenu, setShowAccountMenu] = useState(false)
   const [showAccountPanel, setShowAccountPanel] = useState(false)
@@ -126,23 +127,12 @@ function Dashboard({
           inventoryUnits
         }), { merge: true }));
 
-        if (orders.length > 0 || isManual) {
-          orders.filter(o => o && (o.id || o.orderId)).forEach(o => {
-            batch.push(setDoc(doc(db, "orders", (o.id || o.orderId).toString()), clean(o), { merge: true }));
-          });
-        }
-        
-        if (sales.length > 0 || isManual) {
-          sales.filter(s => s && (s.id || s.saleId)).forEach(s => {
-            batch.push(setDoc(doc(db, "sales", (s.id || s.saleId).toString()), clean(s), { merge: true }));
-          });
-        }
-        
-        if (clients.length > 0 || isManual) {
-          clients.filter(c => c && (c.id || c.clientId || c.phone)).forEach(c => {
-            batch.push(setDoc(doc(db, "clients", (c.id || c.clientId || c.phone || Date.now()).toString()), clean(c), { merge: true }));
-          });
-        }
+        // Bulk Save to main doc as backup only (Stop individual collection loop here to save speed)
+        batch.push(setDoc(doc(db, "erpData", "main"), clean({
+          orders: orders.slice(0, 500),
+          sales: sales.slice(0, 500),
+          clients: clients.slice(0, 500)
+        }), { merge: true }));
 
         if (batch.length > 0) {
           await Promise.all(batch);
@@ -818,15 +808,15 @@ function Dashboard({
                 </div>
               </div>
             }>
-              {currentPage === 'add-order' && <AddOrderPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} orders={orders} setOrders={setOrders} clients={clients} inventory={inventory} setInventory={setInventory} orderTypes={orderTypes} setOrderTypes={setOrderTypes} />}
+              {currentPage === 'add-order' && <AddOrderPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} orders={orders} setOrders={setOrders} clients={clients} inventory={inventory} setInventory={setInventory} orderTypes={orderTypes} setOrderTypes={setOrderTypes} saveOrder={saveOrder} />}
               {currentPage === 'view-orders' && <ViewOrdersPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightOrderId={highlightOrderId} setHighlightOrderId={setHighlightOrderId} orders={orders} setOrders={setOrders} inventory={inventory} setInventory={setInventory} />}
-              {currentPage === 'add-clients' && <AddClientsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} clients={clients} setClients={setClients} />}
-              {currentPage === 'view-clients' && <ViewClientsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} setSelectedClient={setSelectedClient} setClientDetailMode={setClientDetailMode} showGlobalToast={showGlobalToast} currentUser={user} highlightClientId={highlightClientId} setHighlightClientId={setHighlightClientId} clients={clients} setClients={setClients} />}
+              {currentPage === 'add-clients' && <AddClientsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} clients={clients} setClients={setClients} saveClient={saveClient} />}
+              {currentPage === 'view-clients' && <ViewClientsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} setSelectedClient={setSelectedClient} setClientDetailMode={setClientDetailMode} showGlobalToast={showGlobalToast} currentUser={user} highlightClientId={highlightClientId} setHighlightClientId={setHighlightClientId} clients={clients} setClients={setClients} saveClient={saveClient} />}
               {currentPage === 'client-detail' && <ClientDetailPage themeStyle={themeStyle} client={selectedClient} setCurrentPage={setCurrentPage} setSelectedClient={setSelectedClient} initialMode={clientDetailMode} setClientDetailMode={setClientDetailMode} showGlobalToast={showGlobalToast} currentUser={user} clients={clients} setClients={setClients} />}
               {currentPage === 'create-inventory' && <CreateInventoryPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} inventory={inventory} setInventory={setInventory} productTypes={productTypes} setProductTypes={setProductTypes} inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits} />}
               {currentPage === 'view-inventory' && <ViewInventoryPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} setSelectedInventoryItem={setSelectedInventoryItem} setInventoryDetailMode={setInventoryDetailMode} highlightInventoryId={highlightInventoryId} setHighlightInventoryId={setHighlightInventoryId} inventory={inventory} setInventory={setInventory} />}
               {currentPage === 'inventory-detail' && <InventoryDetailPage themeStyle={themeStyle} item={selectedInventoryItem} setCurrentPage={setCurrentPage} setSelectedInventoryItem={setSelectedInventoryItem} initialMode={inventoryDetailMode} setInventoryDetailMode={setInventoryDetailMode} showGlobalToast={showGlobalToast} currentUser={user} inventory={inventory} setInventory={setInventory} />}
-              {currentPage === 'create-sales' && <CreateSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} sales={sales} setSales={setSales} clients={clients} setClients={setClients} orders={orders} setOrders={setOrders} inventory={inventory} setInventory={setInventory} />}
+              {currentPage === 'create-sales' && <CreateSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} sales={sales} setSales={setSales} clients={clients} setClients={setClients} orders={orders} setOrders={setOrders} inventory={inventory} setInventory={setInventory} saveSale={saveSale} />}
               {currentPage === 'view-sales' && <ViewSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightSaleId={highlightSaleId} setHighlightSaleId={setHighlightSaleId} sales={sales} setSales={setSales} inventory={inventory} setInventory={setInventory} orders={orders} setOrders={setOrders} />}
               {currentPage === 'reports' && <ReportsPage themeStyle={themeStyle} showGlobalToast={showGlobalToast} currentUser={user} sales={sales} orders={orders} clients={clients} inventory={inventory} />}
               {currentPage === 'create-user' && <CreateUserPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} users={users} setUsers={setUsers} designations={designations} setDesignations={setDesignations} currentUser={user} />}

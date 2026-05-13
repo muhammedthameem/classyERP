@@ -3,7 +3,7 @@ import { ChevronDown, Search, Settings, ShoppingBag, Pencil, Trash2, Plus, Packa
 import { formatDateDDMMYY, getIndianDate, orders, products } from '../../utils/constants'
 import CustomDatePicker from '../../components/CustomDatePicker'
 
-function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, setOrders, clients, inventory, setInventory, orderTypes, setOrderTypes }) {
+function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, setOrders, clients, inventory, setInventory, orderTypes, setOrderTypes, saveOrder }) {
   const [clientName, setClientName] = useState('')
   const [showClientDropdown, setShowClientDropdown] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
@@ -202,7 +202,12 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
     });
 
     setInventory(updatedInventory);
-    setOrders([...orders, ...newOrders])
+    setOrders([...orders, ...newOrders]);
+
+    // Instant Cloud Save
+    if (saveOrder) {
+      newOrders.forEach(o => saveOrder(o));
+    }
 
     if (showGlobalToast) showGlobalToast('Success', `${orderItems.length} product(s) added for ${clientName}`);
     

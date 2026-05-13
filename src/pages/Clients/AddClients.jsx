@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { ChevronDown, Package, Search, Settings, UsersRound } from 'lucide-react'
 import { products } from '../../utils/constants'
 
-function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, setClients }) {
+function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, setClients, saveClient }) {
   const [personalDetails, setPersonalDetails] = useState({ name: '', address: '', mobile: '' })
   const [showTopMeasurements, setShowTopMeasurements] = useState(true)
   const [showBottomMeasurements, setShowBottomMeasurements] = useState(false)
@@ -111,6 +111,7 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
       existingClients[existingClientIndex].name = personalDetails.name
       existingClients[existingClientIndex].address = personalDetails.address
       setClients(existingClients)
+      if (saveClient) saveClient(existingClients[existingClientIndex]);
     } else {
       const clientData = {
         id: Date.now(),
@@ -119,6 +120,7 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
         createdAt: new Date().toISOString()
       }
       setClients([...existingClients, clientData])
+      if (saveClient) saveClient(clientData);
     }
 
     console.log('Client data saved:', measurementData)

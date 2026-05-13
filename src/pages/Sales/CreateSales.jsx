@@ -3,7 +3,7 @@ import { Package, Search, TrendingUp, UsersRound, Trash2, Download, ShoppingCart
 import html2pdf from 'html2pdf.js'
 import { orders } from '../../utils/constants'
 
-function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventory, setInventory, clients, setClients, orders, setOrders, sales, setSales }) {
+function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventory, setInventory, clients, setClients, orders, setOrders, sales, setSales, saveSale }) {
   const [cart, setCart] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [stockWarning, setStockWarning] = useState(null);
@@ -200,6 +200,9 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       total: calculateSubtotal(),
       timestamp: new Date().toISOString()
     };
+    // Instant Cloud Save
+    if (saveSale) saveSale(newSale);
+
     setSales([...sales, newSale]);
     setShowReceipt(newSale);
 

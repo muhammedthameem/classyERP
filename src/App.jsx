@@ -168,6 +168,10 @@ function App() {
           productTypes={productTypes} setProductTypes={setProductTypes}
           inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits}
           cloudLoaded={cloudLoaded}
+          // Direct Save Functions
+          saveSale={(s) => setDoc(doc(db, "sales", (s.id || s.saleId).toString()), JSON.parse(JSON.stringify(s)), { merge: true })}
+          saveOrder={(o) => setDoc(doc(db, "orders", (o.id || o.orderId).toString()), JSON.parse(JSON.stringify(o)), { merge: true })}
+          saveClient={(c) => setDoc(doc(db, "clients", (c.id || c.clientId || c.phone || Date.now()).toString()), JSON.parse(JSON.stringify(c)), { merge: true })}
         />
       )}
     </main>
