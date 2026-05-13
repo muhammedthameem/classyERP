@@ -36,7 +36,7 @@ function App() {
             if (data.inventoryUnits) setInventoryUnits(data.inventoryUnits)
           }
         }
-      }, (error) => console.log(`Sync Error (${docId}):`, error))
+      }, (error) => { })
     })
 
     // 2. Sync Collections (Orders, Sales, Clients)
@@ -54,7 +54,6 @@ function App() {
         // Finalize loading after first batch of collections
         setCloudLoaded(true)
       }, (error) => {
-        console.log(`Sync Error (${colId}):`, error)
         setCloudLoaded(true)
       })
     })

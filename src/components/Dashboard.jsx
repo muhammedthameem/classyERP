@@ -109,9 +109,7 @@ function Dashboard({
     if (!cloudLoaded) return
 
     const saveCloudData = async () => {
-      console.log("DEBUG: Attempting Cloud Save (Collections Mode)...");
       try {
-        // 1. Save Small Lists (Users, Inventory, Activities, Config)
         const singles = [
           setDoc(doc(db, "erpData", "users"), { list: users }, { merge: true }),
           setDoc(doc(db, "erpData", "inventory"), { list: inventory }, { merge: true }),
@@ -124,24 +122,18 @@ function Dashboard({
           }, { merge: true })
         ];
 
-        // 2. Save Large Collections (Orders, Sales, Clients)
-        // We use individual setDoc for each item to bypass document size limits
         const ordersBatch = orders.map(o => setDoc(doc(db, "orders", o.id.toString()), o, { merge: true }));
         const salesBatch = sales.map(s => setDoc(doc(db, "sales", s.id.toString()), s, { merge: true }));
         const clientsBatch = clients.map(c => setDoc(doc(db, "clients", c.id.toString()), c, { merge: true }));
 
         await Promise.all([...singles, ...ordersBatch, ...salesBatch, ...clientsBatch]);
-
-        console.log("DEBUG: Cloud Sync Success ✅ (Professional Collection Mode)");
       } catch (error) {
-        console.error("DEBUG: Cloud Save Error ❌:", error.message);
         if (showGlobalToast) {
           showGlobalToast('Sync Error', `Could not save to cloud: ${error.message}`);
         }
       }
     }
 
-    console.log("DEBUG: Setting Sync Timeout...");
     const timeout = setTimeout(saveCloudData, 1000)
     return () => clearTimeout(timeout)
   }, [users, designations, clients, orders, inventory, sales, activities, orderTypes, productTypes, inventoryUnits, cloudLoaded])
