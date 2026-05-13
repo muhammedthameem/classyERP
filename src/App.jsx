@@ -34,8 +34,8 @@ function App() {
         if (data.orderTypes) setOrderTypes(data.orderTypes)
         if (data.productTypes) setProductTypes(data.productTypes)
         if (data.inventoryUnits) setInventoryUnits(data.inventoryUnits)
-        setCloudLoaded(true)
       }
+      setCloudLoaded(true) // Always set to true once we've checked the cloud
     }, (error) => {
       console.log("Firebase Sync Error:", error)
       setCloudLoaded(true)
