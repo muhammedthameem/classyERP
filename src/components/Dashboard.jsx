@@ -342,7 +342,16 @@ function Dashboard({
           ))}
         </nav>
 
-
+        {!isSidebarCollapsed && (
+          <div className="mt-auto border-t border-[var(--border)] p-5">
+            <p className="text-[10px] font-bold tracking-widest text-[var(--muted)] uppercase">
+              Classy ERP v1.0.5
+            </p>
+            <p className="text-[8px] font-medium text-[var(--accent)]">
+              Professional Cloud Edition
+            </p>
+          </div>
+        )}
       </aside>
 
       <div className={`min-w-0 bg-[var(--page-bg)] ${transitionClass} ${sidebarWidth}`}>
