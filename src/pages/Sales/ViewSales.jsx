@@ -41,9 +41,11 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightS
     return sId.includes(query) || cName.includes(query);
   });
 
-  // Sort sales: Newest first
+  // Sort sales: Newest first (using timestamp or id as fallback)
   const sortedSales = [...filteredSales].sort((a, b) => {
-    return new Date(b.timestamp || 0) - new Date(a.timestamp || 0);
+    const timeA = new Date(a.timestamp || a.id || 0).getTime();
+    const timeB = new Date(b.timestamp || b.id || 0).getTime();
+    return timeB - timeA;
   });
 
   // Scroll to highlight logic

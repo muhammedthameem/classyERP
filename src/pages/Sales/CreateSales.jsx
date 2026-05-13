@@ -201,9 +201,10 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       timestamp: new Date().toISOString()
     };
     setSales([...sales, newSale]);
+    setShowReceipt(newSale);
 
     if (showGlobalToast) showGlobalToast('Sale Processed', `Sale ${newSale.saleId} for ₹${parseFloat(newSale.total).toFixed(2)} (${newSale.client.name})`);
-    setCurrentPage('view-sales');
+    
     setCart([]);
     setSelectedClient(null);
     setClientSearch('');
@@ -529,6 +530,22 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                 <p className="font-bold text-black mb-1">Thank you for shopping!</p>
                 <p>Your elegance is our priority.</p>
                 <p>Please visit again for more unique designs.</p>
+              </div>
+            </div>
+
+            <div className="mb-6 p-4 rounded-2xl bg-[var(--surface-strong)] border border-[var(--border)]">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--muted)] mb-2">WhatsApp / SMS Number</label>
+              <div className="flex gap-2">
+                <input 
+                  type="tel" 
+                  value={showReceipt.client.phone || ''} 
+                  onChange={(e) => setShowReceipt({
+                    ...showReceipt,
+                    client: { ...showReceipt.client, phone: e.target.value }
+                  })}
+                  placeholder="Enter phone number"
+                  className="flex-1 bg-transparent border-b border-[var(--border)] py-2 outline-none text-sm font-bold"
+                />
               </div>
             </div>
 
