@@ -25,8 +25,20 @@ import {
   onSnapshot
 } from 'firebase/firestore'
 
-function Dashboard({ onLogout, user }) {
-  const [cloudLoaded, setCloudLoaded] = useState(false)
+function Dashboard({ 
+  onLogout, user, 
+  users, setUsers,
+  designations, setDesignations,
+  clients, setClients,
+  orders, setOrders,
+  inventory, setInventory,
+  sales, setSales,
+  activities, setActivities,
+  orderTypes, setOrderTypes,
+  productTypes, setProductTypes,
+  inventoryUnits, setInventoryUnits,
+  cloudLoaded
+}) {
   const [showAccountMenu, setShowAccountMenu] = useState(false)
   const [showAccountPanel, setShowAccountPanel] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
@@ -35,12 +47,9 @@ function Dashboard({ onLogout, user }) {
   const [themeName, setThemeName] = useState('champagne')
   const [showThemeDropdown, setShowThemeDropdown] = useState(false)
   const [globalToast, setGlobalToast] = useState(null)
-  const [activities, setActivities] = useState(() => JSON.parse(localStorage.getItem('activities') || '[]'))
   const [showAllNotifications, setShowAllNotifications] = useState(false)
   const [notificationsPage, setNotificationsPage] = useState(1)
   const notificationsPerPage = 10
-
-
 
   const showGlobalToast = (title, message) => {
     setGlobalToast({ title, message })
@@ -55,7 +64,6 @@ function Dashboard({ onLogout, user }) {
     }
     setActivities(prev => {
       const updated = [newActivity, ...prev].slice(0, 500)
-      localStorage.setItem('activities', JSON.stringify(updated))
       return updated
     })
   }
@@ -81,87 +89,6 @@ function Dashboard({ onLogout, user }) {
   }, [])
 
   const [currentPage, setCurrentPage] = useState(() => localStorage.getItem('erp_current_page') || 'overview')
-
-  // Users Management State
-  const [users, setUsers] = useState(() => {
-    const saved = JSON.parse(localStorage.getItem('erp_users') || '[]');
-    const uniqueUsers = [];
-    const emails = new Set();
-    saved.forEach(u => {
-      if (!emails.has(u.email)) {
-        uniqueUsers.push(u);
-        emails.add(u.email);
-      }
-    });
-
-    if (uniqueUsers.length === 0) {
-      return [{
-        id: 'admin',
-        name: 'Ayesha',
-        email: 'admin@classy.com',
-        designation: 'Admin',
-        password: 'admin123',
-        createdAt: new Date().toISOString()
-      }];
-    }
-    return uniqueUsers;
-  })
-  const [designations, setDesignations] = useState(() => JSON.parse(localStorage.getItem('erp_designations') || '["Admin", "Manager", "Designer", "Sales Staff", "Tailor"]'))
-  const [clients, setClients] = useState(() => JSON.parse(localStorage.getItem('clients') || '[]'))
-  const [orders, setOrders] = useState(() => JSON.parse(localStorage.getItem('orders') || '[]'))
-  const [inventory, setInventory] = useState(() => JSON.parse(localStorage.getItem('inventory') || '[]'))
-  const [sales, setSales] = useState(() => JSON.parse(localStorage.getItem('sales') || '[]'))
-  const [orderTypes, setOrderTypes] = useState(() => JSON.parse(localStorage.getItem('orderTypes') || '["Customisation", "Stitching"]'))
-  const [productTypes, setProductTypes] = useState(() => JSON.parse(localStorage.getItem('productTypes') || '[]'))
-  const [inventoryUnits, setInventoryUnits] = useState(() => JSON.parse(localStorage.getItem('inventoryUnits') || '["nos", "mtr", "kg", "yd", "set"]'))
-
-  // REAL-TIME SYNC FROM FIREBASE
-  useEffect(() => {
-    const docRef = doc(db, "erpData", "main")
-    const unsubscribe = onSnapshot(docRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data()
-        
-        // Update States and LocalStorage
-        if (data.users && Array.isArray(data.users)) {
-          setUsers(data.users)
-        }
-        if (data.designations && Array.isArray(data.designations)) {
-          setDesignations(data.designations)
-        }
-        if (data.clients && Array.isArray(data.clients)) {
-          setClients(data.clients)
-        }
-        if (data.orders && Array.isArray(data.orders)) {
-          setOrders(data.orders)
-        }
-        if (data.inventory && Array.isArray(data.inventory)) {
-          setInventory(data.inventory)
-        }
-        if (data.sales && Array.isArray(data.sales)) {
-          setSales(data.sales)
-        }
-        if (data.activities && Array.isArray(data.activities)) {
-          setActivities(data.activities)
-        }
-        if (data.orderTypes && Array.isArray(data.orderTypes)) {
-          setOrderTypes(data.orderTypes)
-        }
-        if (data.productTypes && Array.isArray(data.productTypes)) {
-          setProductTypes(data.productTypes)
-        }
-        if (data.inventoryUnits && Array.isArray(data.inventoryUnits)) {
-          setInventoryUnits(data.inventoryUnits)
-        }
-        setCloudLoaded(true)
-      }
-    }, (error) => {
-      console.log("Firebase Sync Error:", error)
-      setCloudLoaded(true) // Fallback to local data if cloud fails
-    })
-
-    return () => unsubscribe()
-  }, [])
 
   // LOCAL PERSISTENCE FALLBACKS
   useEffect(() => { localStorage.setItem('erp_users', JSON.stringify(users)) }, [users])

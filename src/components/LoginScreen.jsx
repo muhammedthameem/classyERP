@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { orders } from '../utils/constants'
 
-function LoginScreen({ onLogin }) {
+function LoginScreen({ onLogin, users: cloudUsers }) {
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -36,24 +36,19 @@ function LoginScreen({ onLogin }) {
 
     // Artificial delay for premium feel
     setTimeout(() => {
-      const allUsers = JSON.parse(localStorage.getItem('erp_users') || '[]')
+      // Use cloudUsers prop if available, otherwise fallback to localStorage
+      const allUsers = (cloudUsers && cloudUsers.length > 0) 
+        ? cloudUsers 
+        : JSON.parse(localStorage.getItem('erp_users') || '[]');
+      
       // Fallback if erp_users is empty
       if (allUsers.length === 0 && email === 'admin@classy.com' && password === 'admin123') {
-        const admin = {
-          id: 'admin',
-          name: 'Ayesha',
-          email: 'admin@classy.com',
-          designation: 'Admin',
-          password: 'admin123',
-          createdAt: new Date().toISOString()
-        }
-        localStorage.setItem('erp_users', JSON.stringify([admin]))
         onLogin({ id: 'admin', email, name: 'Ayesha', role: 'Admin' })
         setIsLoading(false)
         return
       }
 
-      const foundUser = allUsers.find(u => u.email === email && u.password === password)
+      const foundUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password)
 
       if (foundUser) {
         onLogin({
@@ -76,7 +71,7 @@ function LoginScreen({ onLogin }) {
 
     setTimeout(() => {
       const allUsers = JSON.parse(localStorage.getItem('erp_users') || '[]')
-      const exists = allUsers.some(u => u.email === email) || email === 'admin@classy.com'
+      const exists = allUsers.some(u => u.email.toLowerCase() === email.toLowerCase()) || email.toLowerCase() === 'admin@classy.com'
 
       if (exists) {
         setMessage('Password reset request accepted. Please contact the boutique owner to reset access.')

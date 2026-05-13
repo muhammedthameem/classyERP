@@ -1,16 +1,66 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import LoginScreen from './components/LoginScreen'
 import Dashboard from './components/Dashboard'
+import { db } from './firebase'
+import { doc, onSnapshot } from 'firebase/firestore'
 
 function App() {
+  // SHARED STATES
+  const [users, setUsers] = useState(() => JSON.parse(localStorage.getItem('erp_users') || '[]'))
+  const [designations, setDesignations] = useState(() => JSON.parse(localStorage.getItem('erp_designations') || '[]'))
+  const [clients, setClients] = useState(() => JSON.parse(localStorage.getItem('clients') || '[]'))
+  const [orders, setOrders] = useState(() => JSON.parse(localStorage.getItem('orders') || '[]'))
+  const [inventory, setInventory] = useState(() => JSON.parse(localStorage.getItem('inventory') || '[]'))
+  const [sales, setSales] = useState(() => JSON.parse(localStorage.getItem('sales') || '[]'))
+  const [activities, setActivities] = useState(() => JSON.parse(localStorage.getItem('activities') || '[]'))
+  const [orderTypes, setOrderTypes] = useState(() => JSON.parse(localStorage.getItem('orderTypes') || '["Customisation", "Stitching"]'))
+  const [productTypes, setProductTypes] = useState(() => JSON.parse(localStorage.getItem('productTypes') || '[]'))
+  const [inventoryUnits, setInventoryUnits] = useState(() => JSON.parse(localStorage.getItem('inventoryUnits') || '["nos", "mtr", "kg", "yd", "set"]'))
+  const [cloudLoaded, setCloudLoaded] = useState(false)
+
+  // REAL-TIME SYNC FROM FIREBASE
+  useEffect(() => {
+    const docRef = doc(db, "erpData", "main")
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data()
+        if (data.users) setUsers(data.users)
+        if (data.designations) setDesignations(data.designations)
+        if (data.clients) setClients(data.clients)
+        if (data.orders) setOrders(data.orders)
+        if (data.inventory) setInventory(data.inventory)
+        if (data.sales) setSales(data.sales)
+        if (data.activities) setActivities(data.activities)
+        if (data.orderTypes) setOrderTypes(data.orderTypes)
+        if (data.productTypes) setProductTypes(data.productTypes)
+        if (data.inventoryUnits) setInventoryUnits(data.inventoryUnits)
+        setCloudLoaded(true)
+      }
+    }, (error) => {
+      console.log("Firebase Sync Error:", error)
+      setCloudLoaded(true)
+    })
+    return () => unsubscribe()
+  }, [])
+
+  // LOCAL PERSISTENCE
+  useEffect(() => { localStorage.setItem('erp_users', JSON.stringify(users)) }, [users])
+  useEffect(() => { localStorage.setItem('erp_designations', JSON.stringify(designations)) }, [designations])
+  useEffect(() => { localStorage.setItem('activities', JSON.stringify(activities)) }, [activities])
+  useEffect(() => { localStorage.setItem('clients', JSON.stringify(clients)) }, [clients])
+  useEffect(() => { localStorage.setItem('orders', JSON.stringify(orders)) }, [orders])
+  useEffect(() => { localStorage.setItem('inventory', JSON.stringify(inventory)) }, [inventory])
+  useEffect(() => { localStorage.setItem('sales', JSON.stringify(sales)) }, [sales])
+  useEffect(() => { localStorage.setItem('orderTypes', JSON.stringify(orderTypes)) }, [orderTypes])
+  useEffect(() => { localStorage.setItem('productTypes', JSON.stringify(productTypes)) }, [productTypes])
+  useEffect(() => { localStorage.setItem('inventoryUnits', JSON.stringify(inventoryUnits)) }, [inventoryUnits])
+
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     const sessionStr = localStorage.getItem('erp_session')
     if (sessionStr) {
       try {
         const session = JSON.parse(sessionStr)
-        if (Date.now() - session.timestamp < 86400000) {
-          return true
-        }
+        if (Date.now() - session.timestamp < 86400000) return true
         localStorage.removeItem('erp_session')
       } catch (e) { }
     }
@@ -22,9 +72,7 @@ function App() {
     if (sessionStr) {
       try {
         const session = JSON.parse(sessionStr)
-        if (Date.now() - session.timestamp < 86400000) {
-          return session.user
-        }
+        if (Date.now() - session.timestamp < 86400000) return session.user
       } catch (e) { }
     }
     return null
@@ -48,9 +96,23 @@ function App() {
   return (
     <main className="min-h-screen bg-[#f7f2ec] text-stone-900">
       {!isLoggedIn ? (
-        <LoginScreen onLogin={handleLogin} />
+        <LoginScreen onLogin={handleLogin} users={users} />
       ) : (
-        <Dashboard onLogout={handleLogout} user={user} />
+        <Dashboard 
+          onLogout={handleLogout} 
+          user={user} 
+          users={users} setUsers={setUsers}
+          designations={designations} setDesignations={setDesignations}
+          clients={clients} setClients={setClients}
+          orders={orders} setOrders={setOrders}
+          inventory={inventory} setInventory={setInventory}
+          sales={sales} setSales={setSales}
+          activities={activities} setActivities={setActivities}
+          orderTypes={orderTypes} setOrderTypes={setOrderTypes}
+          productTypes={productTypes} setProductTypes={setProductTypes}
+          inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits}
+          cloudLoaded={cloudLoaded}
+        />
       )}
     </main>
   )
