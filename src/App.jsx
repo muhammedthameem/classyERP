@@ -43,13 +43,15 @@ function App() {
     const collectionsToSync = ['orders', 'sales', 'clients']
     const unsubCollections = collectionsToSync.map(colId => {
       return onSnapshot(collection(db, colId), (querySnapshot) => {
-        const list = []
-        querySnapshot.forEach((doc) => {
-          list.push(doc.data())
-        })
-        if (colId === 'orders') setOrders(list)
-        if (colId === 'sales') setSales(list)
-        if (colId === 'clients') setClients(list)
+        if (!querySnapshot.empty) {
+          const list = []
+          querySnapshot.forEach((doc) => {
+            list.push(doc.data())
+          })
+          if (colId === 'orders') setOrders(list)
+          if (colId === 'sales') setSales(list)
+          if (colId === 'clients') setClients(list)
+        }
         
         // Finalize loading after first batch of collections
         setCloudLoaded(true)
