@@ -6,11 +6,13 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, setSelectedInventoryIte
   const [searchQuery, setSearchQuery] = useState('');
   const [itemToDelete, setItemToDelete] = useState(null);
 
-  const filteredInventory = inventory.filter(item =>
-    (item.productId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (item.productName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (item.productType || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredInventory = [...inventory]
+    .sort((a, b) => (b.id || 0) - (a.id || 0))
+    .filter(item =>
+      (item.productId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.productName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.productType || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   // Scroll to highlight logic
   useEffect(() => {

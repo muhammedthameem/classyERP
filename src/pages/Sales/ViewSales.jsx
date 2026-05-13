@@ -41,10 +41,15 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightS
     return sId.includes(query) || cName.includes(query);
   });
 
+  // Sort sales: Newest first
+  const sortedSales = [...filteredSales].sort((a, b) => {
+    return new Date(b.timestamp || 0) - new Date(a.timestamp || 0);
+  });
+
   // Scroll to highlight logic
   useEffect(() => {
     if (highlightSaleId) {
-      const index = filteredSales.findIndex(s => s.saleId === highlightSaleId);
+      const index = sortedSales.findIndex(s => s.saleId === highlightSaleId);
       if (index !== -1) {
         const page = Math.floor(index / itemsPerPage) + 1;
         setCurrentPageNum(page);
@@ -65,8 +70,9 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightS
   // Pagination Logic
   const [currentPageNum, setCurrentPageNum] = useState(1);
   const itemsPerPage = 10;
-  const totalPages = Math.ceil(filteredSales.length / itemsPerPage);
-  const paginatedSales = filteredSales.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage);
+  
+  const totalPages = Math.ceil(sortedSales.length / itemsPerPage);
+  const paginatedSales = sortedSales.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage);
 
   return (
     <div style={themeStyle} className="space-y-6">

@@ -3,7 +3,7 @@ import { Package, Search, TrendingUp, UsersRound, Trash2, Download, ShoppingCart
 import html2pdf from 'html2pdf.js'
 import { orders } from '../../utils/constants'
 
-function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventory, setInventory, clients, orders, setOrders, sales, setSales }) {
+function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventory, setInventory, clients, setClients, orders, setOrders, sales, setSales }) {
   const [cart, setCart] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [stockWarning, setStockWarning] = useState(null);
@@ -43,6 +43,28 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     (c?.name?.toLowerCase() || '').includes(clientSearch.toLowerCase()) ||
     (c?.phone || '').includes(clientSearch)
   );
+
+  const handleAddGuest = () => {
+    if (!clientSearch) return;
+    const isPhone = /^[0-9]+$/.test(clientSearch);
+    const newClient = {
+      id: Date.now(),
+      name: isPhone ? `Guest (${clientSearch})` : clientSearch,
+      phone: isPhone ? clientSearch : '',
+      address: '',
+      measurements: [],
+      createdAt: new Date().toISOString()
+    };
+
+    const updatedClients = [...clients, newClient];
+    localStorage.setItem('clients', JSON.stringify(updatedClients));
+    setClients(updatedClients);
+    setCart([]); // Clear cart for new guest
+    setSelectedClient(newClient);
+    setClientSearch(newClient.name);
+    setIsSearchingClient(false);
+    if (showGlobalToast) showGlobalToast('Guest Added', `${newClient.name} linked to sale.`);
+  };
   const addToCart = (item, type) => {
     if (type === 'order') {
       const existing = cart.find(i => i.orderId === item.id);
@@ -763,7 +785,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
               <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
               <input
                 type="text"
-                placeholder="Click to see clients..."
+                placeholder="Search or add client..."
                 className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] py-2.5 pl-12 pr-4 outline-none focus:border-[var(--accent)]"
                 value={clientSearch}
                 onChange={(e) => {
@@ -771,11 +793,27 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                   setIsSearchingClient(true);
                 }}
                 onFocus={() => setIsSearchingClient(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    if (filteredClients.length > 0) {
+                      const c = filteredClients[0];
+                      if (selectedClient && selectedClient.id !== c.id && cart.length > 0) {
+                        setCart([]);
+                        if (showGlobalToast) showGlobalToast('Cart Cleared', 'Switched to different client.');
+                      }
+                      setSelectedClient(c);
+                      setClientSearch(c.name);
+                      setIsSearchingClient(false);
+                    } else if (clientSearch) {
+                      handleAddGuest();
+                    }
+                  }
+                }}
               />
               {isSearchingClient && (
-                <div className="absolute top-full left-0 right-0 z-50 mt-2 max-h-40 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-2xl">
+                <div className="absolute top-full left-0 right-0 z-[100] mt-2 max-h-60 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-2xl">
                   <div className="flex justify-between items-center px-3 py-1 border-b border-[var(--border)] mb-1">
-                    <span className="text-[10px] font-bold uppercase text-[var(--muted)]">Recent Clients</span>
+                    <span className="text-[10px] font-bold uppercase text-[var(--muted)]">Select Client</span>
                     <button onClick={() => setIsSearchingClient(false)} className="text-[var(--accent)] text-xs font-bold">Close</button>
                   </div>
                   {filteredClients.map(c => (
@@ -784,9 +822,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                       className="flex w-full items-center justify-between rounded-xl p-3 text-left transition hover:bg-[var(--soft)]"
                       onClick={() => {
                         if (selectedClient && selectedClient.id !== c.id && cart.length > 0) {
-                          // Automatically clear cart if changing client to avoid logic mistake
                           setCart([]);
-                          if (showGlobalToast) showGlobalToast('Cart Cleared', 'Cart was cleared because you switched to a different client.');
+                          if (showGlobalToast) showGlobalToast('Cart Cleared', 'Switched to different client.');
                         }
                         setSelectedClient(c);
                         setClientSearch(c.name);
@@ -802,28 +839,9 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                   {clientSearch && filteredClients.length === 0 && (
                     <button
                       className="flex w-full items-center gap-2 rounded-xl bg-[var(--accent-soft)] p-3 text-left text-sm font-bold text-[var(--accent)] transition hover:brightness-95"
-                      onClick={() => {
-                        const isPhone = /^[0-9]+$/.test(clientSearch);
-                        const newClient = {
-                          id: Date.now(),
-                          name: isPhone ? `Guest (${clientSearch})` : clientSearch,
-                          phone: isPhone ? clientSearch : '',
-                          address: '',
-                          measurements: [],
-                          createdAt: new Date().toISOString()
-                        };
-
-                        const updatedClients = [...clients, newClient];
-                        localStorage.setItem('clients', JSON.stringify(updatedClients));
-                        setClients(updatedClients);
-                        setCart([]); // Clear cart for new guest
-                        setSelectedClient(newClient);
-                        setClientSearch(newClient.name); // Update search input with guest name
-                        setIsSearchingClient(false);
-                        if (showGlobalToast) showGlobalToast('Guest Added', `${isPhone ? clientSearch : clientSearch} linked to sale.`);
-                      }}
+                      onClick={handleAddGuest}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="12" y2="12"></line></svg>
+                      <Plus size={16} />
                       {/^[0-9]+$/.test(clientSearch) ? `Use Phone: ${clientSearch}` : `Add "${clientSearch}" as Guest`}
                     </button>
                   )}

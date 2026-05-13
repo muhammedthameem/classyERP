@@ -3,7 +3,7 @@ import { ChevronDown, Search, Settings, ShoppingBag, Pencil, Trash2, Plus, Packa
 import { formatDateDDMMYY, getIndianDate, orders, products } from '../../utils/constants'
 import CustomDatePicker from '../../components/CustomDatePicker'
 
-function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, setOrders, clients, inventory, orderTypes, setOrderTypes }) {
+function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, setOrders, clients, inventory, setInventory, orderTypes, setOrderTypes }) {
   const [clientName, setClientName] = useState('')
   const [showClientDropdown, setShowClientDropdown] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
@@ -23,8 +23,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
       product: '',
       orderType: '',
       price: '',
-      size: '',
-      sizeUnit: 'nos',
+      quantity: '',
+      unit: 'nos',
       sourceOfMaterial: 'Outside',
       internalItems: [],
       notes: '',
@@ -82,8 +82,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
       product: '',
       orderType: '',
       price: '',
-      size: '',
-      sizeUnit: 'nos',
+      quantity: '',
+      unit: 'nos',
       sourceOfMaterial: 'Outside',
       internalItems: [],
       notes: '',
@@ -127,19 +127,29 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
     }
 
     // New validation for internal items
-    for (const item of orderItems) {
+    for (let i = 0; i < orderItems.length; i++) {
+      const item = orderItems[i];
+      const itemLabel = item.product || `Product #${i + 1}`;
+
+      if (!item.price || parseFloat(item.price) < 0) {
+        if (showGlobalToast) showGlobalToast('Error', `Please enter a valid price for "${itemLabel}".`);
+        return;
+      }
+
       if (item.sourceOfMaterial === 'Internal') {
-        if (item.internalItems.length === 0) {
-          if (showGlobalToast) showGlobalToast('Error', `Please add at least one material for "${item.product}"`);
+        if (!item.internalItems || item.internalItems.length === 0) {
+          if (showGlobalToast) showGlobalToast('Error', `Please add at least one material for "${itemLabel}".`);
           return;
         }
         for (const mat of item.internalItems) {
-          if (!mat.productId) {
-            if (showGlobalToast) showGlobalToast('Error', 'Please select a material for all items.');
+          // Check for productName or IDs to confirm selection
+          if (!mat.productName && !mat.productId && !mat.inventoryId) {
+            if (showGlobalToast) showGlobalToast('Error', `Please select a material for all items in "${itemLabel}".`);
             return;
           }
-          if (mat.quantity <= 0) {
-            if (showGlobalToast) showGlobalToast('Error', `Invalid quantity for ${mat.productName}.`);
+          const q = parseFloat(mat.quantity);
+          if (!mat.quantity || isNaN(q) || q <= 0) {
+            if (showGlobalToast) showGlobalToast('Error', `Please enter a valid quantity for "${mat.productName || 'material'}" in "${itemLabel}".`);
             return;
           }
         }
@@ -159,10 +169,10 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
     const newOrders = orderItems.map((item, idx) => ({
       id: baseId + idx,
       clientName,
-      product: item.productType,
+      product: item.product,
       orderType: item.orderType,
       price: item.price,
-      size: `${item.size} ${item.sizeUnit}`,
+      size: `${item.quantity} ${item.unit}`,
       sourceOfMaterial: item.sourceOfMaterial,
       internalItems: item.sourceOfMaterial === 'Internal' ? item.internalItems : [],
       materialPhoto: item.materialPhoto,
@@ -173,6 +183,25 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
       status: 'Not Ready'
     }))
 
+    // Deduct inventory for internal materials
+    let updatedInventory = [...inventory];
+    orderItems.forEach(item => {
+      if (item.sourceOfMaterial === 'Internal') {
+        item.internalItems.forEach(mat => {
+          updatedInventory = updatedInventory.map(invItem => {
+            // Match by unique ID or Product ID
+            if (invItem.id === mat.inventoryId || (mat.productId && invItem.productId === mat.productId)) {
+              const currentQty = parseFloat(invItem.quantity) || 0;
+              const usedQty = parseFloat(mat.quantity) || 0;
+              return { ...invItem, quantity: Math.max(0, currentQty - usedQty) };
+            }
+            return invItem;
+          });
+        });
+      }
+    });
+
+    setInventory(updatedInventory);
     setOrders([...orders, ...newOrders])
 
     if (showGlobalToast) showGlobalToast('Success', `${orderItems.length} product(s) added for ${clientName}`);
@@ -184,8 +213,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
       product: '',
       orderType: '',
       price: '',
-      size: '',
-      sizeUnit: 'nos',
+      quantity: '',
+      unit: 'nos',
       sourceOfMaterial: 'Outside',
       internalItems: [],
       notes: '',
@@ -319,7 +348,9 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
               </button>
 
               {showClientDropdown && (
-                <div className="absolute left-0 top-full z-[100] mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-2xl backdrop-blur">
+                <>
+                  <div className="fixed inset-0 z-[90]" onClick={() => setShowClientDropdown(false)} />
+                  <div className="absolute left-0 top-full z-[100] mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-2xl backdrop-blur">
                   <div className="relative mb-2">
                     <Search size={16} className="absolute left-3 top-3 text-[var(--muted)]" />
                     <input
@@ -347,7 +378,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                     ))}
                   </div>
                 </div>
-              )}
+              </>
+            )}
             </div>
 
             <div>
@@ -458,7 +490,9 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                           <ChevronDown size={16} />
                         </button>
                         {item.showProductTypeDropdown && (
-                          <div className="absolute left-0 top-full z-[80] mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-2xl backdrop-blur">
+                          <>
+                            <div className="fixed inset-0 z-[70]" onClick={() => updateOrderItem(idx, { showProductTypeDropdown: false })} />
+                            <div className="absolute left-0 top-full z-[80] mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-2xl backdrop-blur">
                             <input
                               type="text"
                               placeholder="Search..."
@@ -482,7 +516,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                               ))}
                             </div>
                           </div>
-                        )}
+                        </>
+                      )}
                       </div>
 
                       <div className="relative">
@@ -501,7 +536,9 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                           <ChevronDown size={16} />
                         </button>
                         {item.showTypeDropdown && (
-                          <div className="absolute left-0 top-full z-[80] mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-2xl backdrop-blur">
+                          <>
+                            <div className="fixed inset-0 z-[70]" onClick={() => updateOrderItem(idx, { showTypeDropdown: false })} />
+                            <div className="absolute left-0 top-full z-[80] mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-2xl backdrop-blur">
                             <input
                               type="text"
                               placeholder="Search..."
@@ -525,32 +562,37 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                               ))}
                             </div>
                           </div>
-                        )}
+                        </>
+                      )}
                       </div>
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid gap-4 sm:grid-cols-2 mb-4">
                       <div>
-                        <span className="mb-2 block text-sm font-medium text-[var(--text)]">Size</span>
+                        <span className="mb-2 block text-sm font-medium text-[var(--text)]">Quantity</span>
                         <div className="flex gap-2">
                           <input
                             type="text"
-                            placeholder="32, M"
-                            className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2.5 text-sm outline-none transition focus:border-[var(--accent)]"
-                            value={item.size}
-                            onChange={(e) => updateOrderItem(idx, { size: e.target.value })}
+                            placeholder="e.g. 1, 2, 5"
+                            className={`w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2.5 text-sm outline-none transition focus:border-[var(--accent)] ${item.sourceOfMaterial === 'Internal' ? 'opacity-60 cursor-not-allowed font-bold' : ''}`}
+                            value={item.quantity}
+                            onChange={(e) => updateOrderItem(idx, { quantity: e.target.value })}
+                            disabled={item.sourceOfMaterial === 'Internal'}
                           />
                           <select
-                            className="w-20 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-2 text-sm outline-none"
-                            value={item.sizeUnit}
-                            onChange={(e) => updateOrderItem(idx, { sizeUnit: e.target.value })}
+                            className={`w-20 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-2 text-sm outline-none ${item.sourceOfMaterial === 'Internal' ? 'opacity-60 cursor-not-allowed' : ''}`}
+                            value={item.unit}
+                            onChange={(e) => updateOrderItem(idx, { unit: e.target.value })}
+                            disabled={item.sourceOfMaterial === 'Internal'}
                           >
                             {unitsList.map(u => <option key={u} value={u}>{u}</option>)}
                           </select>
                         </div>
                       </div>
                       <div>
-                        <span className="mb-2 block text-sm font-medium text-[var(--text)]">Price</span>
+                        <div className="mb-2">
+                          <span className="text-sm font-medium text-[var(--text)]">Stitching Cost</span>
+                        </div>
                         <div className="relative">
                           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-[var(--muted)]">₹</span>
                           <input
@@ -571,7 +613,23 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                           <button
                             key={source}
                             type="button"
-                            onClick={() => updateOrderItem(idx, { sourceOfMaterial: source })}
+                            onClick={() => {
+                              const updates = { sourceOfMaterial: source };
+                              if (source === 'Outside') {
+                                // Reset quantity and unit when switching to manual mode
+                                updates.quantity = '';
+                                updates.unit = 'nos';
+                              } else {
+                                // Re-sync quantity and unit from materials when switching back to internal
+                                // Re-summing ALL material quantities correctly
+                                const totalMatQ = item.internalItems.reduce((s, m) => s + (parseFloat(m.quantity) || 0), 0);
+                                updates.quantity = totalMatQ > 0 ? totalMatQ.toString() : '';
+                                if (item.internalItems.length > 0) {
+                                  updates.unit = item.internalItems[0].unit;
+                                }
+                              }
+                              updateOrderItem(idx, updates);
+                            }}
                             className={`flex-1 rounded-xl border py-3 text-sm font-bold transition-all ${item.sourceOfMaterial === source ? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)] shadow-sm' : 'border-[var(--border)] bg-[var(--surface-strong)] text-[var(--muted)] hover:bg-[var(--soft)]'}`}
                           >
                             {source === 'Outside' ? 'Client Provided' : 'Studio Inventory'}
@@ -598,7 +656,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                           </button>
                         </div>
 
-                        <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+                        <div className="space-y-2 pr-1 custom-scrollbar">
                           {item.internalItems.map((mat, midx) => (
                             <div key={midx} className="relative flex items-center gap-2 bg-[var(--surface)] p-2 rounded-xl border border-[var(--border)]">
                               <div className="flex-1 min-w-0">
@@ -616,7 +674,9 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                                   {mat.productName || 'Material...'}
                                 </button>
                                 {item.showInventoryDropdown === midx && (
-                                  <div className="absolute left-0 right-0 top-full z-[90] mt-1 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-2xl">
+                                  <>
+                                    <div className="fixed inset-0 z-[80]" onClick={() => updateOrderItem(idx, { showInventoryDropdown: null })} />
+                                    <div className="relative z-[90] mt-2 mb-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-sm">
                                     <input
                                       type="text"
                                       className="w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-xs"
@@ -633,7 +693,19 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                                         .filter(p => p.productName.toLowerCase().includes(inventorySearch.toLowerCase()))
                                         .slice(0, dropdownLimit)
                                         .map(p => {
-                                          const isOutOfStock = (parseFloat(p.stock) || 0) <= 0;
+                                          const usedInOrder = orderItems.reduce((totalUsed, oi) => {
+                                            return totalUsed + oi.internalItems.reduce((matUsed, m) => {
+                                              if (m.inventoryId === p.id || m.productId === p.productId) {
+                                                return matUsed + (parseFloat(m.quantity) || 0);
+                                              }
+                                              return matUsed;
+                                            }, 0);
+                                          }, 0);
+
+                                          const currentItemUsage = (mat.inventoryId === p.id || mat.productId === p.productId) ? (parseFloat(mat.quantity) || 0) : 0;
+                                          const availableStock = (parseFloat(p.quantity) || 0) - (usedInOrder - currentItemUsage);
+                                          
+                                          const isOutOfStock = availableStock <= 0;
                                           return (
                                             <button
                                               key={p.id}
@@ -642,14 +714,36 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                                               className={`w-full rounded-lg px-2 py-1.5 text-left text-[10px] flex justify-between items-center transition ${isOutOfStock ? 'opacity-40 cursor-not-allowed bg-stone-100' : 'hover:bg-[var(--soft)]'}`}
                                               onClick={() => {
                                                 const mats = [...item.internalItems];
-                                                mats[midx] = { ...mats[midx], productId: p.productId, productName: p.productName, unit: p.unit, unitPrice: parseFloat(p.finalPrice), totalPrice: parseFloat(p.finalPrice) * mats[midx].quantity };
-                                                updateOrderItem(idx, { internalItems: mats, showInventoryDropdown: null });
+                                                const priceValue = parseFloat(p.finalPrice) || 0;
+                                                mats[midx] = { 
+                                                   ...mats[midx], 
+                                                   inventoryId: p.id,
+                                                   productId: p.productId, 
+                                                   productName: p.productName, 
+                                                   unit: p.unit, 
+                                                   unitPrice: priceValue, 
+                                                   totalPrice: priceValue * (mats[midx].quantity || 1) 
+                                                };
+                                                
+                                                const totalMatQ = mats.reduce((s, m) => s + (parseFloat(m.quantity) || 0), 0);
+                                                updateOrderItem(idx, { 
+                                                  internalItems: mats, 
+                                                  unit: p.unit,
+                                                  quantity: totalMatQ.toString(),
+                                                  showInventoryDropdown: null
+                                                });
                                               }}
                                             >
                                               <div className="min-w-0 flex-1 pr-2">
-                                                <p className="font-bold truncate">{p.productName}</p>
+                                                <div className="flex items-center gap-1.5">
+                                                  <p className="font-bold truncate">{p.productName}</p>
+                                                  {usedInOrder > 0 && (
+                                                    <span className="px-1 py-0.5 rounded bg-blue-100 text-blue-600 text-[8px] font-black uppercase">In Cart</span>
+                                                  )}
+                                                </div>
                                                 <p className={`text-[9px] font-black ${isOutOfStock ? 'text-red-500' : 'text-[var(--accent)]'}`}>
-                                                  Stock: {p.stock} {p.unit}
+                                                  Available: {availableStock.toFixed(2)} {p.unit}
+                                                  <span className="text-stone-400 font-normal ml-1">(Total: {p.quantity})</span>
                                                 </p>
                                               </div>
                                               <span className="font-bold whitespace-nowrap">₹{p.finalPrice}</span>
@@ -670,7 +764,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                                       )}
                                     </div>
                                   </div>
-                                )}
+                                </>
+                              )}
                               </div>
                               <input
                                 type="number"
@@ -681,14 +776,22 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                                   const mats = [...item.internalItems];
                                   mats[midx].quantity = q;
                                   mats[midx].totalPrice = q * mats[midx].unitPrice;
-                                  updateOrderItem(idx, { internalItems: mats });
+                                  
+                                  const totalMatQ = mats.reduce((s, m) => s + (parseFloat(m.quantity) || 0), 0);
+                                  // Sync with main quantity (SUM of all materials)
+                                  updateOrderItem(idx, { 
+                                    internalItems: mats,
+                                    quantity: totalMatQ.toString()
+                                  });
                                 }}
                               />
                               <button
                                 type="button"
                                 onClick={() => {
                                   const mats = item.internalItems.filter((_, i) => i !== midx);
-                                  updateOrderItem(idx, { internalItems: mats });
+                                  const updates = { internalItems: mats };
+                                  if (mats.length === 0) updates.price = '';
+                                  updateOrderItem(idx, updates);
                                 }}
                                 className="text-red-500 hover:text-red-700"
                               >
@@ -760,6 +863,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                     onChange={(e) => updateOrderItem(idx, { notes: e.target.value })}
                   />
                 </div>
+
               </div>
             ))}
           </div>
@@ -810,30 +914,79 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
           </div>
         </section>
 
-        {/* Action Bar */}
-        <div className="mt-8 flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl sticky bottom-4 z-50 lg:bottom-8">
-          <div className="hidden sm:block">
-            <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Total Order Value</span>
-            <p className="text-2xl font-bold text-[var(--accent)]">
-              ₹{orderItems.reduce((s, i) => s + (parseFloat(i.price) || 0), 0).toFixed(2)}
-            </p>
+        {/* Grand Summary & Actions */}
+        <section className="mt-8 flex flex-col md:flex-row gap-8 items-center justify-between rounded-[32px] border border-[var(--border)] bg-[var(--surface)] p-8 shadow-2xl relative z-40 overflow-hidden">
+          <div className="absolute top-0 left-0 w-1 h-full bg-[var(--accent)]" />
+          
+          <div className="flex flex-wrap gap-8 items-center">
+             <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Total Volume</p>
+                <p className="text-xl font-bold text-[var(--text)] flex items-baseline gap-1">
+                   {orderItems.reduce((s, i) => {
+                     const mainQ = parseFloat(i.quantity) || 0;
+                     const matQ = i.sourceOfMaterial === 'Internal' 
+                        ? i.internalItems.reduce((sm, m) => sm + (parseFloat(m.quantity) || 0), 0)
+                        : 0;
+                     // For internal, materials count. For outside, main quantity counts.
+                     return s + (i.sourceOfMaterial === 'Internal' ? matQ : mainQ);
+                   }, 0)}
+                   <span className="text-xs font-medium text-[var(--muted)] lowercase">units</span>
+                </p>
+             </div>
+             
+             <div className="h-10 w-px bg-[var(--border)] hidden sm:block" />
+
+             <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Total Stitching</p>
+                <p className="text-xl font-bold text-[var(--text)]">
+                   ₹{orderItems.reduce((s, i) => s + (parseFloat(i.price) || 0), 0).toFixed(2)}
+                </p>
+             </div>
+
+             <div className="h-10 w-px bg-[var(--border)] hidden sm:block" />
+
+             <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Materials Cost</p>
+                <p className="text-xl font-bold text-orange-500">
+                   ₹{orderItems.reduce((s, item) => {
+                      if (item.sourceOfMaterial !== 'Internal') return s;
+                      return s + item.internalItems.reduce((sm, m) => sm + (m.totalPrice || 0), 0);
+                   }, 0).toFixed(2)}
+                </p>
+             </div>
           </div>
-          <div className="flex gap-3 w-full sm:w-auto">
-            <button
-              type="button"
-              className="flex-1 sm:flex-none rounded-xl border border-[var(--border)] px-6 py-2.5 font-semibold hover:bg-[var(--soft)] transition"
-              onClick={() => setCurrentPage('view-orders')}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 sm:flex-none rounded-xl bg-[var(--accent)] px-8 py-2.5 font-bold text-white shadow-lg shadow-[var(--accent)]/30 transition hover:brightness-95"
-            >
-              Save Order
-            </button>
+
+          <div className="flex flex-col items-center md:items-end gap-5 w-full md:w-auto pt-6 md:pt-0 border-t md:border-t-0 border-[var(--border)]">
+             <div className="text-center md:text-right">
+                <p className="text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.2em] mb-1">Final Grand Total</p>
+                <h2 className="text-5xl font-black text-[var(--text)] tracking-tighter">
+                  ₹{(
+                    orderItems.reduce((s, i) => s + (parseFloat(i.price) || 0), 0) +
+                    orderItems.reduce((s, item) => {
+                      if (item.sourceOfMaterial !== 'Internal') return s;
+                      return s + item.internalItems.reduce((sm, m) => sm + (m.totalPrice || 0), 0);
+                    }, 0)
+                  ).toFixed(2)}
+                </h2>
+             </div>
+             
+             <div className="flex gap-3 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage('view-orders')}
+                  className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-6 py-3 font-semibold transition hover:bg-[var(--soft)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-lg shadow-[var(--accent)]/25 transition hover:brightness-95 flex items-center gap-2"
+                >
+                  <CheckCircle size={18} /> Confirm Order
+                </button>
+             </div>
           </div>
-        </div>
+        </section>
       </form>
     </div>
   )

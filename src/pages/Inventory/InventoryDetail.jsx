@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, CircleDollarSign, ClipboardList, Package, ShoppingBag, UsersRound, Pencil, Trash2 } from 'lucide-react'
 
-function InventoryDetailPage({ themeStyle, item, setCurrentPage, setSelectedInventoryItem, initialMode, setInventoryDetailMode, showGlobalToast }) {
+function InventoryDetailPage({ themeStyle, item, setCurrentPage, setSelectedInventoryItem, initialMode, setInventoryDetailMode, showGlobalToast, inventory, setInventory }) {
   const [mode, setMode] = useState(initialMode);
   const [formData, setFormData] = useState(item);
   const [priceEntryMode, setPriceEntryMode] = useState('per-unit');
   const [itemToDelete, setItemToDelete] = useState(null);
+
+  useEffect(() => {
+    setFormData(item);
+  }, [item]);
 
   if (!item) {
     setCurrentPage('view-inventory');
@@ -14,18 +18,16 @@ function InventoryDetailPage({ themeStyle, item, setCurrentPage, setSelectedInve
 
   const handleUpdate = (e) => {
     e.preventDefault();
-    const saved = JSON.parse(localStorage.getItem('inventory') || '[]');
-    const updated = saved.map(i => i.id === item.id ? formData : i);
-    localStorage.setItem('inventory', JSON.stringify(updated));
+    const updated = inventory.map(i => i.id === item.id ? formData : i);
+    setInventory(updated);
     setSelectedInventoryItem(formData);
     setMode('view');
     if (showGlobalToast) showGlobalToast('Updated!', 'Inventory item updated successfully.');
   };
 
   const handleDelete = () => {
-    const saved = JSON.parse(localStorage.getItem('inventory') || '[]');
-    const updated = saved.filter(i => i.id !== item.id);
-    localStorage.setItem('inventory', JSON.stringify(updated));
+    const updated = inventory.filter(i => i.id !== item.id);
+    setInventory(updated);
     setCurrentPage('view-inventory');
     if (showGlobalToast) showGlobalToast('Deleted!', 'Inventory item removed successfully.');
   };
@@ -83,7 +85,10 @@ function InventoryDetailPage({ themeStyle, item, setCurrentPage, setSelectedInve
             </button>
           ) : (
             <button
-              onClick={() => setMode('view')}
+              onClick={() => {
+                setFormData(item); // Reset to original values
+                setMode('view');
+              }}
               className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2.5 text-sm font-bold transition hover:bg-[var(--soft)]"
             >
               Cancel Edit
@@ -123,8 +128,18 @@ function InventoryDetailPage({ themeStyle, item, setCurrentPage, setSelectedInve
                   <input 
                     className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2.5 outline-none focus:border-[var(--accent)]" 
                     type="number" 
-                    value={formData.initialQuantity || formData.quantity} 
-                    onChange={e => setFormData({ ...formData, initialQuantity: parseFloat(e.target.value) || 0 })} 
+                    value={formData.initialQuantity !== undefined ? formData.initialQuantity : formData.quantity} 
+                    onChange={e => {
+                      const newInitial = parseFloat(e.target.value) || 0;
+                      const oldInitial = formData.initialQuantity !== undefined ? formData.initialQuantity : formData.quantity;
+                      const diff = newInitial - oldInitial;
+                      
+                      setFormData({ 
+                        ...formData, 
+                        initialQuantity: newInitial,
+                        quantity: Math.max(0, (formData.quantity || 0) + diff)
+                      });
+                    }} 
                   />
                 )}
               </div>

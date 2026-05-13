@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2, Plus } from 'lucide-react'
 import { formatDateDDMMYY, getIndianDate, orders } from '../../utils/constants'
 
-function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders }) {
+function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory }) {
   const rowRefs = useRef({});
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPageNum, setCurrentPageNum] = useState(1)
@@ -30,6 +30,22 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
 
   const handleDeleteConfirm = () => {
     if (orderToDelete) {
+      // Restore inventory if order had internal materials
+      if (orderToDelete.sourceOfMaterial === 'Internal' && orderToDelete.internalItems?.length > 0) {
+        let updatedInventory = [...inventory];
+        orderToDelete.internalItems.forEach(mat => {
+          updatedInventory = updatedInventory.map(invItem => {
+            if (invItem.id === mat.inventoryId || (mat.productId && invItem.productId === mat.productId)) {
+              const currentQty = parseFloat(invItem.quantity) || 0;
+              const restoreQty = parseFloat(mat.quantity) || 0;
+              return { ...invItem, quantity: currentQty + restoreQty };
+            }
+            return invItem;
+          });
+        });
+        setInventory(updatedInventory);
+      }
+
       const updated = orders.filter(o => o.id !== orderToDelete.id)
       saveOrders(updated)
       setOrderToDelete(null)
