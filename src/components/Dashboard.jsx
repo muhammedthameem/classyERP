@@ -111,36 +111,36 @@ function Dashboard({
     const saveCloudData = async (isManual = false) => {
       try {
         const batch = [];
-
-        // 1. Save Small Lists (Users, Inventory, Activities, Config)
-        // Only save if the list has items (prevents wiping from a fresh device)
-        if (users.length > 0 || isManual) batch.push(setDoc(doc(db, "erpData", "users"), { list: users }, { merge: true }));
-        if (inventory.length > 0 || isManual) batch.push(setDoc(doc(db, "erpData", "inventory"), { list: inventory }, { merge: true }));
-        if (activities.length > 0 || isManual) batch.push(setDoc(doc(db, "erpData", "activities"), { list: activities }, { merge: true }));
-
-        batch.push(setDoc(doc(db, "erpData", "config"), {
+        
+        // Helper to remove 'undefined' values which Firebase rejects
+        const clean = (obj) => JSON.parse(JSON.stringify(obj));
+        
+        if (users.length > 0 || isManual) batch.push(setDoc(doc(db, "erpData", "users"), { list: clean(users) }, { merge: true }));
+        if (inventory.length > 0 || isManual) batch.push(setDoc(doc(db, "erpData", "inventory"), { list: clean(inventory) }, { merge: true }));
+        if (activities.length > 0 || isManual) batch.push(setDoc(doc(db, "erpData", "activities"), { list: clean(activities) }, { merge: true }));
+        
+        batch.push(setDoc(doc(db, "erpData", "config"), clean({
           designations,
           orderTypes,
           productTypes,
           inventoryUnits
-        }, { merge: true }));
+        }), { merge: true }));
 
-        // 2. Save Large Collections (Orders, Sales, Clients)
         if (orders.length > 0 || isManual) {
           orders.filter(o => o && (o.id || o.orderId)).forEach(o => {
-            batch.push(setDoc(doc(db, "orders", (o.id || o.orderId).toString()), o, { merge: true }));
+            batch.push(setDoc(doc(db, "orders", (o.id || o.orderId).toString()), clean(o), { merge: true }));
           });
         }
-
+        
         if (sales.length > 0 || isManual) {
           sales.filter(s => s && (s.id || s.saleId)).forEach(s => {
-            batch.push(setDoc(doc(db, "sales", (s.id || s.saleId).toString()), s, { merge: true }));
+            batch.push(setDoc(doc(db, "sales", (s.id || s.saleId).toString()), clean(s), { merge: true }));
           });
         }
-
+        
         if (clients.length > 0 || isManual) {
           clients.filter(c => c && (c.id || c.clientId || c.phone)).forEach(c => {
-            batch.push(setDoc(doc(db, "clients", (c.id || c.clientId || c.phone || Date.now()).toString()), c, { merge: true }));
+            batch.push(setDoc(doc(db, "clients", (c.id || c.clientId || c.phone || Date.now()).toString()), clean(c), { merge: true }));
           });
         }
 
