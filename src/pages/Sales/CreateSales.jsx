@@ -306,7 +306,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     message += `%0A*Grand Total: ₹${parseFloat(showReceipt.total).toFixed(2)}*%0A`;
     message += `*------------------------------*%0A`;
     message += `📄 *Download Digital Receipt:*%0A`;
-    message += `https://classy-couture.web.app/bill/${showReceipt.saleId}%0A%0A`;
+    message += `https://classyerp.netlify.app/?bill=${showReceipt.saleId}%0A%0A`;
     message += `*Visit again for more unique designs!*%0A`;
     message += `_Classy Couture - Be Unique, Be Classy_`;
 

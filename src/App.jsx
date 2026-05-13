@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import LoginScreen from './components/LoginScreen'
 import Dashboard from './components/Dashboard'
+import PublicReceipt from './components/PublicReceipt'
 import { db } from './firebase'
 import { doc, onSnapshot, getDoc, collection, setDoc, writeBatch, query, orderBy, limit } from 'firebase/firestore'
 
@@ -124,6 +125,12 @@ function App() {
     setUser(null)
     setIsLoggedIn(false)
     localStorage.removeItem('erp_session')
+  }
+
+  const billId = new URLSearchParams(window.location.search).get('bill')
+
+  if (billId) {
+    return <PublicReceipt billId={billId} />
   }
 
   return (

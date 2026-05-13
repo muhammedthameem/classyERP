@@ -1,0 +1,140 @@
+import React, { useEffect, useState } from 'react';
+import { db } from '../firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { CheckCircle, Download, Package } from 'lucide-react';
+import html2pdf from 'html2pdf.js';
+
+function PublicReceipt({ billId }) {
+  const [sale, setSale] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSale = async () => {
+      try {
+        const q = query(collection(db, "sales"), where("saleId", "==", billId));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+          setSale(querySnapshot.docs[0].data());
+        }
+      } catch (error) {
+        console.error("Error fetching sale:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSale();
+  }, [billId]);
+
+  const handleDownload = () => {
+    const element = document.getElementById('printable-bill');
+    const opt = {
+      margin: 0,
+      filename: `Receipt_${sale.saleId}.pdf`,
+      image: { type: 'jpeg', quality: 1 },
+      html2canvas: { scale: 3, useCORS: true },
+      jsPDF: { unit: 'mm', format: [80, 200], orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(element).save();
+  };
+
+  if (loading) return (
+    <div className="flex h-screen items-center justify-center bg-[#f7f2ec]">
+      <div className="text-center">
+        <div className="h-12 w-12 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-stone-500 font-bold uppercase tracking-widest text-xs">Loading Receipt...</p>
+      </div>
+    </div>
+  );
+
+  if (!sale) return (
+    <div className="flex h-screen items-center justify-center bg-[#f7f2ec] p-6">
+      <div className="text-center max-w-sm">
+        <div className="h-20 w-20 bg-rose-50 text-rose-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-rose-500/10">
+          <Package size={40} />
+        </div>
+        <h2 className="text-2xl font-black mb-2">Receipt Not Found</h2>
+        <p className="text-stone-500 text-sm mb-8 leading-relaxed">We couldn't find a digital receipt with ID <span className="text-stone-900 font-bold">#{billId}</span>. Please check the link or contact the shop.</p>
+        <a href="/" className="inline-block px-8 py-4 bg-stone-900 text-white rounded-2xl font-bold text-sm shadow-xl hover:brightness-110 transition">Go to Login</a>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-[#f7f2ec] p-4 lg:p-10 flex flex-col items-center">
+      <div className="w-full max-w-lg mb-8 text-center">
+        <div className="flex items-center justify-center gap-2 text-[var(--accent)] mb-2">
+          <CheckCircle size={18} />
+          <span className="text-[10px] font-black uppercase tracking-[0.2em]">Verified Digital Receipt</span>
+        </div>
+        <h1 className="text-3xl font-black mb-2">Classy Couture</h1>
+        <p className="text-stone-500 text-sm">Thank you for your purchase!</p>
+      </div>
+
+      <div id="printable-bill" className="mb-8 bg-white p-6 text-black shadow-2xl rounded-sm overflow-hidden mx-auto" style={{ width: '80mm', minHeight: '120mm', fontFamily: 'monospace' }}>
+        <div className="text-center mb-6 border-b-2 border-dashed border-gray-300 pb-6">
+          <img src="/logo-black.png" alt="Logo" className="w-24 h-24 mx-auto mb-4 object-contain" />
+          <h3 className="text-lg font-bold uppercase tracking-tight">Classy Couture</h3>
+          <p className="text-[9px] font-medium">Be Unique, Be Classy</p>
+          <p style={{ margin: '2px 0', fontSize: '9px' }}>Ph : 8606154015</p>
+          <div className="mt-4 text-[9px] text-gray-500">
+            <p>Order ID: {sale.saleId}</p>
+            <p>{new Date(sale.timestamp).toLocaleString()}</p>
+          </div>
+        </div>
+
+        <div className="mb-6 text-[11px]">
+          <p className="font-bold">Customer: {sale.client.name}</p>
+          {sale.client.phone && <p>Tel: {sale.client.phone}</p>}
+        </div>
+
+        <table className="w-full text-[10px] mb-6">
+          <thead>
+            <tr className="border-b border-dashed border-gray-300 text-left uppercase">
+              <th className="py-2">Item</th>
+              <th className="py-2 text-center">Qty</th>
+              <th className="py-2 text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-dashed divide-gray-200">
+            {sale.items.map((item, idx) => (
+              <tr key={idx}>
+                <td className="py-3 pr-2">
+                  <p className="font-bold">{item.productName}</p>
+                  <p className="text-[8px] opacity-60">Rate: ₹{item.rate}</p>
+                </td>
+                <td className="py-3 text-center">{item.qty}</td>
+                <td className="py-3 text-right font-bold">₹{parseFloat(item.price).toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div className="border-t-2 border-dashed border-gray-300 pt-4 mb-6">
+          <div className="flex justify-between text-base font-black">
+            <span>GRAND TOTAL</span>
+            <span>₹{parseFloat(sale.total).toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div className="text-center mt-6 text-[9px] text-gray-500 italic border-t border-dashed border-gray-200 pt-6">
+          <p className="font-bold text-black mb-1">Authentic Quality Since 2024</p>
+          <p>This is a computer generated receipt.</p>
+          <p>No signature required.</p>
+        </div>
+      </div>
+
+      <button 
+        onClick={handleDownload}
+        className="flex items-center gap-3 px-10 py-5 bg-[var(--accent)] text-white rounded-3xl font-bold shadow-2xl shadow-[var(--accent)]/30 hover:scale-105 active:scale-95 transition-all"
+      >
+        <Download size={20} /> Download PDF Receipt
+      </button>
+
+      <p className="mt-8 text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+        Powered by Classy ERP
+      </p>
+    </div>
+  );
+}
+
+export default PublicReceipt;
