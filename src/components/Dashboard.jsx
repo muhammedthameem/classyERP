@@ -108,7 +108,7 @@ function Dashboard({
   useEffect(() => {
     if (!cloudLoaded) return
 
-    const saveCloudData = async () => {
+    const saveCloudData = async (isManual = false) => {
       try {
         const singles = [
           setDoc(doc(db, "erpData", "users"), { list: users }, { merge: true }),
@@ -127,7 +127,11 @@ function Dashboard({
         const clientsBatch = clients.filter(c => c && (c.id || c.clientId || c.phone)).map(c => setDoc(doc(db, "clients", (c.id || c.clientId || c.phone || Date.now()).toString()), c, { merge: true }));
 
         await Promise.all([...singles, ...ordersBatch, ...salesBatch, ...clientsBatch]);
+        if (isManual && showGlobalToast) {
+          showGlobalToast('Success', 'Manual Cloud Sync Complete! ✅');
+        }
       } catch (error) {
+        console.error("Cloud Sync Error:", error.message);
         if (showGlobalToast) {
           showGlobalToast('Sync Error', `Could not save to cloud: ${error.message}`);
         }
@@ -343,6 +347,12 @@ function Dashboard({
                       {cloudLoaded ? 'cloud synced' : 'connecting...'}
                     </span>
                   </span>
+                  <button 
+                    onClick={() => saveCloudData(true)}
+                    className="ml-4 rounded-md bg-[var(--surface-strong)] px-2 py-0.5 text-[8px] font-bold text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white transition-colors"
+                  >
+                    Force Upload
+                  </button>
                 </p>
                 <h1 className="text-lg font-semibold lg:text-3xl">{currentUserName || 'Admin'}</h1>
               </div>

@@ -56,6 +56,7 @@ function App() {
         // Finalize loading after first batch of collections
         setCloudLoaded(true)
       }, (error) => {
+        console.error(`Sync Error (${colId}):`, error.message)
         setCloudLoaded(true)
       })
     })
