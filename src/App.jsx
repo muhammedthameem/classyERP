@@ -168,10 +168,34 @@ function App() {
           productTypes={productTypes} setProductTypes={setProductTypes}
           inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits}
           cloudLoaded={cloudLoaded}
-          // Direct Save Functions
-          saveSale={(s) => setDoc(doc(db, "sales", (s.id || s.saleId).toString()), JSON.parse(JSON.stringify(s)), { merge: true })}
-          saveOrder={(o) => setDoc(doc(db, "orders", (o.id || o.orderId).toString()), JSON.parse(JSON.stringify(o)), { merge: true })}
-          saveClient={(c) => setDoc(doc(db, "clients", (c.id || c.clientId || c.phone || Date.now()).toString()), JSON.parse(JSON.stringify(c)), { merge: true })}
+          // Direct Save Functions with Error Handling
+          saveSale={async (s) => {
+            try {
+              await setDoc(doc(db, "sales", (s.id || s.saleId).toString()), JSON.parse(JSON.stringify(s)), { merge: true });
+              console.log("Sale synced to cloud:", s.saleId);
+            } catch (err) {
+              console.error("Cloud Sync Error (Sale):", err.message);
+              alert("Cloud Sync Failed: " + err.message);
+            }
+          }}
+          saveOrder={async (o) => {
+            try {
+              await setDoc(doc(db, "orders", (o.id || o.orderId).toString()), JSON.parse(JSON.stringify(o)), { merge: true });
+              console.log("Order synced to cloud:", o.id);
+            } catch (err) {
+              console.error("Cloud Sync Error (Order):", err.message);
+              alert("Cloud Sync Failed: " + err.message);
+            }
+          }}
+          saveClient={async (c) => {
+            try {
+              await setDoc(doc(db, "clients", (c.id || c.clientId || c.phone || Date.now()).toString()), JSON.parse(JSON.stringify(c)), { merge: true });
+              console.log("Client synced to cloud:", c.name);
+            } catch (err) {
+              console.error("Cloud Sync Error (Client):", err.message);
+              alert("Cloud Sync Failed: " + err.message);
+            }
+          }}
         />
       )}
     </main>
