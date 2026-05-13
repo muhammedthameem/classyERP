@@ -110,25 +110,43 @@ function Dashboard({
 
     const saveCloudData = async (isManual = false) => {
       try {
-        const singles = [
-          setDoc(doc(db, "erpData", "users"), { list: users }, { merge: true }),
-          setDoc(doc(db, "erpData", "inventory"), { list: inventory }, { merge: true }),
-          setDoc(doc(db, "erpData", "activities"), { list: activities }, { merge: true }),
-          setDoc(doc(db, "erpData", "config"), {
-            designations,
-            orderTypes,
-            productTypes,
-            inventoryUnits
-          }, { merge: true })
-        ];
+        const batch = [];
+        
+        // 1. Save Small Lists (Users, Inventory, Activities, Config)
+        // Only save if the list has items (prevents wiping from a fresh device)
+        if (users.length > 0 || isManual) batch.push(setDoc(doc(db, "erpData", "users"), { list: users }, { merge: true }));
+        if (inventory.length > 0 || isManual) batch.push(setDoc(doc(db, "erpData", "inventory"), { list: inventory }, { merge: true }));
+        if (activities.length > 0 || isManual) batch.push(setDoc(doc(db, "erpData", "activities"), { list: activities }, { merge: true }));
+        
+        batch.push(setDoc(doc(db, "erpData", "config"), {
+          designations,
+          orderTypes,
+          productTypes,
+          inventoryUnits
+        }, { merge: true }));
 
-        const ordersBatch = orders.filter(o => o && (o.id || o.orderId)).map(o => setDoc(doc(db, "orders", (o.id || o.orderId).toString()), o, { merge: true }));
-        const salesBatch = sales.filter(s => s && (s.id || s.saleId)).map(s => setDoc(doc(db, "sales", (s.id || s.saleId).toString()), s, { merge: true }));
-        const clientsBatch = clients.filter(c => c && (c.id || c.clientId || c.phone)).map(c => setDoc(doc(db, "clients", (c.id || c.clientId || c.phone || Date.now()).toString()), c, { merge: true }));
+        // 2. Save Large Collections (Orders, Sales, Clients)
+        if (orders.length > 0 || isManual) {
+          orders.filter(o => o && (o.id || o.orderId)).forEach(o => {
+            batch.push(setDoc(doc(db, "orders", (o.id || o.orderId).toString()), o, { merge: true }));
+          });
+        }
+        
+        if (sales.length > 0 || isManual) {
+          sales.filter(s => s && (s.id || s.saleId)).forEach(s => {
+            batch.push(setDoc(doc(db, "sales", (s.id || s.saleId).toString()), s, { merge: true }));
+          });
+        }
+        
+        if (clients.length > 0 || isManual) {
+          clients.filter(c => c && (c.id || c.clientId || c.phone)).forEach(c => {
+            batch.push(setDoc(doc(db, "clients", (c.id || c.clientId || c.phone || Date.now()).toString()), c, { merge: true }));
+          });
+        }
 
-        await Promise.all([...singles, ...ordersBatch, ...salesBatch, ...clientsBatch]);
-        if (isManual && showGlobalToast) {
-          showGlobalToast('Success', 'Manual Cloud Sync Complete! ✅');
+        if (batch.length > 0) {
+          await Promise.all(batch);
+          if (isManual && showGlobalToast) showGlobalToast('Success', 'Manual Cloud Sync Complete! ✅');
         }
       } catch (error) {
         console.error("Cloud Sync Error:", error.message);
