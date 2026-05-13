@@ -122,9 +122,9 @@ function Dashboard({
           }, { merge: true })
         ];
 
-        const ordersBatch = orders.map(o => setDoc(doc(db, "orders", o.id.toString()), o, { merge: true }));
-        const salesBatch = sales.map(s => setDoc(doc(db, "sales", s.id.toString()), s, { merge: true }));
-        const clientsBatch = clients.map(c => setDoc(doc(db, "clients", c.id.toString()), c, { merge: true }));
+        const ordersBatch = orders.filter(o => o && (o.id || o.orderId)).map(o => setDoc(doc(db, "orders", (o.id || o.orderId).toString()), o, { merge: true }));
+        const salesBatch = sales.filter(s => s && (s.id || s.saleId)).map(s => setDoc(doc(db, "sales", (s.id || s.saleId).toString()), s, { merge: true }));
+        const clientsBatch = clients.filter(c => c && (c.id || c.clientId || c.phone)).map(c => setDoc(doc(db, "clients", (c.id || c.clientId || c.phone || Date.now()).toString()), c, { merge: true }));
 
         await Promise.all([...singles, ...ordersBatch, ...salesBatch, ...clientsBatch]);
       } catch (error) {
