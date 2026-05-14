@@ -16,38 +16,35 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
   const handleConfirmDelete = async () => {
     if (!userToDelete) return
     const id = userToDelete.id
+    
+    // Security checks
     if (userToDelete.designation === 'Admin') {
-      if (showGlobalToast) showGlobalToast('Error', 'Admin accounts cannot be deleted for security reasons.')
+      if (showGlobalToast) showGlobalToast('Error', 'Admin accounts cannot be deleted.')
       setUserToDelete(null)
       return
     }
     if (currentUser && id === currentUser.id) {
-      if (showGlobalToast) showGlobalToast('Error', 'You cannot delete your own account while logged in.')
+      if (showGlobalToast) showGlobalToast('Error', 'You cannot delete yourself.')
       setUserToDelete(null)
       return
     }
-    if (users.length <= 1) {
-      if (showGlobalToast) showGlobalToast('Error', 'Cannot delete the only user.')
-      setUserToDelete(null)
-      return
-    }
+
+    // --- INSTANT UI UPDATE (Optimistic) ---
+    const originalUsers = [...users];
+    setUsers(users.filter(u => u.id !== id));
+    setUserToDelete(null); // Close modal instantly
 
     try {
-      // 1. Delete from Supabase Database
+      // Tell cloud to delete in background
       const { error } = await supabase.from('erp_users').delete().eq('id', id);
       if (error) throw error;
-
-      // 2. Update Local State
-      setUsers(users.filter(u => u.id !== id))
       
-      if (showGlobalToast) {
-        showGlobalToast('Success', 'User removed from database. Please manually revoke their login in the Auth tab for full security.')
-      }
+      if (showGlobalToast) showGlobalToast('Success', 'User deleted successfully.')
     } catch (error) {
-      console.error("Delete Error:", error.message);
-      if (showGlobalToast) showGlobalToast('Error', 'Could not delete from cloud: ' + error.message)
-    } finally {
-      setUserToDelete(null)
+      // ROLLBACK: If cloud fails, put the user back
+      setUsers(originalUsers);
+      console.error("Cloud Sync Failed:", error.message);
+      if (showGlobalToast) showGlobalToast('Error', 'Cloud sync failed. User restored.')
     }
   }
 
