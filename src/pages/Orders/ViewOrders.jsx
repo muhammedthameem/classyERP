@@ -652,7 +652,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                           <option value="In Progress">In Progress</option>
                           <option value="Hold">Hold</option>
                           <option value="Completed">Completed</option>
-                          <option value="Sold">Sold</option>
+                          <option value="Sold" disabled>Sold</option>
                         </select>
                         <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--muted)]">
                           <ChevronDown size={14} />
