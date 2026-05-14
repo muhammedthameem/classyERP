@@ -350,10 +350,12 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
 
       message += `*ORDER SUMMARY:*%0A`;
       showReceipt.items.forEach(item => {
-        message += `• ${item.productName} (x${item.qty}) - ₹${item.price}%0A`;
+        const itemPrice = parseFloat(item.price || 0).toFixed(2);
+        message += `• ${item.productName} (x${item.qty}) - ₹${itemPrice}%0A`;
       });
 
-      message += `%0A*Grand Total: ₹${parseFloat(showReceipt.total).toFixed(2)}*%0A`;
+      const grandTotal = parseFloat(showReceipt.total || 0).toFixed(2);
+      message += `%0A*Grand Total: ₹${grandTotal}*%0A`;
       message += `*------------------------------*%0A`;
       if (publicUrl) {
         message += `📄 *DOWNLOAD DIGITAL RECEIPT:*%0A${publicUrl}%0A`;
@@ -376,9 +378,11 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       message += `${greeting}%0A%0A`;
       message += `*ORDER SUMMARY:*%0A`;
       showReceipt.items.forEach(item => {
-        message += `• ${item.productName} (x${item.qty}) - ₹${item.price}%0A`;
+        const itemPrice = parseFloat(item.price || 0).toFixed(2);
+        message += `• ${item.productName} (x${item.qty}) - ₹${itemPrice}%0A`;
       });
-      message += `%0A*Grand Total: ₹${parseFloat(showReceipt.total).toFixed(2)}*%0A`;
+      const grandTotalFallback = parseFloat(showReceipt.total || 0).toFixed(2);
+      message += `%0A*Grand Total: ₹${grandTotalFallback}*%0A`;
       message += `*------------------------------*%0A`;
       message += `*Visit again for more unique designs!*%0A`;
       message += `_Classy Couture - Be Unique, Be Classy_`;

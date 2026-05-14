@@ -409,11 +409,13 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       msg += `${greeting}%0A%0A`;
 
                       msg += `*ORDER SUMMARY:*%0A`;
-                      viewSale.items.forEach(i => {
-                        msg += `• ${i.productName} (x${i.qty}) - ₹${i.price}%0A`;
+                      viewSale.items.forEach(item => {
+                        const itemPrice = parseFloat(item.price || 0).toFixed(2);
+                        msg += `• ${item.productName} (x${item.qty}) - ₹${itemPrice}%0A`;
                       });
 
-                      msg += `%0A*Grand Total: ₹${viewSale.total}*%0A`;
+                      const grandTotal = parseFloat(viewSale.total || 0).toFixed(2);
+                      msg += `%0A*Grand Total: ₹${grandTotal}*%0A`;
                       msg += `*------------------------------*%0A`;
                       if (publicUrl) {
                         msg += `*DOWNLOAD PDF RECEIPT:*%0A${publicUrl}%0A`;
@@ -434,10 +436,12 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       msg += `Hello *${viewSale.client?.name || 'Guest'}*,%0A`;
                       msg += `${greeting}%0A%0A`;
                       msg += `*ORDER SUMMARY:*%0A`;
-                      viewSale.items.forEach(i => {
-                        msg += `• ${i.productName} (x${i.qty}) - ₹${i.price}%0A`;
+                      viewSale.items.forEach(item => {
+                        const itemPrice = parseFloat(item.price || 0).toFixed(2);
+                        msg += `• ${item.productName} (x${item.qty}) - ₹${itemPrice}%0A`;
                       });
-                      msg += `%0A*Grand Total: ₹${viewSale.total}*%0A`;
+                      const grandTotal = parseFloat(viewSale.total || 0).toFixed(2);
+                      msg += `%0A*Grand Total: ₹${grandTotal}*%0A`;
                       msg += `*------------------------------*%0A`;
                       msg += `*Visit again for more unique designs!*%0A`;
                       msg += `_Classy Couture - Be Unique, Be Classy_`;
