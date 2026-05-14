@@ -3,6 +3,8 @@ import { ChevronLeft, ChevronRight, Search, TrendingUp, Eye, Trash2, Download, P
 import html2pdf from 'html2pdf.js'
 import { orders } from '../../utils/constants'
 
+import supabase from '../../supabase'
+
 function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightSaleId, setHighlightSaleId, sales, setSales, inventory, setInventory, orders, setOrders }) {
   const rowRefs = useRef({});
   const [searchQuery, setSearchQuery] = useState('');
@@ -10,12 +12,12 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightS
   const [saleToDelete, setSaleToDelete] = useState(null);
 
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!saleToDelete) return;
 
-    const id = saleToDelete.id;
-    const updatedSales = sales.filter(s => s.id !== id);
+    const idToDelete = saleToDelete.id;
 
+    // 1. Restore Stock/Orders Logic
     let updatedInventory = [...inventory];
     let updatedOrders = [...orders];
 
@@ -23,15 +25,24 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightS
       if (soldItem.type === 'order') {
         updatedOrders = updatedOrders.map(o => o.id === soldItem.orderId ? { ...o, status: 'Completed' } : o);
       } else {
-        updatedInventory = updatedInventory.map(p => p.id === soldItem.id ? { ...p, quantity: p.quantity + soldItem.qty } : p);
+        updatedInventory = updatedInventory.map(p => p.id === soldItem.id ? { ...p, quantity: (p.quantity || 0) + soldItem.qty } : p);
       }
     });
 
+    // 2. Optimistic UI update (Instant)
+    const updatedSales = sales.filter(s => s.id !== idToDelete);
     setSales(updatedSales);
     setInventory(updatedInventory);
     setOrders(updatedOrders);
     setSaleToDelete(null);
-    if (showGlobalToast) showGlobalToast('Sale Deleted', 'Stock/Order status restored successfully.');
+    if (showGlobalToast) showGlobalToast('Sale Deleted', 'Record removed instantly.');
+
+    // 3. Background Cloud Sync
+    try {
+      await supabase.from('erp_sales').delete().eq('id', idToDelete);
+    } catch (err) {
+      console.error("Cloud delete failed:", err);
+    }
   };
 
   const filteredSales = sales.filter(s => {

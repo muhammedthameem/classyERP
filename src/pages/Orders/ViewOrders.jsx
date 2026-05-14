@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2, Plus } from 'lucide-react'
 import { formatDateDDMMYY, getIndianDate, orders } from '../../utils/constants'
+import supabase from '../../supabase'
 
 function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory }) {
   const rowRefs = useRef({});
@@ -28,8 +29,10 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
     setOrders(newOrders)
   }
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (orderToDelete) {
+      const idToDelete = orderToDelete.id;
+      
       // Restore inventory if order had internal materials
       if (orderToDelete.sourceOfMaterial === 'Internal' && orderToDelete.internalItems?.length > 0) {
         let updatedInventory = [...inventory];
@@ -46,10 +49,18 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
         setInventory(updatedInventory);
       }
 
-      const updated = orders.filter(o => o.id !== orderToDelete.id)
+      // 1. Optimistic UI update (Instant)
+      const updated = orders.filter(o => o.id !== idToDelete)
       saveOrders(updated)
       setOrderToDelete(null)
-      if (showGlobalToast) showGlobalToast('Deleted', 'Order has been deleted successfully.')
+      if (showGlobalToast) showGlobalToast('Deleted', 'Order removed instantly.')
+
+      // 2. Background Cloud Sync
+      try {
+        await supabase.from('erp_orders').delete().eq('id', idToDelete);
+      } catch (err) {
+        console.error("Cloud delete failed:", err);
+      }
     }
   }
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight, Package, Search, Eye, Pencil, Trash2 } from 'lucide-react'
+import supabase from '../../supabase'
 
 function ViewInventoryPage({ themeStyle, setCurrentPage, setSelectedInventoryItem, setInventoryDetailMode, showGlobalToast, highlightInventoryId, setHighlightInventoryId, inventory, setInventory }) {
   const rowRefs = useRef({});
@@ -41,12 +42,22 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, setSelectedInventoryIte
   const totalPages = Math.ceil(filteredInventory.length / itemsPerPage);
   const paginatedInventory = filteredInventory.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage);
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (itemToDelete) {
-      const updated = inventory.filter(item => item.id !== itemToDelete.id);
+      const idToDelete = itemToDelete.id;
+
+      // 1. Optimistic UI Update (Instant)
+      const updated = inventory.filter(item => item.id !== idToDelete);
       setInventory(updated);
       setItemToDelete(null);
-      if (showGlobalToast) showGlobalToast('Deleted!', 'Inventory item deleted successfully.');
+      if (showGlobalToast) showGlobalToast('Deleted!', 'Item removed instantly.');
+
+      // 2. Background Cloud Sync
+      try {
+        await supabase.from('erp_inventory').delete().eq('id', idToDelete);
+      } catch (err) {
+        console.error("Cloud delete failed:", err);
+      }
     }
   };
 
