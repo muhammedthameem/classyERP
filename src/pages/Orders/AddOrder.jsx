@@ -370,11 +370,12 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                           const searchVal = clientSearch.trim();
                           const filtered = (clientsList || []).filter(c => (c.name || '').toLowerCase().includes(searchVal.toLowerCase()));
                           
-                          if (filtered.length > 0 && filtered.some(c => c.name.toLowerCase() === searchVal.toLowerCase())) {
-                            const exactMatch = filtered.find(c => c.name.toLowerCase() === searchVal.toLowerCase());
-                            setClientName(exactMatch.name);
+                          if (filtered.length > 0) {
+                            // If there are matches, pick the first one (most relevant)
+                            setClientName(filtered[0].name);
                             setShowClientDropdown(false);
                           } else if (searchVal) {
+                            // Only go to Add Client if NO matches were found
                             localStorage.setItem('prefillClientName', searchVal);
                             setCurrentPage('add-clients');
                           }
