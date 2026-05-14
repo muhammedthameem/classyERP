@@ -22,6 +22,7 @@ function App() {
 
   // REAL-TIME SYNC FROM SUPABASE
   useEffect(() => {
+    let isMounted = true;
     const fetchData = async () => {
       try {
         const [u, c, o, s, i, a, cfg] = await Promise.all([
@@ -34,12 +35,14 @@ function App() {
           supabase.from('erp_config').select('*')
         ]);
 
-        if (u.data) setUsers(u.data.map(item => item.data));
-        if (c.data) setClients(c.data.map(item => item.data));
-        if (o.data) setOrders(o.data.map(item => item.data));
-        if (s.data) setSales(s.data.map(item => item.data));
-        if (i.data) setInventory(i.data.map(item => item.data));
-        if (a.data) setActivities(a.data.map(item => item.data));
+        if (!isMounted) return;
+
+        if (u.data) setUsers(u.data.map(item => item.data || item));
+        if (c.data) setClients(c.data.map(item => item.data || item));
+        if (o.data) setOrders(o.data.map(item => item.data || item));
+        if (s.data) setSales(s.data.map(item => item.data || item));
+        if (i.data) setInventory(i.data.map(item => item.data || item));
+        if (a.data) setActivities(a.data.map(item => item.data || item));
         
         if (cfg.data) {
           cfg.data.forEach(item => {
@@ -70,6 +73,7 @@ function App() {
     ];
 
     return () => {
+      isMounted = false;
       channels.forEach(channel => supabase.removeChannel(channel));
     };
   }, []);

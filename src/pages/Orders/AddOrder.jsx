@@ -335,7 +335,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
       <form onSubmit={handleSave} className="space-y-6">
 
         {/* Step 1: Client Selection */}
-        <section className="rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-8 shadow-[var(--shadow)] backdrop-blur relative z-[60]">
+        <section className="rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-8 shadow-[var(--shadow)] backdrop-blur relative">
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)]">
@@ -491,8 +491,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
 
           <div className="grid gap-6">
             {orderItems.map((item, idx) => (
-              <div 
-                key={item.id} 
+              <div
+                key={item.id}
                 ref={idx === orderItems.length - 1 ? lastItemRef : null}
                 className="relative rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] transition-all group scroll-mt-24"
               >
