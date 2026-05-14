@@ -7,6 +7,20 @@ function DeliveryAlertModal({ orders }) {
   const [snoozed, setSnoozed] = useState({}); // { id: wakeupTimestamp }
   const audioRef = useRef(null);
 
+  // 0. INITIALIZE PERSISTENT DISMISSALS
+  useEffect(() => {
+    const todayStr = new Date().toDateString();
+    const stored = localStorage.getItem('erp_dismissed_alerts');
+    if (stored) {
+      const { date, ids } = JSON.parse(stored);
+      if (date === todayStr) {
+        setDismissedIds(ids);
+      } else {
+        localStorage.removeItem('erp_dismissed_alerts');
+      }
+    }
+  }, []);
+
   // 1. SOUND LOGIC
   useEffect(() => {
     // Initialize audio once
@@ -65,7 +79,10 @@ function DeliveryAlertModal({ orders }) {
   }, [orders, dismissedIds, snoozed, currentAlert]);
 
   const handleStop = (id) => {
-    setDismissedIds(prev => [...prev, id]);
+    const todayStr = new Date().toDateString();
+    const newDismissed = [...dismissedIds, id];
+    setDismissedIds(newDismissed);
+    localStorage.setItem('erp_dismissed_alerts', JSON.stringify({ date: todayStr, ids: newDismissed }));
     setCurrentAlert(null);
     audioRef.current?.pause();
   };
