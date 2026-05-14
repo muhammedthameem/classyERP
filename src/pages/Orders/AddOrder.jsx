@@ -14,6 +14,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
   const [photoPreview, setPhotoPreview] = useState(null)
   const [notes, setNotes] = useState('')
   const lastItemRef = useRef(null)
+  const isInitialMount = useRef(true)
 
   // Multiple Products (Order Items)
   const [orderItems, setOrderItems] = useState([
@@ -35,8 +36,12 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
     }
   ])
 
-  // Auto-scroll to current last item (Addition or Deletion)
+  // Auto-scroll to current last item (Addition or Deletion) - Ignore initial mount
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     if (lastItemRef.current) {
       lastItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
