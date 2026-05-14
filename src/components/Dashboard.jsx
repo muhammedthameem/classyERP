@@ -32,7 +32,7 @@ function Dashboard({
   inventoryUnits, setInventoryUnits,
   cloudLoaded,
   syncError,
-  saveSale, saveOrder, saveClient, saveUser, deleteClient, deleteOrder
+  saveSale, saveOrder, saveClient, saveUser, deleteClient, deleteOrder, saveConfig
 }) {
   const [showAccountMenu, setShowAccountMenu] = useState(false)
   const [showAccountPanel, setShowAccountPanel] = useState(false)
@@ -814,7 +814,7 @@ function Dashboard({
                 </div>
               </div>
             }>
-              {currentPage === 'add-order' && <AddOrderPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} orders={orders} setOrders={setOrders} clients={clients} inventory={inventory} setInventory={setInventory} orderTypes={orderTypes} setOrderTypes={setOrderTypes} saveOrder={saveOrder} />}
+              {currentPage === 'add-order' && <AddOrderPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} orders={orders} setOrders={setOrders} clients={clients} inventory={inventory} setInventory={setInventory} orderTypes={orderTypes} setOrderTypes={setOrderTypes} productTypes={productTypes} setProductTypes={setProductTypes} inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits} saveOrder={saveOrder} saveConfig={saveConfig} />}
               {currentPage === 'view-orders' && <ViewOrdersPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightOrderId={highlightOrderId} setHighlightOrderId={setHighlightOrderId} orders={orders} setOrders={setOrders} inventory={inventory} setInventory={setInventory} saveOrder={saveOrder} deleteOrder={deleteOrder} />}
               {currentPage === 'add-clients' && <AddClientsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} clients={clients} setClients={setClients} saveClient={saveClient} />}
               {currentPage === 'view-clients' && <ViewClientsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} setSelectedClient={setSelectedClient} setClientDetailMode={setClientDetailMode} showGlobalToast={showGlobalToast} currentUser={user} highlightClientId={highlightClientId} setHighlightClientId={setHighlightClientId} clients={clients} setClients={setClients} saveClient={saveClient} deleteClient={deleteClient} />}

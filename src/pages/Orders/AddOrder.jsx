@@ -3,7 +3,7 @@ import { ChevronDown, Search, Settings, ShoppingBag, Pencil, Trash2, Plus, Packa
 import { formatDateDDMMYY, getIndianDate, orders, products } from '../../utils/constants'
 import CustomDatePicker from '../../components/CustomDatePicker'
 
-function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, setOrders, clients, inventory, setInventory, orderTypes, setOrderTypes, saveOrder }) {
+function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, setOrders, clients, inventory, setInventory, orderTypes, setOrderTypes, productTypes, setProductTypes, inventoryUnits, setInventoryUnits, saveOrder, saveConfig }) {
   const [clientName, setClientName] = useState('')
   const [showClientDropdown, setShowClientDropdown] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
@@ -34,20 +34,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
     }
   ])
 
-  const [productTypesList, setProductTypesList] = useState(() => {
-    const saved = localStorage.getItem("productTypes")
-    if (saved) return JSON.parse(saved)
-    return [
-      "Shirt", "T-Shirt", "Blouse", "Kurta", "Pants", "Jeans", "Trousers", "Dress", "Saree",
-      "Salwar Kameez", "Lehenga", "Blazer", "Suit", "Jacket", "Coat", "Skirt", "Shorts",
-      "Sweater", "Cardigan", "Anarkali",
-    ]
-  })
-  const [unitsList, setUnitsList] = useState(() => {
-    const saved = localStorage.getItem("inventoryUnits")
-    if (saved) return JSON.parse(saved)
-    return ["nos", "mtr", "kg", "yd", "set"]
-  })
+  const productTypesList = productTypes || []
+  const unitsList = inventoryUnits || []
 
   const [dailyOrderLimit, setDailyOrderLimit] = useState(6)
   const [specificDateLimits, setSpecificDateLimits] = useState({})
@@ -538,14 +526,14 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                                   if (e.key === 'Enter') {
                                     e.preventDefault();
                                     const nt = productTypeSearch.trim();
-                                    if (nt && !allProductTypes.some(t => t.toLowerCase() === nt.toLowerCase())) {
-                                      const updatedList = [...productTypesList, nt];
-                                      setProductTypesList(updatedList);
-                                      localStorage.setItem("productTypes", JSON.stringify(updatedList));
+                                    if (nt && !productTypes.some(t => t.toLowerCase() === nt.toLowerCase())) {
+                                      const updatedList = [...productTypes, nt];
+                                      setProductTypes(updatedList);
+                                      if (saveConfig) saveConfig("productTypes", updatedList);
                                       updateOrderItem(idx, { product: nt, showProductTypeDropdown: false });
                                       if (showGlobalToast) showGlobalToast('Added', `New product "${nt}" created.`);
                                     } else if (nt) {
-                                      const ex = allProductTypes.find(t => t.toLowerCase().includes(nt.toLowerCase()));
+                                      const ex = productTypes.find(t => t.toLowerCase().includes(nt.toLowerCase()));
                                       if (ex) updateOrderItem(idx, { product: ex, showProductTypeDropdown: false });
                                     }
                                   }
@@ -570,8 +558,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         const updated = productTypesList.filter(item => item !== t);
-                                        setProductTypesList(updated);
-                                        localStorage.setItem("productTypes", JSON.stringify(updated));
+                                        setProductTypes(updated);
+                                        if (saveConfig) saveConfig("productTypes", updated);
                                         if (showGlobalToast) showGlobalToast('Removed', `"${t}" deleted.`);
                                       }}
                                     >
@@ -588,8 +576,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                                       const nt = productTypeSearch.trim();
                                       if (nt) {
                                         const updatedList = [...productTypesList, nt];
-                                        setProductTypesList(updatedList);
-                                        localStorage.setItem("productTypes", JSON.stringify(updatedList));
+                                        setProductTypes(updatedList);
+                                        if (saveConfig) saveConfig("productTypes", updatedList);
                                         updateOrderItem(idx, { product: nt, showProductTypeDropdown: false });
                                         if (showGlobalToast) showGlobalToast('Added', `New product "${nt}" created.`);
                                       }

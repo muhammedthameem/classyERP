@@ -190,6 +190,10 @@ function App() {
               const { error } = await supabase.from('erp_orders').delete().eq('id', id.toString());
               if (error) alert("Delete Failed: " + error.message);
             }}
+            saveConfig={async (id, data) => {
+              const { error } = await supabase.from('erp_config').upsert([{ id, data }]);
+              if (error) console.error("Config Save Failed:", error);
+            }}
           />
           <DeliveryAlertModal orders={orders} />
         </>
