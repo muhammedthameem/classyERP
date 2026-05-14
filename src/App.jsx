@@ -85,39 +85,49 @@ function App() {
   useEffect(() => { localStorage.setItem('productTypes', JSON.stringify(productTypes)) }, [productTypes])
   useEffect(() => { localStorage.setItem('inventoryUnits', JSON.stringify(inventoryUnits)) }, [inventoryUnits])
 
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    const sessionStr = localStorage.getItem('erp_session')
-    if (sessionStr) {
-      try {
-        const session = JSON.parse(sessionStr)
-        if (Date.now() - session.timestamp < 86400000) return true
-        localStorage.removeItem('erp_session')
-      } catch (e) { }
-    }
-    return false
-  })
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [user, setUser] = useState(null)
 
-  const [user, setUser] = useState(() => {
-    const sessionStr = localStorage.getItem('erp_session')
-    if (sessionStr) {
-      try {
-        const session = JSON.parse(sessionStr)
-        if (Date.now() - session.timestamp < 86400000) return session.user
-      } catch (e) { }
-    }
-    return null
-  })
+  // 1. RECOVER SUPABASE SESSION
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setIsLoggedIn(true);
+        // Fetch profile from erp_users to get Name/Role
+        supabase.from('erp_users').select('*').eq('id', session.user.email).single().then(({ data }) => {
+          if (data) {
+            setUser({
+              id: data.data.id,
+              email: data.data.email,
+              name: data.data.name,
+              role: data.data.designation || 'Staff'
+            });
+          } else {
+            setUser({ id: session.user.id, email: session.user.email, name: session.user.email.split('@')[0], role: 'Admin' });
+          }
+        });
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setIsLoggedIn(true);
+      } else {
+        setIsLoggedIn(false);
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleLogin = (loggedInUser) => {
     setUser(loggedInUser)
     setIsLoggedIn(true)
-    localStorage.setItem('erp_session', JSON.stringify({
-      user: loggedInUser,
-      timestamp: Date.now()
-    }))
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setUser(null)
     setIsLoggedIn(false)
     localStorage.removeItem('erp_session')
