@@ -212,7 +212,7 @@ function Dashboard({
 
       <aside
         className={`fixed inset-y-0 left-0 z-[100] border-r border-[var(--border)] text-[var(--text)] shadow-[15px_0_80px_rgba(0,0,0,0.15)] ${transitionClass} lg:flex lg:flex-col ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-          } ${isSidebarCollapsed ? 'lg:w-24' : 'lg:w-72'} w-72 bg-[var(--surface-strong)] overflow-hidden`}
+          } ${isSidebarCollapsed ? 'lg:w-24' : 'lg:w-72'} w-72 bg-[var(--surface-strong)]`}
       >
         <div className="flex h-20 items-center justify-between border-b border-[var(--border)] px-5">
           <div className="flex min-w-0 items-center gap-3">
@@ -238,7 +238,7 @@ function Dashboard({
               <ChevronsLeft size={18} />
             </button>
             <button
-              className="hidden grid h-9 w-9 place-items-center rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] text-[var(--muted)] transition hover:text-[var(--accent)] lg:grid"
+              className="hidden grid h-9 w-9 place-items-center rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] text-[var(--muted)] transition hover:text-[var(--accent)] lg:grid absolute right-[-20ox]"
               onClick={() => setIsSidebarCollapsed((value) => !value)}
               title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               type="button"

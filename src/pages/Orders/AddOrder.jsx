@@ -31,7 +31,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
       showProductTypeDropdown: false,
       showInventoryDropdown: null,
       orderDate: getIndianDate(),
-      deliveryDate: '' 
+      deliveryDate: ''
     }
   ])
 
@@ -480,7 +480,11 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
 
           <div className="grid gap-6">
             {orderItems.map((item, idx) => (
-              <div key={item.id} className="relative rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] transition-all group">
+              <div 
+                key={item.id} 
+                ref={idx === orderItems.length - 1 ? lastItemRef : null}
+                className="relative rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] transition-all group scroll-mt-24"
+              >
                 <div className="absolute -left-2 top-6 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent)] text-[10px] font-black text-white shadow-lg">
                   {idx + 1}
                 </div>
@@ -592,24 +596,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                         )}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="relative">
-                          <span className="mb-2 block text-sm font-medium text-[var(--text)]">Order Date</span>
-                          <CustomDatePicker 
-                            value={item.orderDate} 
-                            onChange={(val) => updateOrderItem(idx, { orderDate: val })} 
-                          />
-                        </div>
-                        <div className="relative">
-                          <span className="mb-2 block text-sm font-medium text-[var(--text)]">Delivery Date <span className="text-red-500">*</span></span>
-                          <CustomDatePicker 
-                            value={item.deliveryDate} 
-                            onChange={(val) => updateOrderItem(idx, { deliveryDate: val })} 
-                            minDate={item.orderDate}
-                            placeholder="Select date"
-                          />
-                        </div>
-                      </div>
+
 
                       <div className="relative">
                         <span className="mb-2 block text-sm font-medium text-[var(--text)]">Order Type</span>
@@ -699,6 +686,25 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                             </div>
                           </>
                         )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="relative">
+                        <span className="mb-2 block text-sm font-medium text-[var(--text)]">Order Date</span>
+                        <CustomDatePicker
+                          value={item.orderDate}
+                          onChange={(val) => updateOrderItem(idx, { orderDate: val })}
+                        />
+                      </div>
+                      <div className="relative">
+                        <span className="mb-2 block text-sm font-medium text-[var(--text)]">Delivery Date <span className="text-red-500">*</span></span>
+                        <CustomDatePicker
+                          value={item.deliveryDate}
+                          onChange={(val) => updateOrderItem(idx, { deliveryDate: val })}
+                          minDate={item.orderDate}
+                          placeholder="Select date"
+                        />
                       </div>
                     </div>
 
@@ -1081,7 +1087,6 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
 
               </div>
             ))}
-            <div ref={lastItemRef} className="h-4" />
           </div>
         </section>
 
