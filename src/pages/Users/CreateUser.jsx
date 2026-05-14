@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Search, ShieldCheck, Eye } from 'lucide-react'
+import { ShieldCheck, Eye } from 'lucide-react'
+import supabase from '../../supabase'
 
 function CreateUserPage({ themeStyle, setCurrentPage, showGlobalToast, users, setUsers, designations, setDesignations, currentUser, saveUser }) {
   const [name, setName] = useState('')
@@ -13,8 +14,9 @@ function CreateUserPage({ themeStyle, setCurrentPage, showGlobalToast, users, se
   const [showRepeatPassword, setShowRepeatPassword] = useState(false)
   const [showDesignationDropdown, setShowDesignationDropdown] = useState(false)
   const [designationSearch, setDesignationSearch] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (currentUser?.role !== 'Admin') {
       if (showGlobalToast) showGlobalToast('Access Denied', 'Only Admins can create new users.')
@@ -28,23 +30,40 @@ function CreateUserPage({ themeStyle, setCurrentPage, showGlobalToast, users, se
       if (showGlobalToast) showGlobalToast('Error', 'Passwords do not match.')
       return
     }
-    const newUser = {
-      id: Date.now(),
-      name,
-      email,
-      phone,
-      address,
-      designation,
-      password, // Note: For a real production app, this should be hashed on the server.
-      createdAt: new Date().toISOString()
+
+    setIsCreating(true)
+    try {
+      // 1. Register in Supabase Auth Vault
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email.toLowerCase(),
+        password: password,
+      });
+
+      if (authError) throw authError;
+
+      const newUser = {
+        id: email.toLowerCase(), // Use email as unique ID
+        name,
+        email: email.toLowerCase(),
+        phone,
+        address,
+        designation,
+        password, // Keep for display/reference
+        createdAt: new Date().toISOString()
+      }
+
+      // 2. Save Profile Data
+      setUsers([...users, newUser])
+      if (saveUser) await saveUser(newUser);
+
+      if (showGlobalToast) showGlobalToast('Success', 'User created and authorized successfully.')
+      setCurrentPage('view-users')
+    } catch (error) {
+      console.error("User Creation Error:", error.message);
+      if (showGlobalToast) showGlobalToast('Error', 'Could not register user: ' + error.message)
+    } finally {
+      setIsCreating(false)
     }
-    setUsers([...users, newUser])
-
-    // Cloud Sync (Firebase + Supabase)
-    if (saveUser) saveUser(newUser);
-
-    if (showGlobalToast) showGlobalToast('Success', 'User created successfully.')
-    setCurrentPage('view-users')
   }
 
   return (
@@ -203,12 +222,13 @@ function CreateUserPage({ themeStyle, setCurrentPage, showGlobalToast, users, se
           >
             Cancel
           </button>
-          <button
-            className="rounded-xl bg-[var(--accent)] px-6 py-3 font-semibold text-white shadow-lg shadow-black/10 transition hover:brightness-95"
-            type="submit"
-          >
-            Create User
-          </button>
+            <button
+              className="rounded-xl bg-[var(--accent)] px-6 py-3 font-semibold text-white shadow-lg shadow-black/10 transition hover:brightness-95 disabled:opacity-50"
+              type="submit"
+              disabled={isCreating}
+            >
+              {isCreating ? 'Creating...' : 'Create User'}
+            </button>
         </div>
       </form>
     </div>
