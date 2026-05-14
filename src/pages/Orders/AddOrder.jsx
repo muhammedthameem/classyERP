@@ -580,6 +580,20 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                               className="mb-2 w-full rounded-xl border border-[var(--border)] bg-transparent py-2 px-3 text-sm outline-none"
                               value={typeSearch}
                               onChange={(e) => setTypeSearch(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  const nt = typeSearch.trim();
+                                  if (nt && !orderTypes.some(t => t.toLowerCase() === nt.toLowerCase())) {
+                                    setOrderTypes([...orderTypes, nt]);
+                                    updateOrderItem(idx, { orderType: nt, showTypeDropdown: false });
+                                    if (showGlobalToast) showGlobalToast('Added', `New type "${nt}" created.`);
+                                  } else if (nt) {
+                                    const ex = orderTypes.find(t => t.toLowerCase().includes(nt.toLowerCase()));
+                                    if (ex) updateOrderItem(idx, { orderType: ex, showTypeDropdown: false });
+                                  }
+                                }
+                              }}
                               autoFocus
                             />
                             <div className="max-h-48 overflow-y-auto space-y-1">
@@ -595,6 +609,23 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                                   {t}
                                 </button>
                               ))}
+                              
+                              {typeSearch && !orderTypes.some(t => t.toLowerCase() === typeSearch.toLowerCase()) && (
+                                <button
+                                  type="button"
+                                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-[var(--accent)] bg-[var(--accent-soft)] transition hover:brightness-95 flex items-center gap-2 mt-1"
+                                  onClick={() => {
+                                    const nt = typeSearch.trim();
+                                    if (nt) {
+                                      setOrderTypes([...orderTypes, nt]);
+                                      updateOrderItem(idx, { orderType: nt, showTypeDropdown: false });
+                                      if (showGlobalToast) showGlobalToast('Added', `New type "${nt}" created.`);
+                                    }
+                                  }}
+                                >
+                                  <Plus size={14} /> Add New Type: "{typeSearch}"
+                                </button>
+                              )}
                             </div>
                           </div>
                         </>
