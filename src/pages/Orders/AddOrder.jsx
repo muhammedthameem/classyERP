@@ -35,9 +35,9 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
     }
   ])
 
-  // Auto-scroll to new item
+  // Auto-scroll to current last item (Addition or Deletion)
   useEffect(() => {
-    if (orderItems.length > 1 && lastItemRef.current) {
+    if (lastItemRef.current) {
       lastItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [orderItems.length]);
