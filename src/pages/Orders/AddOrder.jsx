@@ -534,6 +534,22 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                               className="mb-2 w-full rounded-xl border border-[var(--border)] bg-transparent py-2 px-3 text-sm outline-none"
                               value={productTypeSearch}
                               onChange={(e) => setProductTypeSearch(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  const nt = productTypeSearch.trim();
+                                  if (nt && !allProductTypes.some(t => t.toLowerCase() === nt.toLowerCase())) {
+                                    const updatedList = [...productTypesList, nt];
+                                    setProductTypesList(updatedList);
+                                    localStorage.setItem("productTypes", JSON.stringify(updatedList));
+                                    updateOrderItem(idx, { product: nt, showProductTypeDropdown: false });
+                                    if (showGlobalToast) showGlobalToast('Added', `New product "${nt}" created.`);
+                                  } else if (nt) {
+                                    const ex = allProductTypes.find(t => t.toLowerCase().includes(nt.toLowerCase()));
+                                    if (ex) updateOrderItem(idx, { product: ex, showProductTypeDropdown: false });
+                                  }
+                                }
+                              }}
                               autoFocus
                             />
                             <div className="max-h-48 overflow-y-auto space-y-1">
@@ -549,6 +565,25 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                                   {t}
                                 </button>
                               ))}
+                              
+                              {productTypeSearch && !allProductTypes.some(t => t.toLowerCase() === productTypeSearch.toLowerCase()) && (
+                                <button
+                                  type="button"
+                                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-[var(--accent)] bg-[var(--accent-soft)] transition hover:brightness-95 flex items-center gap-2 mt-1"
+                                  onClick={() => {
+                                    const nt = productTypeSearch.trim();
+                                    if (nt) {
+                                      const updatedList = [...productTypesList, nt];
+                                      setProductTypesList(updatedList);
+                                      localStorage.setItem("productTypes", JSON.stringify(updatedList));
+                                      updateOrderItem(idx, { product: nt, showProductTypeDropdown: false });
+                                      if (showGlobalToast) showGlobalToast('Added', `New product "${nt}" created.`);
+                                    }
+                                  }}
+                                >
+                                  <Plus size={14} /> Add New Product: "{productTypeSearch}"
+                                </button>
+                              )}
                             </div>
                           </div>
                         </>
