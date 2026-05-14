@@ -415,8 +415,10 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
 
                       msg += `%0A*Grand Total: ₹${viewSale.total}*%0A`;
                       msg += `*------------------------------*%0A`;
-                      msg += `*DOWNLOAD PDF RECEIPT:*%0A${publicUrl}%0A`;
-                      msg += `*------------------------------*%0A`;
+                      if (publicUrl) {
+                        msg += `*DOWNLOAD PDF RECEIPT:*%0A${publicUrl}%0A`;
+                        msg += `*------------------------------*%0A`;
+                      }
                       msg += `*Visit again for more unique designs!*%0A`;
                       msg += `_Classy Couture - Be Unique, Be Classy_`;
 
@@ -425,7 +427,26 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       window.open(`https://wa.me/${formattedPhone}?text=${msg}`, '_blank');
                     } catch (err) {
                       console.error('WhatsApp Share Error:', err);
-                      if (showGlobalToast) showGlobalToast('Error', 'Failed to generate receipt link.');
+                      // Fallback: Send message WITHOUT PDF link if upload fails
+                      const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
+                      let msg = `*✨ INVOICE: ${viewSale.saleId} ✨*%0A`;
+                      msg += `*------------------------------*%0A`;
+                      msg += `Hello *${viewSale.client?.name || 'Guest'}*,%0A`;
+                      msg += `${greeting}%0A%0A`;
+                      msg += `*ORDER SUMMARY:*%0A`;
+                      viewSale.items.forEach(i => {
+                        msg += `• ${i.productName} (x${i.qty}) - ₹${i.price}%0A`;
+                      });
+                      msg += `%0A*Grand Total: ₹${viewSale.total}*%0A`;
+                      msg += `*------------------------------*%0A`;
+                      msg += `*Visit again for more unique designs!*%0A`;
+                      msg += `_Classy Couture - Be Unique, Be Classy_`;
+
+                      const phone = viewSale.client?.phone ? viewSale.client.phone.replace(/[^0-9]/g, '') : '';
+                      const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
+                      window.open(`https://wa.me/${formattedPhone}?text=${msg}`, '_blank');
+
+                      if (showGlobalToast) showGlobalToast('Warning', 'Bill sent without PDF link (Supabase storage not ready).');
                     } finally {
                       setIsSendingPdf(false);
                     }

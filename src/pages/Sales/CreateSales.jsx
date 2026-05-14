@@ -355,8 +355,10 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
 
       message += `%0A*Grand Total: ₹${parseFloat(showReceipt.total).toFixed(2)}*%0A`;
       message += `*------------------------------*%0A`;
-      message += `📄 *DOWNLOAD DIGITAL RECEIPT:*%0A${publicUrl}%0A`;
-      message += `*------------------------------*%0A`;
+      if (publicUrl) {
+        message += `📄 *DOWNLOAD DIGITAL RECEIPT:*%0A${publicUrl}%0A`;
+        message += `*------------------------------*%0A`;
+      }
       message += `*Visit again for more unique designs!*%0A`;
       message += `_Classy Couture - Be Unique, Be Classy_`;
 
@@ -366,7 +368,26 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
     } catch (err) {
       console.error('WhatsApp Share Error:', err);
-      if (showGlobalToast) showGlobalToast('Error', 'Failed to generate receipt link.');
+      // Fallback: Send message WITHOUT PDF link if upload fails
+      const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
+      let message = `*✨ INVOICE: ${showReceipt.saleId} ✨*%0A`;
+      message += `*------------------------------*%0A`;
+      message += `Hello *${showReceipt.client.name}*,%0A`;
+      message += `${greeting}%0A%0A`;
+      message += `*ORDER SUMMARY:*%0A`;
+      showReceipt.items.forEach(item => {
+        message += `• ${item.productName} (x${item.qty}) - ₹${item.price}%0A`;
+      });
+      message += `%0A*Grand Total: ₹${parseFloat(showReceipt.total).toFixed(2)}*%0A`;
+      message += `*------------------------------*%0A`;
+      message += `*Visit again for more unique designs!*%0A`;
+      message += `_Classy Couture - Be Unique, Be Classy_`;
+
+      const phone = showReceipt.client.phone ? showReceipt.client.phone.replace(/[^0-9]/g, '') : '';
+      const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
+      window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
+
+      if (showGlobalToast) showGlobalToast('Warning', 'Bill sent without PDF link (Supabase storage not ready).');
     } finally {
       setIsSendingPdf(false);
     }
