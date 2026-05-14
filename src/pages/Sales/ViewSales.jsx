@@ -10,6 +10,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
   const [searchQuery, setSearchQuery] = useState('');
   const [viewSale, setViewSale] = useState(null);
   const [saleToDelete, setSaleToDelete] = useState(null);
+  const [isSendingPdf, setIsSendingPdf] = useState(false);
 
 
   const handleDeleteConfirm = async () => {
@@ -364,31 +365,75 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                   <Download size={18} /> Print Bill
                 </button>
                 <button
-                  onClick={() => {
-                    const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
-                    let msg = `*✨ INVOICE: ${viewSale.saleId} ✨*%0A`;
-                    msg += `*------------------------------*%0A`;
-                    msg += `Hello *${viewSale.client?.name || 'Guest'}*,%0A`;
-                    msg += `${greeting}%0A%0A`;
+                  disabled={isSendingPdf}
+                  onClick={async () => {
+                    try {
+                      setIsSendingPdf(true);
+                      if (showGlobalToast) showGlobalToast('Generating', 'Uploading receipt PDF to secure server...');
 
-                    msg += `*ORDER SUMMARY:*%0A`;
-                    viewSale.items.forEach(i => {
-                      msg += `• ${i.productName} (x${i.qty}) - ₹${i.price}%0A`;
-                    });
+                      const visualBill = document.getElementById('printable-bill-view');
+                      if (!visualBill) {
+                        if (showGlobalToast) showGlobalToast('Error', 'Receipt container not found.');
+                        return;
+                      }
 
-                    msg += `%0A*Grand Total: ₹${viewSale.total}*%0A`;
-                    msg += `*------------------------------*%0A`;
-                    msg += `*Visit again for more unique designs!*%0A`;
-                    msg += `_Classy Couture - Be Unique, Be Classy_`;
+                      const opt = {
+                        margin: 0,
+                        filename: `Receipt_${viewSale.saleId}.pdf`,
+                        image: { type: 'jpeg', quality: 1 },
+                        html2canvas: { scale: 2, useCORS: true },
+                        jsPDF: { unit: 'mm', format: [80, 200], orientation: 'portrait' }
+                      };
 
-                    const phone = viewSale.client?.phone ? viewSale.client.phone.replace(/[^0-9]/g, '') : '';
-                    const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
-                    window.open(`https://wa.me/${formattedPhone}?text=${msg}`, '_blank');
+                      const pdfBlob = await html2pdf().set(opt).from(visualBill).output('blob');
+                      const fileName = `receipts/${viewSale.saleId}_${Date.now()}.pdf`;
+                      
+                      const { data, error: uploadError } = await supabase.storage
+                        .from('receipts')
+                        .upload(fileName, pdfBlob, {
+                          contentType: 'application/pdf',
+                          cacheControl: '3600',
+                          upsert: false
+                        });
+
+                      if (uploadError) throw uploadError;
+
+                      const { data: { publicUrl } } = supabase.storage
+                        .from('receipts')
+                        .getPublicUrl(fileName);
+
+                      const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
+                      let msg = `*✨ INVOICE: ${viewSale.saleId} ✨*%0A`;
+                      msg += `*------------------------------*%0A`;
+                      msg += `Hello *${viewSale.client?.name || 'Guest'}*,%0A`;
+                      msg += `${greeting}%0A%0A`;
+
+                      msg += `*ORDER SUMMARY:*%0A`;
+                      viewSale.items.forEach(i => {
+                        msg += `• ${i.productName} (x${i.qty}) - ₹${i.price}%0A`;
+                      });
+
+                      msg += `%0A*Grand Total: ₹${viewSale.total}*%0A`;
+                      msg += `*------------------------------*%0A`;
+                      msg += `*DOWNLOAD PDF RECEIPT:*%0A${publicUrl}%0A`;
+                      msg += `*------------------------------*%0A`;
+                      msg += `*Visit again for more unique designs!*%0A`;
+                      msg += `_Classy Couture - Be Unique, Be Classy_`;
+
+                      const phone = viewSale.client?.phone ? viewSale.client.phone.replace(/[^0-9]/g, '') : '';
+                      const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
+                      window.open(`https://wa.me/${formattedPhone}?text=${msg}`, '_blank');
+                    } catch (err) {
+                      console.error('WhatsApp Share Error:', err);
+                      if (showGlobalToast) showGlobalToast('Error', 'Failed to generate receipt link.');
+                    } finally {
+                      setIsSendingPdf(false);
+                    }
                   }}
-                  className="flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] py-3 text-sm font-bold text-white shadow-lg shadow-[#25D366]/20 transition hover:brightness-95"
+                  className={`flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] py-3 text-sm font-bold text-white shadow-lg shadow-[#25D366]/20 transition hover:brightness-95 ${isSendingPdf ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="fill-white"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-11.4 8.38 8.38 0 0 1 3.8.9L22 4Z" /></svg>
-                  WhatsApp
+                  {isSendingPdf ? 'Generating Link...' : 'WhatsApp'}
                 </button>
               </div>
             </div>

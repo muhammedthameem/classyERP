@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Package, Search, TrendingUp, UsersRound, Trash2, Download, ShoppingCart, CheckCircle, Plus } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
+import supabase from '../../supabase'
 import { orders } from '../../utils/constants'
 
 function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventory, setInventory, clients, setClients, orders, setOrders, sales, setSales, saveSale, saveOrder }) {
@@ -14,6 +15,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
   const [selectionMode, setSelectionMode] = useState('inventory');
   const [showReceipt, setShowReceipt] = useState(null);
   const [cartAlert, setCartAlert] = useState(null); // { title: '', message: '', type: 'warning'|'error' }
+  const [isSendingPdf, setIsSendingPdf] = useState(false);
 
 
   useEffect(() => {
@@ -302,30 +304,72 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     });
   };
 
-  const handleWhatsApp = () => {
-    const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
-    let message = `*✨ INVOICE: ${showReceipt.saleId} ✨*%0A`;
-    message += `*------------------------------*%0A`;
-    message += `Hello *${showReceipt.client.name}*,%0A`;
-    message += `${greeting}%0A%0A`;
+  const handleWhatsApp = async () => {
+    if (!showReceipt) return;
+    
+    try {
+      setIsSendingPdf(true);
+      if (showGlobalToast) showGlobalToast('Generating', 'Uploading receipt PDF to secure server...');
 
-    message += `*ORDER SUMMARY:*%0A`;
-    showReceipt.items.forEach(item => {
-      message += `• ${item.productName} (x${item.qty}) - ₹${item.price}%0A`;
-    });
+      const visualBill = document.getElementById('printable-bill');
+      if (!visualBill) {
+        if (showGlobalToast) showGlobalToast('Error', 'Receipt container not found.');
+        return;
+      }
 
-    message += `%0A*Grand Total: ₹${parseFloat(showReceipt.total).toFixed(2)}*%0A`;
-    message += `*------------------------------*%0A`;
-    message += `📄 *Download Digital Receipt:*%0A`;
-    message += `https://classy-erp.vercel.app/?bill=${showReceipt.saleId}%0A%0A`;
-    message += `*Visit again for more unique designs!*%0A`;
-    message += `_Classy Couture - Be Unique, Be Classy_`;
+      const opt = {
+        margin: 0,
+        filename: `Receipt_${showReceipt.saleId}.pdf`,
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: [80, 200], orientation: 'portrait' }
+      };
 
-    const phone = showReceipt.client.phone ? showReceipt.client.phone.replace(/[^0-9]/g, '') : '';
-    // Adding a prefix if not present (assuming Indian numbers if 10 digits)
-    const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
+      const pdfBlob = await html2pdf().set(opt).from(visualBill).output('blob');
+      const fileName = `receipts/${showReceipt.saleId}_${Date.now()}.pdf`;
+      
+      const { data, error: uploadError } = await supabase.storage
+        .from('receipts')
+        .upload(fileName, pdfBlob, {
+          contentType: 'application/pdf',
+          cacheControl: '3600',
+          upsert: false
+        });
 
-    window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('receipts')
+        .getPublicUrl(fileName);
+
+      const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
+      let message = `*✨ INVOICE: ${showReceipt.saleId} ✨*%0A`;
+      message += `*------------------------------*%0A`;
+      message += `Hello *${showReceipt.client.name}*,%0A`;
+      message += `${greeting}%0A%0A`;
+
+      message += `*ORDER SUMMARY:*%0A`;
+      showReceipt.items.forEach(item => {
+        message += `• ${item.productName} (x${item.qty}) - ₹${item.price}%0A`;
+      });
+
+      message += `%0A*Grand Total: ₹${parseFloat(showReceipt.total).toFixed(2)}*%0A`;
+      message += `*------------------------------*%0A`;
+      message += `📄 *DOWNLOAD DIGITAL RECEIPT:*%0A${publicUrl}%0A`;
+      message += `*------------------------------*%0A`;
+      message += `*Visit again for more unique designs!*%0A`;
+      message += `_Classy Couture - Be Unique, Be Classy_`;
+
+      const phone = showReceipt.client.phone ? showReceipt.client.phone.replace(/[^0-9]/g, '') : '';
+      const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
+
+      window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
+    } catch (err) {
+      console.error('WhatsApp Share Error:', err);
+      if (showGlobalToast) showGlobalToast('Error', 'Failed to generate receipt link.');
+    } finally {
+      setIsSendingPdf(false);
+    }
   };
 
   const handleSMS = () => {
@@ -574,9 +618,13 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                 Send SMS
               </button>
-              <button onClick={handleWhatsApp} className="flex items-center justify-center gap-3 rounded-2xl bg-[#25D366] py-4 font-bold text-white shadow-xl shadow-[#25D366]/20 transition hover:brightness-95">
+              <button 
+                disabled={isSendingPdf}
+                onClick={handleWhatsApp} 
+                className={`flex items-center justify-center gap-3 rounded-2xl bg-[#25D366] py-4 font-bold text-white shadow-xl shadow-[#25D366]/20 transition hover:brightness-95 ${isSendingPdf ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="fill-white"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-11.4 8.38 8.38 0 0 1 3.8.9L22 4Z" /></svg>
-                Send WhatsApp
+                {isSendingPdf ? 'Generating...' : 'Send WhatsApp'}
               </button>
             </div>
           </div>
