@@ -68,7 +68,7 @@ function CreateUserPage({ themeStyle, setCurrentPage, showGlobalToast, users, se
       setUsers([...users, newUser])
       if (saveUser) await saveUser(newUser);
 
-      if (showGlobalToast) showGlobalToast('Success', 'User created and authorized successfully.')
+      if (showGlobalToast) showGlobalToast('Success', `${name} successfully created`)
       setCurrentPage('view-users')
     } catch (error) {
       console.error("User Creation Error:", error.message);
