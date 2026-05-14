@@ -144,6 +144,7 @@ function App() {
     <main className="min-h-screen bg-[#f7f2ec] text-stone-900">
       {!isLoggedIn ? (
         <LoginScreen onLogin={handleLogin} users={users} />
+      ) : (
         <>
           <Dashboard
             onLogout={handleLogout}
