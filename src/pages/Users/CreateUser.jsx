@@ -30,6 +30,10 @@ function CreateUserPage({ themeStyle, setCurrentPage, showGlobalToast, users, se
       if (showGlobalToast) showGlobalToast('Error', 'Passwords do not match.')
       return
     }
+    if (password.length < 6) {
+      if (showGlobalToast) showGlobalToast('Error', 'Password must be at least 6 characters long.')
+      return
+    }
 
     setIsCreating(true)
     try {
