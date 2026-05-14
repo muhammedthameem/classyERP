@@ -3,6 +3,8 @@ import { ChevronLeft, ChevronRight, Search, UsersRound, Eye, Pencil, Trash2, Dow
 import html2pdf from 'html2pdf.js'
 import { formatDateDDMMYY } from '../../utils/constants'
 
+import supabase from '../../supabase'
+
 function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setClientDetailMode, showGlobalToast, currentUser, highlightClientId, setHighlightClientId, clients, setClients }) {
   const rowRefs = useRef({})
   const [searchQuery, setSearchQuery] = useState('')
@@ -217,11 +219,24 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
               </button>
               <button
                 className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
-                onClick={() => {
-                  const updated = clients.filter(c => c.mobile !== clientToDelete.mobile)
-                  setClients(updated)
-                  setClientToDelete(null)
-                  if (showGlobalToast) showGlobalToast('Deleted!', 'Client successfully deleted.')
+                onClick={async () => {
+                  try {
+                    // 1. Delete from Cloud (Permanent)
+                    const { error } = await supabase
+                      .from('erp_clients')
+                      .delete()
+                      .eq('id', clientToDelete.id || clientToDelete.mobile);
+                    
+                    if (error) throw error;
+
+                    // 2. Update local UI
+                    const updated = clients.filter(c => c.mobile !== clientToDelete.mobile)
+                    setClients(updated)
+                    setClientToDelete(null)
+                    if (showGlobalToast) showGlobalToast('Deleted!', 'Client successfully removed from cloud.')
+                  } catch (err) {
+                    alert("Cloud delete failed: " + err.message);
+                  }
                 }}
               >
                 Delete Client
