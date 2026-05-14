@@ -817,7 +817,7 @@ function Dashboard({
                               </div>
                               <div className="flex justify-between mt-1.5 items-center">
                                 <span className="text-tiny">Market share</span>
-                                <span className="text-para-sm font-bold text-[var(--text)]">₹{item.value.toLocaleString()}</span>
+                                <span className="text-para-sm font-bold">₹{item.value.toLocaleString()}</span>
                               </div>
                             </div>
                           ))}
@@ -832,7 +832,7 @@ function Dashboard({
                       <h2 className="text-h2 flex items-center gap-2">
                         <ShieldCheck size={20} /> Client elegance score
                       </h2>
-                      <p className="text-para text-[var(--muted)] mt-1">Retention, repeat orders, and fulfillment quality</p>
+                      <p className="text-para mt-1">Retention, repeat orders, and fulfillment quality</p>
                       <div className="mt-6 grid gap-4 sm:grid-cols-3">
                         {(() => {
                           const totalClientsCount = clients.length || 0;
