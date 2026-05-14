@@ -70,7 +70,14 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
     u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.designation.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  ).sort((a, b) => {
+    // MOVE CURRENT USER TO TOP
+    if (currentUser) {
+      if (a.email === currentUser.email) return -1;
+      if (b.email === currentUser.email) return 1;
+    }
+    return 0;
+  })
 
   return (
     <div style={themeStyle} className="relative">
@@ -364,7 +371,10 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
                 filteredUsers.map((user) => {
                   const isCurrentUser = currentUser && user.email === currentUser.email;
                   return (
-                    <tr key={user.id} className="transition-colors hover:bg-[var(--soft)]/50">
+                    <tr 
+                      key={user.id} 
+                      className={`transition-colors ${isCurrentUser ? 'bg-[var(--accent)]/5 border-l-4 border-l-[var(--accent)]' : 'hover:bg-[var(--soft)]/50'}`}
+                    >
                       <td className="font-semibold">
                         <div className="flex items-center gap-2">
                           {user.name}
