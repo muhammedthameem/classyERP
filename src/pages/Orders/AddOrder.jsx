@@ -11,10 +11,9 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
   const [allOrders, setAllOrders] = useState(orders)
 
   // Global order metadata
-  const [orderDate, setOrderDate] = useState(getIndianDate())
-  const [deliveryDate, setDeliveryDate] = useState('')
   const [photoPreview, setPhotoPreview] = useState(null)
   const [notes, setNotes] = useState('')
+  const lastItemRef = useRef(null)
 
   // Multiple Products (Order Items)
   const [orderItems, setOrderItems] = useState([
@@ -31,9 +30,17 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
       showTypeDropdown: false,
       showProductTypeDropdown: false,
       showInventoryDropdown: null,
+      orderDate: getIndianDate(),
       deliveryDate: '' 
     }
   ])
+
+  // Auto-scroll to new item
+  useEffect(() => {
+    if (orderItems.length > 1 && lastItemRef.current) {
+      lastItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [orderItems.length]);
 
   const productTypesList = productTypes || []
   const unitsList = inventoryUnits || []
@@ -80,7 +87,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
       showTypeDropdown: false,
       showProductTypeDropdown: false,
       showInventoryDropdown: null,
-      deliveryDate: deliveryDate || ''
+      orderDate: getIndianDate(),
+      deliveryDate: ''
     }])
   }
 
@@ -106,14 +114,10 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
       if (showGlobalToast) showGlobalToast('Error', 'Please select a client.')
       return
     }
-    if (!deliveryDate) {
-      if (showGlobalToast) showGlobalToast('Error', 'Please select a delivery date.')
-      return
-    }
 
-    const incompleteItem = orderItems.find(item => !item.product || !item.orderType || !item.deliveryDate)
+    const incompleteItem = orderItems.find(item => !item.product || !item.orderType || !item.deliveryDate || !item.orderDate)
     if (incompleteItem) {
-      if (showGlobalToast) showGlobalToast('Error', 'Please fill product, type, and delivery date for all items.')
+      if (showGlobalToast) showGlobalToast('Error', 'Please fill product, type, order date and delivery date for all items.')
       return
     }
 
@@ -175,7 +179,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
       internalItems: item.sourceOfMaterial === 'Internal' ? item.internalItems : [],
       materialPhoto: item.materialPhoto,
       notes: item.notes || notes,
-      orderDate,
+      orderDate: item.orderDate,
       deliveryDate: item.deliveryDate,
       photo: photoPreview,
       status: 'Not Ready'
@@ -223,10 +227,10 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
       notes: '',
       showTypeDropdown: false,
       showProductTypeDropdown: false,
-      showInventoryDropdown: null
+      showInventoryDropdown: null,
+      orderDate: getIndianDate(),
+      deliveryDate: ''
     }])
-    setOrderDate(getIndianDate())
-    setDeliveryDate('')
     setPhotoPreview(null)
     setNotes('')
     setCurrentPage('view-orders')
@@ -338,7 +342,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
             )}
           </div>
 
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6">
             <div className="relative">
               <span className="mb-2 block text-sm font-medium text-[var(--text)]">Client Name</span>
               <button
@@ -349,7 +353,6 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                 {clientName || 'Select Client...'}
                 <ChevronDown size={16} className={`transition-transform ${showClientDropdown ? 'rotate-180' : ''}`} />
               </button>
-
               {showClientDropdown && (
                 <>
                   <div className="fixed inset-0 z-[90]" onClick={() => setShowClientDropdown(false)} />
@@ -369,11 +372,9 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                             const filtered = (clientsList || []).filter(c => (c.name || '').toLowerCase().includes(searchVal.toLowerCase()));
 
                             if (filtered.length > 0) {
-                              // If there are matches, pick the first one (most relevant)
                               setClientName(filtered[0].name);
                               setShowClientDropdown(false);
                             } else if (searchVal) {
-                              // Only go to Add Client if NO matches were found
                               localStorage.setItem('prefillClientName', searchVal);
                               setCurrentPage('add-clients');
                             }
@@ -413,26 +414,6 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                   </div>
                 </>
               )}
-            </div>
-
-            <div>
-              <span className="mb-2 block text-sm font-medium text-[var(--text)]">Order Date</span>
-              <CustomDatePicker value={orderDate} onChange={setOrderDate} />
-            </div>
-
-            <div>
-              <span className="mb-2 block text-sm font-medium text-[var(--text)]">Delivery Date (Set All)</span>
-              <CustomDatePicker 
-                value={deliveryDate} 
-                onChange={(val) => {
-                  setDeliveryDate(val);
-                  // Bulk update all items
-                  const updated = orderItems.map(item => ({ ...item, deliveryDate: val }));
-                  setOrderItems(updated);
-                }} 
-                minDate={orderDate} 
-                placeholder="Bulk set date..." 
-              />
             </div>
           </div>
 
@@ -611,14 +592,23 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                         )}
                       </div>
 
-                      <div className="relative">
-                        <span className="mb-2 block text-sm font-medium text-[var(--text)]">Delivery Date <span className="text-red-500">*</span></span>
-                        <CustomDatePicker 
-                          value={item.deliveryDate} 
-                          onChange={(val) => updateOrderItem(idx, { deliveryDate: val })} 
-                          minDate={orderDate}
-                          placeholder="Select date"
-                        />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="relative">
+                          <span className="mb-2 block text-sm font-medium text-[var(--text)]">Order Date</span>
+                          <CustomDatePicker 
+                            value={item.orderDate} 
+                            onChange={(val) => updateOrderItem(idx, { orderDate: val })} 
+                          />
+                        </div>
+                        <div className="relative">
+                          <span className="mb-2 block text-sm font-medium text-[var(--text)]">Delivery Date <span className="text-red-500">*</span></span>
+                          <CustomDatePicker 
+                            value={item.deliveryDate} 
+                            onChange={(val) => updateOrderItem(idx, { deliveryDate: val })} 
+                            minDate={item.orderDate}
+                            placeholder="Select date"
+                          />
+                        </div>
                       </div>
 
                       <div className="relative">
@@ -1091,6 +1081,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
 
               </div>
             ))}
+            <div ref={lastItemRef} className="h-4" />
           </div>
         </section>
 
