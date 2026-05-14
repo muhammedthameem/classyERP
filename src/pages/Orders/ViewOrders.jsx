@@ -1,9 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { CalendarDays, ChevronLeft, ChevronRight, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2, Plus } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2, Plus } from 'lucide-react'
 import { formatDateDDMMYY, getIndianDate, orders } from '../../utils/constants'
 import supabase from '../../supabase'
 
 function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory }) {
+  // Safety guard for cloud sync
+  if (!orders) return <div className="p-20 text-center flex flex-col items-center gap-4">
+    <div className="w-12 h-12 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin"></div>
+    <p className="text-[var(--muted)] font-medium">Syncing Boutique Records...</p>
+  </div>;
+
   const rowRefs = useRef({});
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPageNum, setCurrentPageNum] = useState(1)
