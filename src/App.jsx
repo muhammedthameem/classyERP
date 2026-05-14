@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import LoginScreen from './components/LoginScreen'
 import Dashboard from './components/Dashboard'
+import DeliveryAlertModal from './components/DeliveryAlertModal'
 import PublicReceipt from './components/PublicReceipt'
 import supabase from './supabase'
 
@@ -181,9 +182,9 @@ function App() {
             if (error) alert("Save Failed: " + error.message);
           }}
         />
-      )}
-    </main>
-  )
-}
+        <DeliveryAlertModal orders={orders} />
+      </main>
+    )
+  }
 
 export default App;
