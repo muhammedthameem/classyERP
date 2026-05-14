@@ -697,9 +697,9 @@ function Dashboard({
                               Live
                             </span>
                           </div>
-                          <p className="text-sm text-[var(--muted)]">{stat.label}</p>
-                          <h3 className="mt-3 text-3xl font-semibold">{stat.value}</h3>
-                          <p className="mt-2 text-sm font-medium text-[var(--jewel)]">{stat.note}</p>
+                          <p className="text-tiny">{stat.label}</p>
+                          <h3 className="text-h1 mt-3">{stat.value}</h3>
+                          <p className="text-para-sm mt-2 text-[var(--jewel)] font-medium">{stat.note}</p>
                         </article>
                       )
                     })}
@@ -738,10 +738,10 @@ function Dashboard({
 
                   {user?.role === 'Admin' && (
                     <div className="rounded-[24px] border border-[var(--border)] bg-[var(--jewel)] p-5 text-white shadow-[var(--shadow)]">
-                      <h2 className="flex items-center gap-2 text-xl font-semibold">
+                      <h2 className="text-h2 flex items-center gap-2">
                         <ShieldCheck size={20} /> Team pulse
                       </h2>
-                      <p className="mt-1 text-sm text-[#cce0da]">Staff activities today</p>
+                      <p className="text-para-sm mt-1 text-[#cce0da]">Staff activities today</p>
                       <div className="mt-5 space-y-3">
                         {liveActivities.map((act) => (
                           <div className="rounded-md bg-white/10 p-4" key={act.id}>
@@ -799,15 +799,15 @@ function Dashboard({
                           <h2 className="text-h2 flex items-center gap-2">
                             <BarChart3 size={22} className="text-[var(--accent)]" /> Revenue pulse
                           </h2>
-                          <p className="text-3xl font-black mt-2">₹{totalRev.toLocaleString()}</p>
-                          <p className="text-tiny text-[var(--muted)] mt-1">Total boutique income</p>
+                          <p className="text-h1 mt-2">₹{totalRev.toLocaleString()}</p>
+                          <p className="text-tiny mt-1">Total boutique income</p>
                         </div>
                         <div className="space-y-6">
                           {liveRevenuePulse.map((item) => (
                             <div key={item.label}>
                               <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-bold text-[var(--text)]">{item.label}</span>
-                                <span className="text-sm font-black text-[var(--accent)]">{item.percentage}%</span>
+                                <span className="text-tiny">{item.label}</span>
+                                <span className="text-h2 font-black text-[var(--accent)]">{item.percentage}%</span>
                               </div>
                               <div className="h-2.5 w-full rounded-full bg-[var(--soft)] overflow-hidden">
                                 <div 
@@ -815,9 +815,9 @@ function Dashboard({
                                   style={{ width: `${item.percentage}%` }}
                                 />
                               </div>
-                              <div className="flex justify-between mt-1.5">
-                                <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-tight">Market share</span>
-                                <span className="text-[10px] font-bold text-[var(--text)]">₹{item.value.toLocaleString()}</span>
+                              <div className="flex justify-between mt-1.5 items-center">
+                                <span className="text-tiny">Market share</span>
+                                <span className="text-para-sm font-bold text-[var(--text)]">₹{item.value.toLocaleString()}</span>
                               </div>
                             </div>
                           ))}
@@ -868,8 +868,8 @@ function Dashboard({
                             { label: 'Fulfillment', value: `${fulfillmentRate}%` }
                           ].map((item) => (
                             <div className="rounded-2xl bg-[var(--soft)] p-4" key={item.label}>
-                              <p className="text-2xl font-semibold">{item.value}</p>
-                              <p className="mt-1 text-sm text-[var(--muted)]">{item.label}</p>
+                              <p className="text-h1">{item.value}</p>
+                              <p className="text-tiny mt-1">{item.label}</p>
                             </div>
                           ));
                         })()}
