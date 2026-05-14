@@ -3,7 +3,6 @@ import { Eye, EyeOff, ShieldCheck, User, Mail, Phone, Calendar, MapPin, CheckCir
 import supabase from '../supabase'
 
 function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyle }) {
-function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyle }) {
   const [activeTab, setActiveTab] = useState('profile') // 'profile' or 'security'
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
