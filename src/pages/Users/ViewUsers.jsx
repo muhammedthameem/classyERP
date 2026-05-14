@@ -84,12 +84,14 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
     u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.designation.toLowerCase().includes(searchTerm.toLowerCase())
   ).sort((a, b) => {
-    // MOVE CURRENT USER TO TOP
+    // 1. MOVE CURRENT USER TO TOP
     if (currentUser) {
       if (a.email === currentUser.email) return -1;
       if (b.email === currentUser.email) return 1;
     }
-    return 0;
+    
+    // 2. TIE-BREAKER: Sort everyone else alphabetically by name
+    return a.name.localeCompare(b.name);
   })
 
   return (
