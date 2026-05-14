@@ -159,21 +159,25 @@ function App() {
           inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits}
           cloudLoaded={cloudLoaded}
           syncError={syncError}
-          // Direct Save Functions for Supabase (FLEXIBLE SCHEMA)
+          // Direct Save Functions for Supabase (FLEXIBLE SCHEMA & COMPRESSED)
           saveSale={async (s) => {
-            const { error } = await supabase.from('erp_sales').upsert([{ id: (s.id || s.saleId).toString(), data: s }]);
+            const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+            const { error } = await supabase.from('erp_sales').upsert([{ id: (s.id || s.saleId).toString(), data: clean(s) }]);
             if (error) alert("Save Failed: " + error.message);
           }}
           saveOrder={async (o) => {
-            const { error } = await supabase.from('erp_orders').upsert([{ id: (o.id || o.orderId).toString(), data: o }]);
+            const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+            const { error } = await supabase.from('erp_orders').upsert([{ id: (o.id || o.orderId).toString(), data: clean(o) }]);
             if (error) alert("Save Failed: " + error.message);
           }}
           saveClient={async (c) => {
-            const { error } = await supabase.from('erp_clients').upsert([{ id: (c.id || c.clientId || c.phone).toString(), data: c }]);
+            const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+            const { error } = await supabase.from('erp_clients').upsert([{ id: (c.id || c.clientId || c.phone).toString(), data: clean(c) }]);
             if (error) alert("Save Failed: " + error.message);
           }}
           saveUser={async (u) => {
-            const { error } = await supabase.from('erp_users').upsert([{ id: u.email, data: u }]);
+            const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+            const { error } = await supabase.from('erp_users').upsert([{ id: u.email, data: clean(u) }]);
             if (error) alert("Save Failed: " + error.message);
           }}
         />

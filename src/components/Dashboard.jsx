@@ -103,15 +103,16 @@ function Dashboard({
 
     const saveToSupabase = async () => {
       try {
+        const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
         await Promise.all([
           // Save Config settings
-          supabase.from('erp_config').upsert([{ id: 'designations', data: designations }]),
-          supabase.from('erp_config').upsert([{ id: 'orderTypes', data: orderTypes }]),
-          supabase.from('erp_config').upsert([{ id: 'productTypes', data: productTypes }]),
-          supabase.from('erp_config').upsert([{ id: 'inventoryUnits', data: inventoryUnits }]),
+          supabase.from('erp_config').upsert([{ id: 'designations', data: clean(designations) }]),
+          supabase.from('erp_config').upsert([{ id: 'orderTypes', data: clean(orderTypes) }]),
+          supabase.from('erp_config').upsert([{ id: 'productTypes', data: clean(productTypes) }]),
+          supabase.from('erp_config').upsert([{ id: 'inventoryUnits', data: clean(inventoryUnits) }]),
           // Save Users & Inventory in bulk/background
-          ...users.map(u => supabase.from('erp_users').upsert([{ id: u.email, data: u }])),
-          ...inventory.slice(0, 200).map(i => supabase.from('erp_inventory').upsert([{ id: (i.id || i.productId).toString(), data: i }]))
+          ...users.map(u => supabase.from('erp_users').upsert([{ id: u.email, data: clean(u) }])),
+          ...inventory.slice(0, 200).map(i => supabase.from('erp_inventory').upsert([{ id: (i.id || i.productId).toString(), data: clean(i) }]))
         ]);
       } catch (error) {
         console.error("Supabase Background Sync Error:", error.message);
