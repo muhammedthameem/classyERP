@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react'
-import { Bell, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Crown, Gem, LayoutDashboard, LogOut, Menu, Moon, Package, Palette, Search, Settings, ShieldCheck, ShoppingBag, Sparkles, Sun, TrendingUp, UsersRound, BarChart3 } from 'lucide-react'
+import { AlertCircle, Bell, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Crown, Gem, LayoutDashboard, LogOut, Menu, Moon, Package, Palette, Search, Settings, ShieldCheck, ShoppingBag, Sparkles, Sun, TrendingUp, UsersRound, BarChart3 } from 'lucide-react'
 import { formatDateTimeDDMMYY, boutiqueThemes, appearanceTokens, navItems, stats, orders, products, staffActivities } from '../utils/constants'
 const CreateUserPage = lazy(() => import('../pages/Users/CreateUser'))
 const ViewUsersPage = lazy(() => import('../pages/Users/ViewUsers'))
@@ -40,7 +40,8 @@ function Dashboard({
   productTypes, setProductTypes,
   inventoryUnits, setInventoryUnits,
   cloudLoaded,
-  saveSale, saveOrder, saveClient
+  syncError,
+  saveSale, saveOrder, saveClient, saveUser
 }) {
   const [showAccountMenu, setShowAccountMenu] = useState(false)
   const [showAccountPanel, setShowAccountPanel] = useState(false)
@@ -815,9 +816,15 @@ function Dashboard({
               {currentPage === 'create-sales' && <CreateSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} sales={sales} setSales={setSales} clients={clients} setClients={setClients} orders={orders} setOrders={setOrders} inventory={inventory} setInventory={setInventory} saveSale={saveSale} />}
               {currentPage === 'view-sales' && <ViewSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightSaleId={highlightSaleId} setHighlightSaleId={setHighlightSaleId} sales={sales} setSales={setSales} inventory={inventory} setInventory={setInventory} orders={orders} setOrders={setOrders} />}
               {currentPage === 'reports' && <ReportsPage themeStyle={themeStyle} showGlobalToast={showGlobalToast} currentUser={user} sales={sales} orders={orders} clients={clients} inventory={inventory} />}
-              {currentPage === 'create-user' && <CreateUserPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} users={users} setUsers={setUsers} designations={designations} setDesignations={setDesignations} currentUser={user} />}
+              {currentPage === 'create-user' && <CreateUserPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} users={users} setUsers={setUsers} designations={designations} setDesignations={setDesignations} currentUser={user} saveUser={saveUser} />}
               {currentPage === 'view-users' && <ViewUsersPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} users={users} setUsers={setUsers} designations={designations} setDesignations={setDesignations} currentUser={user} />}
             </Suspense>
+            {syncError && (
+              <div className="mt-6 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-500 flex items-center gap-3">
+                <AlertCircle size={18} />
+                Failed to sync with cloud. Offline mode active.
+              </div>
+            )}
           </div>
         </div>
       </div>

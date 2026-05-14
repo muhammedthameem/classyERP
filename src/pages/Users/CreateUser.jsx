@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Search, ShieldCheck, Eye } from 'lucide-react'
 
-function CreateUserPage({ themeStyle, setCurrentPage, showGlobalToast, users, setUsers, designations, setDesignations, currentUser }) {
+function CreateUserPage({ themeStyle, setCurrentPage, showGlobalToast, users, setUsers, designations, setDesignations, currentUser, saveUser }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -39,6 +39,10 @@ function CreateUserPage({ themeStyle, setCurrentPage, showGlobalToast, users, se
       createdAt: new Date().toISOString()
     }
     setUsers([...users, newUser])
+
+    // Cloud Sync (Firebase + Supabase)
+    if (saveUser) saveUser(newUser);
+
     if (showGlobalToast) showGlobalToast('Success', 'User created successfully.')
     setCurrentPage('view-users')
   }

@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard'
 import PublicReceipt from './components/PublicReceipt'
 import { db } from './firebase'
 import { doc, onSnapshot, getDoc, collection, setDoc, writeBatch, query, orderBy, limit } from 'firebase/firestore'
+import supabase from './supabase'
 
 function App() {
   // SHARED STATES
@@ -18,6 +19,7 @@ function App() {
   const [productTypes, setProductTypes] = useState(() => JSON.parse(localStorage.getItem('productTypes') || '[]'))
   const [inventoryUnits, setInventoryUnits] = useState(() => JSON.parse(localStorage.getItem('inventoryUnits') || '["nos", "mtr", "kg", "yd", "set"]'))
   const [cloudLoaded, setCloudLoaded] = useState(false)
+  const [syncError, setSyncError] = useState(null)
 
   // REAL-TIME SYNC FROM FIREBASE
   useEffect(() => {
@@ -44,8 +46,8 @@ function App() {
     const collectionsToSync = ['orders', 'sales', 'clients']
     const unsubCollections = collectionsToSync.map(colId => {
       return onSnapshot(collection(db, colId), (querySnapshot) => {
+        const list = []
         if (!querySnapshot.empty) {
-          const list = []
           querySnapshot.forEach((doc) => {
             list.push(doc.data())
           })
@@ -60,7 +62,6 @@ function App() {
             const mainData = mainSnap.data()
             if (colId === 'orders') {
               const oldList = mainData.orders || []
-              // Filter out duplicates (prefer new collection over old main)
               const combined = [...list, ...oldList.filter(o => !list.some(no => no.id === o.id))]
               setOrders(combined)
             }
@@ -75,14 +76,20 @@ function App() {
               setClients(combined)
             }
           } else {
-            // No old data, just use the collection list
             if (colId === 'orders') setOrders(list)
             if (colId === 'sales') setSales(list)
             if (colId === 'clients') setClients(list)
           }
           setCloudLoaded(true)
+          setSyncError(null)
+        }).catch(err => {
+          console.error("Migration Fallback Error:", err)
+          if (err.message.includes("quota")) setSyncError("Daily Limit Exceeded (Firebase Quota)")
+          setCloudLoaded(true)
         })
       }, (error) => {
+        console.error("Collection Sync Error:", error.message)
+        if (error.message.includes("quota")) setSyncError("Daily Limit Exceeded (Firebase Quota)")
         setCloudLoaded(true)
       })
     })
@@ -168,6 +175,7 @@ function App() {
           productTypes={productTypes} setProductTypes={setProductTypes}
           inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits}
           cloudLoaded={cloudLoaded}
+          syncError={syncError}
           // Direct Save Functions with Error Handling
           saveSale={async (s) => {
             try {
@@ -193,6 +201,23 @@ function App() {
               console.log("Client synced to cloud:", c.name);
             } catch (err) {
               console.error("Cloud Sync Error (Client):", err.message);
+              alert("Cloud Sync Failed: " + err.message);
+            }
+          }}
+          saveUser={async (u) => {
+            try {
+              // 1. Save to Firebase (Individual document for Nitro Sync)
+              await setDoc(doc(db, "erp_users", (u.email).toString()), JSON.parse(JSON.stringify(u)), { merge: true });
+              
+              // 2. Save to Supabase
+              const { data, error } = await supabase
+                .from('users')
+                .upsert([u], { onConflict: 'email' });
+              
+              if (error) throw error;
+              console.log("User synced to both Firebase & Supabase:", u.email);
+            } catch (err) {
+              console.error("Cloud Sync Error (User):", err.message);
               alert("Cloud Sync Failed: " + err.message);
             }
           }}
