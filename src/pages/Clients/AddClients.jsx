@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { ChevronDown, Package, Search, Settings, UsersRound } from 'lucide-react'
-import { products } from '../../utils/constants'
 
-function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, setClients, saveClient }) {
+function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, setClients, saveClient, currentUser }) {
+  // Safety check for non-admin or uninitialized users
+  if (!clients) return <div className="p-10 text-center">Loading clients...</div>;
   const [personalDetails, setPersonalDetails] = useState(() => {
     const prefill = localStorage.getItem('prefillClientName')
     if (prefill) {
