@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
-import { orders } from '../utils/constants'
+import supabase from '../supabase'
 
 function LoginScreen({ onLogin, users: cloudUsers }) {
   const [mode, setMode] = useState('login')
@@ -34,34 +34,44 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
       localStorage.removeItem('erp_remember_password')
     }
 
-    // Artificial delay for premium feel
-    setTimeout(() => {
-      // Use cloudUsers prop if available, otherwise fallback to localStorage
-      const allUsers = (cloudUsers && cloudUsers.length > 0) 
-        ? cloudUsers 
-        : JSON.parse(localStorage.getItem('erp_users') || '[]');
-      
-      // Fallback if erp_users is empty
-      if (allUsers.length === 0 && email === 'admin@classy.com' && password === 'admin123') {
-        onLogin({ id: 'admin', email, name: 'Ayesha', role: 'Admin' })
-        setIsLoading(false)
-        return
-      }
+    try {
+      // 1. Official Supabase Auth Login
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase(),
+        password: password
+      });
 
-      const foundUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password)
+      if (authError) throw authError;
 
-      if (foundUser) {
+      // 2. Fetch User Profile from our ERP table
+      const { data: userData, error: userError } = await supabase
+        .from('erp_users')
+        .select('*')
+        .eq('id', email.toLowerCase())
+        .single();
+
+      if (userData) {
         onLogin({
-          id: foundUser.id,
-          email: foundUser.email,
-          name: foundUser.name,
-          role: foundUser.designation || 'Staff'
+          id: userData.data.id,
+          email: userData.data.email,
+          name: userData.data.name,
+          role: userData.data.designation || 'Staff'
         })
       } else {
-        setMessage('Invalid email or password.')
+        // Fallback for first-time Admin setup or if profile missing
+        onLogin({
+          id: authData.user.id,
+          email: authData.user.email,
+          name: authData.user.email.split('@')[0],
+          role: 'Admin'
+        })
       }
-      setIsLoading(false)
-    }, 800)
+    } catch (error) {
+      console.error("Login Error:", error.message);
+      setMessage(error.message === 'Invalid login credentials' ? 'Invalid email or password.' : error.message);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const submitForgotPassword = async (event) => {
