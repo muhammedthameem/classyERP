@@ -105,14 +105,13 @@ function Dashboard({
       try {
         await Promise.all([
           // Save Config settings
-          supabase.from('config').upsert([{ id: 'designations', data: designations }]),
-          supabase.from('config').upsert([{ id: 'orderTypes', data: orderTypes }]),
-          supabase.from('config').upsert([{ id: 'productTypes', data: productTypes }]),
-          supabase.from('config').upsert([{ id: 'inventoryUnits', data: inventoryUnits }]),
-          // Save Inventory & Activities (Already partially handled by pages, but keep for state sync)
-          // Note: Full list upserting can be heavy, but these are small lists (<1000 items)
-          ...users.map(u => supabase.from('users').upsert([u])),
-          ...inventory.slice(0, 200).map(i => supabase.from('inventory').upsert([i]))
+          supabase.from('erp_config').upsert([{ id: 'designations', data: designations }]),
+          supabase.from('erp_config').upsert([{ id: 'orderTypes', data: orderTypes }]),
+          supabase.from('erp_config').upsert([{ id: 'productTypes', data: productTypes }]),
+          supabase.from('erp_config').upsert([{ id: 'inventoryUnits', data: inventoryUnits }]),
+          // Save Users & Inventory in bulk/background
+          ...users.map(u => supabase.from('erp_users').upsert([{ id: u.email, data: u }])),
+          ...inventory.slice(0, 200).map(i => supabase.from('erp_inventory').upsert([{ id: (i.id || i.productId).toString(), data: i }]))
         ]);
       } catch (error) {
         console.error("Supabase Background Sync Error:", error.message);

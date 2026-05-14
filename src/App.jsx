@@ -24,21 +24,21 @@ function App() {
     const fetchData = async () => {
       try {
         const [u, c, o, s, i, a, cfg] = await Promise.all([
-          supabase.from('users').select('*'),
-          supabase.from('clients').select('*'),
-          supabase.from('orders').select('*'),
-          supabase.from('sales').select('*'),
-          supabase.from('inventory').select('*'),
-          supabase.from('activities').select('*').order('timestamp', { ascending: false }).limit(100),
-          supabase.from('config').select('*')
+          supabase.from('erp_users').select('*'),
+          supabase.from('erp_clients').select('*'),
+          supabase.from('erp_orders').select('*'),
+          supabase.from('erp_sales').select('*'),
+          supabase.from('erp_inventory').select('*'),
+          supabase.from('erp_activities').select('*').order('id', { ascending: false }).limit(100),
+          supabase.from('erp_config').select('*')
         ]);
 
-        if (u.data) setUsers(u.data);
-        if (c.data) setClients(c.data);
-        if (o.data) setOrders(o.data);
-        if (s.data) setSales(s.data);
-        if (i.data) setInventory(i.data);
-        if (a.data) setActivities(a.data);
+        if (u.data) setUsers(u.data.map(item => item.data));
+        if (c.data) setClients(c.data.map(item => item.data));
+        if (o.data) setOrders(o.data.map(item => item.data));
+        if (s.data) setSales(s.data.map(item => item.data));
+        if (i.data) setInventory(i.data.map(item => item.data));
+        if (a.data) setActivities(a.data.map(item => item.data));
         
         if (cfg.data) {
           cfg.data.forEach(item => {
@@ -60,14 +60,12 @@ function App() {
 
     // Set up Realtime Subscriptions
     const channels = [
-      supabase.channel('users').on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, (payload) => {
-        fetchData(); // Refresh on change for simplicity
-      }).subscribe(),
-      supabase.channel('clients').on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => fetchData()).subscribe(),
-      supabase.channel('orders').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchData()).subscribe(),
-      supabase.channel('sales').on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, () => fetchData()).subscribe(),
-      supabase.channel('inventory').on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => fetchData()).subscribe(),
-      supabase.channel('config').on('postgres_changes', { event: '*', schema: 'public', table: 'config' }, () => fetchData()).subscribe()
+      supabase.channel('erp_users').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_users' }, () => fetchData()).subscribe(),
+      supabase.channel('erp_clients').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_clients' }, () => fetchData()).subscribe(),
+      supabase.channel('erp_orders').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_orders' }, () => fetchData()).subscribe(),
+      supabase.channel('erp_sales').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_sales' }, () => fetchData()).subscribe(),
+      supabase.channel('erp_inventory').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_inventory' }, () => fetchData()).subscribe(),
+      supabase.channel('erp_config').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_config' }, () => fetchData()).subscribe()
     ];
 
     return () => {
@@ -151,21 +149,21 @@ function App() {
           inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits}
           cloudLoaded={cloudLoaded}
           syncError={syncError}
-          // Direct Save Functions for Supabase
+          // Direct Save Functions for Supabase (FLEXIBLE SCHEMA)
           saveSale={async (s) => {
-            const { error } = await supabase.from('sales').upsert([s]);
+            const { error } = await supabase.from('erp_sales').upsert([{ id: (s.id || s.saleId).toString(), data: s }]);
             if (error) alert("Save Failed: " + error.message);
           }}
           saveOrder={async (o) => {
-            const { error } = await supabase.from('orders').upsert([o]);
+            const { error } = await supabase.from('erp_orders').upsert([{ id: (o.id || o.orderId).toString(), data: o }]);
             if (error) alert("Save Failed: " + error.message);
           }}
           saveClient={async (c) => {
-            const { error } = await supabase.from('clients').upsert([c]);
+            const { error } = await supabase.from('erp_clients').upsert([{ id: (c.id || c.clientId || c.phone).toString(), data: c }]);
             if (error) alert("Save Failed: " + error.message);
           }}
           saveUser={async (u) => {
-            const { error } = await supabase.from('users').upsert([u]);
+            const { error } = await supabase.from('erp_users').upsert([{ id: u.email, data: u }]);
             if (error) alert("Save Failed: " + error.message);
           }}
         />
