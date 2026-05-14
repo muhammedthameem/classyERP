@@ -345,13 +345,15 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
                         >
                           <Plus size={18} />
                         </button>
-                        <button
-                          className="grid h-10 w-10 place-items-center rounded-xl bg-red-500/10 text-red-500 transition hover:bg-red-500 hover:text-white shadow-sm active:scale-95"
-                          title="Delete Client"
-                          onClick={() => setClientToDelete(client)}
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        {currentUser?.role === 'Admin' && (
+                          <button
+                            className="grid h-10 w-10 place-items-center rounded-xl bg-red-500/10 text-red-500 transition hover:bg-red-500 hover:text-white shadow-sm active:scale-95"
+                            title="Delete Client"
+                            onClick={() => setClientToDelete(client)}
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
                         <button
                           className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--soft)] text-[var(--muted)] transition hover:bg-[var(--accent)] hover:text-white shadow-sm active:scale-95"
                           title="Download PDF"

@@ -5,7 +5,7 @@ import { orders } from '../../utils/constants'
 
 import supabase from '../../supabase'
 
-function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightSaleId, setHighlightSaleId, sales, setSales, inventory, setInventory, orders, setOrders }) {
+function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightSaleId, setHighlightSaleId, sales, setSales, inventory, setInventory, orders, setOrders }) {
   const rowRefs = useRef({});
   const [searchQuery, setSearchQuery] = useState('');
   const [viewSale, setViewSale] = useState(null);
@@ -163,9 +163,11 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightS
                       <button onClick={() => setViewSale(sale)} className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white transition" title="View Details">
                         <Eye size={16} />
                       </button>
-                      <button onClick={() => setSaleToDelete(sale)} className="grid h-8 w-8 place-items-center rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition" title="Delete Sale">
-                        <Trash2 size={16} />
-                      </button>
+                      {currentUser?.role === 'Admin' && (
+                        <button onClick={() => setSaleToDelete(sale)} className="grid h-8 w-8 place-items-center rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition" title="Delete Sale">
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

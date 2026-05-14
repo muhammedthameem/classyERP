@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight, Package, Search, Eye, Pencil, Trash2, Plus } from 'lucide-react'
 import supabase from '../../supabase'
 
-function ViewInventoryPage({ themeStyle, setCurrentPage, setSelectedInventoryItem, setInventoryDetailMode, showGlobalToast, highlightInventoryId, setHighlightInventoryId, inventory, setInventory }) {
+function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelectedInventoryItem, setInventoryDetailMode, showGlobalToast, highlightInventoryId, setHighlightInventoryId, inventory, setInventory }) {
   const rowRefs = useRef({});
   const [searchQuery, setSearchQuery] = useState('');
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -178,13 +178,15 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, setSelectedInventoryIte
                         >
                           <Pencil size={16} />
                         </button>
-                        <button
-                          className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white"
-                          title="Delete Item"
-                          onClick={() => setItemToDelete(item)}
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        {currentUser?.role === 'Admin' && (
+                          <button
+                            className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white"
+                            title="Delete Item"
+                            onClick={() => setItemToDelete(item)}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
