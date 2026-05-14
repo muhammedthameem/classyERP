@@ -182,6 +182,10 @@ function App() {
               const { error } = await supabase.from('erp_users').upsert([{ id: u.email, data: clean(u) }]);
               if (error) alert("Save Failed: " + error.message);
             }}
+            deleteClient={async (id) => {
+              const { error } = await supabase.from('erp_clients').delete().eq('id', id.toString());
+              if (error) alert("Delete Failed: " + error.message);
+            }}
           />
           <DeliveryAlertModal orders={orders} />
         </>

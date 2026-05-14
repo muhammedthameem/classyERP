@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { ChevronDown, ChevronLeft, Package, Search, Settings, ShoppingBag, UsersRound, Pencil, Trash2, Plus } from 'lucide-react'
 import { formatDateDDMMYY, formatDateTimeDDMMYY, products } from '../../utils/constants'
 
-function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClient, initialMode, setClientDetailMode, showGlobalToast }) {
+function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClient, initialMode, setClientDetailMode, showGlobalToast, currentUser, clients, setClients, saveClient }) {
   const [clientsList, setClientsList] = useState([])
   const [showClientDropdown, setShowClientDropdown] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
@@ -163,9 +163,22 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
         updatedClient.measurements.push(measurementData)
       }
 
-      existingClients[clientIndex] = updatedClient
-      localStorage.setItem('clients', JSON.stringify(existingClients))
-      setClientsList(existingClients)
+      // existingClients[clientIndex] = updatedClient
+      // localStorage.setItem('clients', JSON.stringify(existingClients))
+      // setClientsList(existingClients)
+      
+      // Use the global saveClient to sync to Supabase
+      if (saveClient) {
+        saveClient(updatedClient);
+      } else {
+        // Fallback for safety
+        const saved = JSON.parse(localStorage.getItem('clients') || '[]');
+        const idx = saved.findIndex(c => c.id === updatedClient.id);
+        if (idx >= 0) saved[idx] = updatedClient;
+        else saved.push(updatedClient);
+        localStorage.setItem('clients', JSON.stringify(saved));
+        if (setClients) setClients(saved);
+      }
 
       setSelectedClient(updatedClient)
 
@@ -202,9 +215,18 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
         measurements: [measurementData]
       }
 
-      existingClients.push(newClient)
-      localStorage.setItem('clients', JSON.stringify(existingClients))
-      setClientsList(existingClients)
+      // existingClients.push(newClient)
+      // localStorage.setItem('clients', JSON.stringify(existingClients))
+      // setClientsList(existingClients)
+      
+      if (saveClient) {
+        saveClient(newClient);
+      } else {
+        const saved = JSON.parse(localStorage.getItem('clients') || '[]');
+        saved.push(newClient);
+        localStorage.setItem('clients', JSON.stringify(saved));
+        if (setClients) setClients(saved);
+      }
 
       setSelectedClient(newClient)
       setSelectedMeasurementIndex(0)
@@ -234,13 +256,26 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
               </button>
               <button
                 className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
-                onClick={() => {
-                  const saved = JSON.parse(localStorage.getItem('clients') || '[]')
-                  const updated = saved.filter(c => c.id !== clientToDelete.id && c.mobile !== clientToDelete.mobile)
-                  localStorage.setItem('clients', JSON.stringify(updated))
-                  setClientToDelete(null)
-                  if (showGlobalToast) showGlobalToast('Client Deleted', `Profile of ${clientToDelete.name} was removed`);
-                  setCurrentPage('view-clients')
+                onClick={async () => {
+                  try {
+                    const idToDelete = clientToDelete.id
+                    // 1. Cloud Delete
+                    if (deleteClient) {
+                      await deleteClient(idToDelete);
+                    } else {
+                      await supabase.from('erp_clients').delete().eq('id', idToDelete.toString());
+                    }
+
+                    // 2. Update local UI (Optimistic)
+                    if (setClients) {
+                      setClients(prev => prev.filter(c => c.id !== idToDelete));
+                    }
+                    setClientToDelete(null)
+                    if (showGlobalToast) showGlobalToast('Client Removed', 'Profile and measurements deleted permanently.');
+                    setCurrentPage('view-clients')
+                  } catch (err) {
+                    console.error("Delete failed:", err);
+                  }
                 }}
               >
                 Delete Client

@@ -5,10 +5,22 @@ import { formatDateDDMMYY } from '../../utils/constants'
 
 import supabase from '../../supabase'
 
-function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setClientDetailMode, showGlobalToast, currentUser, highlightClientId, setHighlightClientId, clients, setClients }) {
+function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setClientDetailMode, showGlobalToast, currentUser, highlightClientId, setHighlightClientId, clients, setClients, deleteClient }) {
   const rowRefs = useRef({})
   const [searchQuery, setSearchQuery] = useState('')
   const [clientToDelete, setClientToDelete] = useState(null)
+
+  // Safety guard for initial load
+  if (!currentUser || !clients) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="text-center">
+          <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[var(--accent-soft)] border-t-[var(--accent)] mx-auto"></div>
+          <p className="text-sm font-semibold text-[var(--muted)]">Syncing Boutique Records...</p>
+        </div>
+      </div>
+    )
+  }
 
   const filteredClients = clients.filter(client =>
     (client.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -221,21 +233,20 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
                 className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
                 onClick={async () => {
                   try {
-                    // 1. Delete from Cloud (Permanent)
-                    const { error } = await supabase
-                      .from('erp_clients')
-                      .delete()
-                      .eq('id', clientToDelete.id || clientToDelete.mobile);
-                    
-                    if (error) throw error;
+                    const idToDelete = clientToDelete.id
+                    // 1. Cloud Delete
+                    if (deleteClient) {
+                      await deleteClient(idToDelete);
+                    } else {
+                      await supabase.from('erp_clients').delete().eq('id', idToDelete.toString());
+                    }
 
-                    // 2. Update local UI
-                    const updated = clients.filter(c => c.mobile !== clientToDelete.mobile)
-                    setClients(updated)
+                    // 2. Update local UI (Optimistic)
+                    setClients(prev => prev.filter(c => c.id !== idToDelete))
                     setClientToDelete(null)
-                    if (showGlobalToast) showGlobalToast('Deleted!', 'Client successfully removed from cloud.')
+                    if (showGlobalToast) showGlobalToast('Client Removed', 'Record deleted from cloud.')
                   } catch (err) {
-                    alert("Cloud delete failed: " + err.message);
+                    console.error("Delete failed:", err);
                   }
                 }}
               >
@@ -301,9 +312,11 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
                     </td>
                     <td>{client.mobile}</td>
                     <td>
-                      {client.measurements?.length > 0
-                        ? client.measurements.map(m => m.product).join(', ')
-                        : (client.product || '-')}
+                      <div className="max-w-[200px] truncate text-sm font-medium text-[var(--muted)]">
+                        {client.measurements?.length > 0
+                          ? [...new Set(client.measurements.map(m => m.product))].join(', ')
+                          : (client.product || '-')}
+                      </div>
                     </td>
                     <td>{client.address}</td>
                     <td>{formatDateDDMMYY(client.createdAt)}</td>
@@ -311,7 +324,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
                       <div className="flex justify-end gap-2">
                         <button
                           className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white shadow-sm active:scale-95"
-                          title="View Details"
+                          title="View Profile"
                           onClick={() => {
                             setSelectedClient(client)
                             if (setClientDetailMode) setClientDetailMode('view')
@@ -321,41 +334,26 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
                           <Eye size={18} />
                         </button>
                         <button
-                          className="grid h-10 w-10 place-items-center rounded-xl bg-amber-50 text-amber-600 transition hover:bg-amber-600 hover:text-white shadow-sm active:scale-95"
-                          title="Edit Client"
-                          onClick={() => {
-                            setSelectedClient(client)
-                            if (setClientDetailMode) setClientDetailMode('edit')
-                            setCurrentPage('client-detail')
-                          }}
-                        >
-                          <Pencil size={18} />
-                        </button>
-                        <button
-                          className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-50 text-emerald-600 transition hover:bg-emerald-600 hover:text-white shadow-sm active:scale-95"
+                          className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white shadow-sm active:scale-95 opacity-80"
                           title="Add Measurement"
                           onClick={() => {
                             setSelectedClient(client)
                             if (setClientDetailMode) setClientDetailMode('view')
                             setCurrentPage('client-detail')
-                            // We need a way to trigger 'Add Measurement' mode once we navigate
-                            // For now, setting a flag in localStorage is a quick way to communicate between pages
                             localStorage.setItem('triggerAddMeasurement', 'true')
                           }}
                         >
                           <Plus size={18} />
                         </button>
-                        {currentUser?.role === 'Admin' && (
-                          <button
-                            className="grid h-10 w-10 place-items-center rounded-xl bg-red-50 text-red-600 transition hover:bg-red-600 hover:text-white shadow-sm active:scale-95"
-                            title="Delete Client"
-                            onClick={() => setClientToDelete(client)}
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        )}
                         <button
-                          className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-600 transition hover:bg-blue-600 hover:text-white shadow-sm active:scale-95"
+                          className="grid h-10 w-10 place-items-center rounded-xl bg-red-500/10 text-red-500 transition hover:bg-red-500 hover:text-white shadow-sm active:scale-95"
+                          title="Delete Client"
+                          onClick={() => setClientToDelete(client)}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                        <button
+                          className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--soft)] text-[var(--muted)] transition hover:bg-[var(--accent)] hover:text-white shadow-sm active:scale-95"
                           title="Download PDF"
                           onClick={() => downloadClientPdf(client)}
                         >
