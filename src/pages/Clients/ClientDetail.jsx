@@ -389,13 +389,15 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
               <Pencil size={18} />
               Edit Profile
             </button>
-            <button
-              className="rounded-xl border border-red-500/20 bg-red-50 text-red-600 px-4 py-3 text-sm font-bold transition hover:bg-red-600 hover:text-white flex items-center justify-center gap-2 shadow-sm active:scale-95"
-              onClick={() => setClientToDelete(client)}
-            >
-              <Trash2 size={18} />
-              Delete
-            </button>
+            {currentUser?.role === 'Admin' && (
+              <button
+                className="rounded-xl border border-red-500/20 bg-red-50 text-red-600 px-4 py-3 text-sm font-bold transition hover:bg-red-600 hover:text-white flex items-center justify-center gap-2 shadow-sm active:scale-95"
+                onClick={() => setClientToDelete(client)}
+              >
+                <Trash2 size={18} />
+                Delete
+              </button>
+            )}
             <button
               className="col-span-2 sm:col-auto rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 flex items-center justify-center gap-2 active:scale-95"
               onClick={() => setIsAddingMeasurement(true)}
