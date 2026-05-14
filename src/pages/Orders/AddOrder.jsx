@@ -381,6 +381,19 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                         </div>
                       </button>
                     ))}
+                    
+                    {clientSearch && !clientsList.some(c => c.name.toLowerCase() === clientSearch.toLowerCase()) && (
+                      <button
+                        type="button"
+                        className="w-full rounded-xl px-4 py-3 text-left text-sm font-bold text-[var(--accent)] bg-[var(--accent-soft)] transition hover:brightness-95 flex items-center gap-2 mt-2"
+                        onClick={() => {
+                          localStorage.setItem('prefillClientName', clientSearch);
+                          setCurrentPage('add-client');
+                        }}
+                      >
+                        <Plus size={16} /> Add New Client: "{clientSearch}"
+                      </button>
+                    )}
                   </div>
                 </div>
               </>
