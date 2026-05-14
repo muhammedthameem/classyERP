@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore"
-import { db } from "../firebase"
+import supabase from '../supabase'
 
 function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyle }) {
   const [currentPassword, setCurrentPassword] = useState('')
@@ -8,8 +7,8 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const email = fullUser?.email || 'admin@classy.com'
-  const name = fullUser?.name || 'Ayesha'
+  const email = fullUser?.email || ''
+  const name = fullUser?.name || 'User'
 
   const submitChangePassword = async (event) => {
     event.preventDefault()
@@ -17,20 +16,21 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
     setIsLoading(true)
 
     try {
-      const userRef = doc(db, "erp_users", email)
-      const userSnap = await getDoc(userRef)
+      // 1. Fetch current profile from Supabase
+      const { data: userData, error: fetchError } = await supabase
+        .from('erp_users')
+        .select('*')
+        .eq('id', email)
+        .single();
 
-      if (!userSnap.exists() && email !== 'admin@classy.com') {
-        setMessage('User not found in system record.')
+      if (fetchError || !userData) {
+        setMessage('User profile not found in database.')
         setIsLoading(false)
         return
       }
 
-      const targetUser = userSnap.exists()
-        ? userSnap.data()
-        : { password: 'admin123' }
-
-      if (currentPassword !== targetUser.password) {
+      // 2. Verify current password
+      if (currentPassword !== userData.data.password) {
         setMessage('Current password is incorrect.')
         setIsLoading(false)
         return
@@ -42,33 +42,29 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
         return
       }
 
-      if (userSnap.exists()) {
-        await updateDoc(userRef, {
-          password: newPassword
-        })
-      } else {
-        await setDoc(userRef, {
-          id: 'admin',
-          name: name,
-          email: email,
-          designation: 'Admin',
-          password: newPassword,
-          createdAt: new Date().toISOString()
-        })
-      }
+      // 3. Update Supabase Auth Password (The Login Key)
+      const { error: authError } = await supabase.auth.updateUser({ password: newPassword });
+      if (authError) throw authError;
+
+      // 4. Update Database Password (The Reference)
+      const updatedProfile = { ...userData.data, password: newPassword };
+      const { error: dbError } = await supabase
+        .from('erp_users')
+        .upsert([{ id: email, data: updatedProfile }]);
+      
+      if (dbError) throw dbError;
 
       setMessage('Password changed successfully. Logging out...')
-
       setTimeout(() => {
         onChanged()
       }, 1500)
 
     } catch (error) {
       console.error(error)
-      setMessage('Something went wrong.')
+      setMessage(error.message || 'Something went wrong.')
+    } finally {
+      setIsLoading(false)
     }
-
-    setIsLoading(false)
   }
 
   return (
