@@ -353,7 +353,7 @@ function Dashboard({
                 <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--accent)] lg:text-sm">
                   <Sparkles size={14} /> Designer dashboard
                 </p>
-                <h1 className="text-lg font-semibold lg:text-3xl">{currentUserName || 'Admin'}</h1>
+                <h3 className="text-lg font-semibold lg:text-3xl">{currentUserName || 'Admin'}</h3>
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">

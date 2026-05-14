@@ -230,7 +230,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                   <h3 className="uppercase tracking-tight !text-[24px] !font-extrabold">Classy Couture</h3>
                   <p className="text-[10px] font-medium">Be Unique, Be Classy</p>
                   <p style={{ margin: '2px 0', fontSize: '12px' }}>Ph : 8606154015</p>
-                  <div className="mt-2 text-[8px] text-gray-500">
+                  <div className="mt-2 text-gray-500">
                     <p className='!text-[10px]'>Order ID: {viewSale.saleId}</p>
                     <p className='!text-[10px]'>{new Date(viewSale.timestamp).toLocaleString()}</p>
                   </div>
@@ -305,10 +305,10 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                     container.innerHTML = `
                       <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
                         <img src="/logo-black.png" style="width: 80px; height: auto; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;" />
-                        <h2 style="margin: 0; font-size: 20px; text-transform: uppercase; font-weight: bold;">Classy Couture</h2>
+                        <h2 style="margin: 0; font-size: 24px; text-transform: uppercase; font-weight: 900; letter-spacing: -0.5px;">Classy Couture</h2>
                         <p style="margin: 2px 0; font-size: 10px;">Be Unique, Be Classy</p>
-                        <p style="margin: 2px 0; font-size: 10px;">Ph : 8606154015</p>
-                        <div style="margin-top: 8px; font-size: 9px; color: #333;">
+                        <p style="margin: 2px 0; font-size: 12px;">Ph : 8606154015</p>
+                        <div style="margin-top: 8px; font-size: 10px; color: #333;">
                           <p style="margin: 2px 0;">ID: ${viewSale.saleId}</p>
                           <p style="margin: 2px 0;">Date: ${new Date(viewSale.timestamp).toLocaleString()}</p>
                         </div>

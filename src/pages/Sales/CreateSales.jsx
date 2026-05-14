@@ -492,12 +492,12 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
             <div id="printable-bill" className="mb-8 bg-white p-4 text-black shadow-inner overflow-hidden mx-auto" style={{ width: '80mm', minHeight: '120mm', fontFamily: 'monospace' }}>
               <div className="text-center mb-4 border-b-2 border-dashed border-gray-300 pb-4">
                 <img src="/logo-black.png" alt="Logo" className="w-28 h-32 mx-auto mb-4 object-contain" />
-                <h3 className="text-xl font-bold uppercase tracking-tight">Classy Couture</h3>
+                <h3 className="uppercase tracking-tight !text-[24px] !font-extrabold">Classy Couture</h3>
                 <p className="text-[10px] font-medium">Be Unique, Be Classy</p>
-                <p style={{ margin: '2px 0', fontSize: '10px' }}>Ph : 8606154015</p>
-                <div className="mt-2 text-[10px] text-gray-500">
-                  <p>Order ID: {showReceipt.saleId}</p>
-                  <p>{new Date(showReceipt.timestamp).toLocaleString()}</p>
+                <p style={{ margin: '2px 0', fontSize: '12px' }}>Ph : 8606154015</p>
+                <div className="mt-2 text-gray-500">
+                  <p className="!text-[10px]">Order ID: {showReceipt.saleId}</p>
+                  <p className="!text-[10px]">{new Date(showReceipt.timestamp).toLocaleString()}</p>
                 </div>
               </div>
 
@@ -509,7 +509,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
               <table className="w-full text-[10px] mb-4">
                 <thead>
                   <tr className="border-b border-dashed border-gray-300 text-left">
-                    <th className="py-1">Item</th>
+                    <th className="py-1 min-w-[100px]">Item</th>
                     <th className="py-1 text-center px-2">Qty</th>
                     <th className="py-1 text-right px-2">Disc (%)</th>
                     <th className="py-1 text-right px-2">Total</th>
