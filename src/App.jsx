@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react'
 import LoginScreen from './components/LoginScreen'
 import Dashboard from './components/Dashboard'
 import PublicReceipt from './components/PublicReceipt'
-import { db } from './firebase'
-import { doc, onSnapshot, getDoc, collection, setDoc, writeBatch, query, orderBy, limit } from 'firebase/firestore'
 import supabase from './supabase'
 
 function App() {
@@ -21,84 +19,61 @@ function App() {
   const [cloudLoaded, setCloudLoaded] = useState(false)
   const [syncError, setSyncError] = useState(null)
 
-  // REAL-TIME SYNC FROM FIREBASE
+  // REAL-TIME SYNC FROM SUPABASE
   useEffect(() => {
-    // 1. Sync Single Documents (Config, Users, Inventory, Activities)
-    const singleDocs = ['users', 'inventory', 'activities', 'config']
-    const unsubSingles = singleDocs.map(docId => {
-      return onSnapshot(doc(db, "erpData", docId), (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data()
-          if (docId === 'users' && data.list) setUsers(data.list)
-          if (docId === 'inventory' && data.list) setInventory(data.list)
-          if (docId === 'activities' && data.list) setActivities(data.list)
-          if (docId === 'config') {
-            if (data.designations) setDesignations(data.designations)
-            if (data.orderTypes) setOrderTypes(data.orderTypes)
-            if (data.productTypes) setProductTypes(data.productTypes)
-            if (data.inventoryUnits) setInventoryUnits(data.inventoryUnits)
-          }
-        }
-      }, (error) => { })
-    })
+    const fetchData = async () => {
+      try {
+        const [u, c, o, s, i, a, cfg] = await Promise.all([
+          supabase.from('users').select('*'),
+          supabase.from('clients').select('*'),
+          supabase.from('orders').select('*'),
+          supabase.from('sales').select('*'),
+          supabase.from('inventory').select('*'),
+          supabase.from('activities').select('*').order('timestamp', { ascending: false }).limit(100),
+          supabase.from('config').select('*')
+        ]);
 
-    // 2. Sync Collections (Orders, Sales, Clients)
-    const collectionsToSync = ['orders', 'sales', 'clients']
-    const unsubCollections = collectionsToSync.map(colId => {
-      return onSnapshot(collection(db, colId), (querySnapshot) => {
-        const list = []
-        if (!querySnapshot.empty) {
-          querySnapshot.forEach((doc) => {
-            list.push(doc.data())
-          })
-          if (colId === 'orders') setOrders(list)
-          if (colId === 'sales') setSales(list)
-          if (colId === 'clients') setClients(list)
-        }
+        if (u.data) setUsers(u.data);
+        if (c.data) setClients(c.data);
+        if (o.data) setOrders(o.data);
+        if (s.data) setSales(s.data);
+        if (i.data) setInventory(i.data);
+        if (a.data) setActivities(a.data);
         
-        // Robust merge logic: Combine cloud collections with old "main" data
-        getDoc(doc(db, "erpData", "main")).then(mainSnap => {
-          if (mainSnap.exists()) {
-            const mainData = mainSnap.data()
-            if (colId === 'orders') {
-              const oldList = mainData.orders || []
-              const combined = [...list, ...oldList.filter(o => !list.some(no => no.id === o.id))]
-              setOrders(combined)
-            }
-            if (colId === 'sales') {
-              const oldList = mainData.sales || []
-              const combined = [...list, ...oldList.filter(s => !list.some(ns => ns.id === s.id))]
-              setSales(combined)
-            }
-            if (colId === 'clients') {
-              const oldList = mainData.clients || []
-              const combined = [...list, ...oldList.filter(c => !list.some(nc => nc.id === c.id))]
-              setClients(combined)
-            }
-          } else {
-            if (colId === 'orders') setOrders(list)
-            if (colId === 'sales') setSales(list)
-            if (colId === 'clients') setClients(list)
-          }
-          setCloudLoaded(true)
-          setSyncError(null)
-        }).catch(err => {
-          console.error("Migration Fallback Error:", err)
-          if (err.message.includes("quota")) setSyncError("Daily Limit Exceeded (Firebase Quota)")
-          setCloudLoaded(true)
-        })
-      }, (error) => {
-        console.error("Collection Sync Error:", error.message)
-        if (error.message.includes("quota")) setSyncError("Daily Limit Exceeded (Firebase Quota)")
-        setCloudLoaded(true)
-      })
-    })
+        if (cfg.data) {
+          cfg.data.forEach(item => {
+            if (item.id === 'designations') setDesignations(item.data);
+            if (item.id === 'orderTypes') setOrderTypes(item.data);
+            if (item.id === 'productTypes') setProductTypes(item.data);
+            if (item.id === 'inventoryUnits') setInventoryUnits(item.data);
+          });
+        }
+        setCloudLoaded(true);
+      } catch (err) {
+        console.error("Supabase Load Error:", err);
+        setSyncError("Failed to load cloud data");
+        setCloudLoaded(true);
+      }
+    };
+
+    fetchData();
+
+    // Set up Realtime Subscriptions
+    const channels = [
+      supabase.channel('users').on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, (payload) => {
+        fetchData(); // Refresh on change for simplicity
+      }).subscribe(),
+      supabase.channel('clients').on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => fetchData()).subscribe(),
+      supabase.channel('orders').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchData()).subscribe(),
+      supabase.channel('sales').on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, () => fetchData()).subscribe(),
+      supabase.channel('inventory').on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => fetchData()).subscribe(),
+      supabase.channel('config').on('postgres_changes', { event: '*', schema: 'public', table: 'config' }, () => fetchData()).subscribe()
+    ];
 
     return () => {
-      unsubSingles.forEach(unsub => unsub())
-      unsubCollections.forEach(unsub => unsub())
-    }
-  }, [])
+      channels.forEach(channel => supabase.removeChannel(channel));
+    };
+  }, []);
 
   // LOCAL PERSISTENCE
   useEffect(() => { localStorage.setItem('erp_users', JSON.stringify(users)) }, [users])
@@ -161,9 +136,9 @@ function App() {
       {!isLoggedIn ? (
         <LoginScreen onLogin={handleLogin} users={users} />
       ) : (
-        <Dashboard 
-          onLogout={handleLogout} 
-          user={user} 
+        <Dashboard
+          onLogout={handleLogout}
+          user={user}
           users={users} setUsers={setUsers}
           designations={designations} setDesignations={setDesignations}
           clients={clients} setClients={setClients}
@@ -176,50 +151,22 @@ function App() {
           inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits}
           cloudLoaded={cloudLoaded}
           syncError={syncError}
-          // Direct Save Functions with Error Handling
+          // Direct Save Functions for Supabase
           saveSale={async (s) => {
-            try {
-              await setDoc(doc(db, "sales", (s.id || s.saleId).toString()), JSON.parse(JSON.stringify(s)), { merge: true });
-              console.log("Sale synced to cloud:", s.saleId);
-            } catch (err) {
-              console.error("Cloud Sync Error (Sale):", err.message);
-              alert("Cloud Sync Failed: " + err.message);
-            }
+            const { error } = await supabase.from('sales').upsert([s]);
+            if (error) alert("Save Failed: " + error.message);
           }}
           saveOrder={async (o) => {
-            try {
-              await setDoc(doc(db, "orders", (o.id || o.orderId).toString()), JSON.parse(JSON.stringify(o)), { merge: true });
-              console.log("Order synced to cloud:", o.id);
-            } catch (err) {
-              console.error("Cloud Sync Error (Order):", err.message);
-              alert("Cloud Sync Failed: " + err.message);
-            }
+            const { error } = await supabase.from('orders').upsert([o]);
+            if (error) alert("Save Failed: " + error.message);
           }}
           saveClient={async (c) => {
-            try {
-              await setDoc(doc(db, "clients", (c.id || c.clientId || c.phone || Date.now()).toString()), JSON.parse(JSON.stringify(c)), { merge: true });
-              console.log("Client synced to cloud:", c.name);
-            } catch (err) {
-              console.error("Cloud Sync Error (Client):", err.message);
-              alert("Cloud Sync Failed: " + err.message);
-            }
+            const { error } = await supabase.from('clients').upsert([c]);
+            if (error) alert("Save Failed: " + error.message);
           }}
           saveUser={async (u) => {
-            try {
-              // 1. Save to Firebase (Individual document for Nitro Sync)
-              await setDoc(doc(db, "erp_users", (u.email).toString()), JSON.parse(JSON.stringify(u)), { merge: true });
-              
-              // 2. Save to Supabase
-              const { data, error } = await supabase
-                .from('users')
-                .upsert([u], { onConflict: 'email' });
-              
-              if (error) throw error;
-              console.log("User synced to both Firebase & Supabase:", u.email);
-            } catch (err) {
-              console.error("Cloud Sync Error (User):", err.message);
-              alert("Cloud Sync Failed: " + err.message);
-            }
+            const { error } = await supabase.from('users').upsert([u]);
+            if (error) alert("Save Failed: " + error.message);
           }}
         />
       )}

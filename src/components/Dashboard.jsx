@@ -16,16 +16,7 @@ const ViewSalesPage = lazy(() => import('../pages/Sales/ViewSales'))
 const ReportsPage = lazy(() => import('../pages/Reports/Reports'))
 import AccountDetailsModal from './AccountDetailsModal'
 
-import { db } from '../firebase'
-
-import {
-  doc,
-  setDoc,
-  getDoc,
-  onSnapshot,
-  collection,
-  writeBatch
-} from 'firebase/firestore'
+import supabase from '../supabase'
 
 function Dashboard({
   onLogout, user,
@@ -106,46 +97,31 @@ function Dashboard({
   useEffect(() => { localStorage.setItem('productTypes', JSON.stringify(productTypes)) }, [productTypes])
   useEffect(() => { localStorage.setItem('inventoryUnits', JSON.stringify(inventoryUnits)) }, [inventoryUnits])
 
-  // SAVE TO FIREBASE
+  // SAVE TO SUPABASE (BULK & CONFIG)
   useEffect(() => {
-    if (!cloudLoaded) return
+    if (!cloudLoaded) return;
 
-    const saveCloudData = async (isManual = false) => {
+    const saveToSupabase = async () => {
       try {
-        const batch = [];
-        
-        // Helper to remove 'undefined' values which Firebase rejects
-        const clean = (obj) => JSON.parse(JSON.stringify(obj));
-        
-        if (users.length > 0 || isManual) batch.push(setDoc(doc(db, "erpData", "users"), { list: clean(users) }, { merge: true }));
-        if (inventory.length > 0 || isManual) batch.push(setDoc(doc(db, "erpData", "inventory"), { list: clean(inventory) }, { merge: true }));
-        if (activities.length > 0 || isManual) batch.push(setDoc(doc(db, "erpData", "activities"), { list: clean(activities) }, { merge: true }));
-        
-        batch.push(setDoc(doc(db, "erpData", "config"), clean({
-          designations,
-          orderTypes,
-          productTypes,
-          inventoryUnits
-        }), { merge: true }));
-
-        // Removed bulk main backup to save on quota. 
-        // Collections (Sales/Orders/Clients) now handle their own instant sync.
-
-        if (batch.length > 0) {
-          await Promise.all(batch);
-          if (isManual && showGlobalToast) showGlobalToast('Success', 'Manual Cloud Sync Complete! ✅');
-        }
+        await Promise.all([
+          // Save Config settings
+          supabase.from('config').upsert([{ id: 'designations', data: designations }]),
+          supabase.from('config').upsert([{ id: 'orderTypes', data: orderTypes }]),
+          supabase.from('config').upsert([{ id: 'productTypes', data: productTypes }]),
+          supabase.from('config').upsert([{ id: 'inventoryUnits', data: inventoryUnits }]),
+          // Save Inventory & Activities (Already partially handled by pages, but keep for state sync)
+          // Note: Full list upserting can be heavy, but these are small lists (<1000 items)
+          ...users.map(u => supabase.from('users').upsert([u])),
+          ...inventory.slice(0, 200).map(i => supabase.from('inventory').upsert([i]))
+        ]);
       } catch (error) {
-        console.error("Cloud Sync Error:", error.message);
-        if (showGlobalToast) {
-          showGlobalToast('Sync Error', `Could not save to cloud: ${error.message}`);
-        }
+        console.error("Supabase Background Sync Error:", error.message);
       }
-    }
+    };
 
-    const timeout = setTimeout(saveCloudData, 1000)
-    return () => clearTimeout(timeout)
-  }, [users, designations, clients, orders, inventory, sales, activities, orderTypes, productTypes, inventoryUnits, cloudLoaded])
+    const timer = setTimeout(saveToSupabase, 5000); // Debounce saves
+    return () => clearTimeout(timer);
+  }, [users, inventory, designations, orderTypes, productTypes, inventoryUnits, cloudLoaded]);
 
   const activeSidebarPage = currentPage === 'client-detail' ? 'view-clients' : (currentPage === 'inventory-detail' ? 'view-inventory' : currentPage)
 
