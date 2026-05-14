@@ -38,7 +38,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
   const handleDeleteConfirm = async () => {
     if (orderToDelete) {
       const idToDelete = orderToDelete.id;
-      
+
       // Restore inventory if order had internal materials
       if (orderToDelete.sourceOfMaterial === 'Internal' && orderToDelete.internalItems?.length > 0) {
         let updatedInventory = [...inventory];
@@ -92,7 +92,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
       return o
     })
     saveOrders(updated)
-    
+
     // Cloud Sync: Persist the specific order change
     const changedOrder = updated.find(o => o.id === id)
     if (changedOrder && saveOrder) {
@@ -126,16 +126,16 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
     } else if (activeFilter !== 'All') {
       matchesStatus = o.status === activeFilter
     }
-    
+
     if (!matchesStatus) return false
 
     // 2. Date Filtering (Delivery Tracker)
     if (dateFilter !== 'All') {
       if (!o.deliveryDate) return false
-      
+
       const todayStr = getIndianDate() // YYYY-MM-DD
       const targetStr = o.deliveryDate // Should be YYYY-MM-DD
-      
+
       if (dateFilter === 'Today') {
         if (targetStr !== todayStr) return false
       } else if (dateFilter === 'Tomorrow') {
@@ -145,9 +145,9 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
         if (targetStr !== tomStr) return false
       } else if (dateFilter === 'Week') {
         const today = new Date()
-        today.setHours(0,0,0,0)
+        today.setHours(0, 0, 0, 0)
         const target = new Date(o.deliveryDate)
-        target.setHours(0,0,0,0)
+        target.setHours(0, 0, 0, 0)
         const nextWeek = new Date(today)
         nextWeek.setDate(today.getDate() + 7)
         if (target < today || target > nextWeek) return false
@@ -167,7 +167,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
       if (index !== -1) {
         const page = Math.floor(index / itemsPerPage) + 1;
         setCurrentPageNum(page);
-        
+
         // Wait for page to render
         setTimeout(() => {
           const row = rowRefs.current[highlightOrderId];
@@ -376,7 +376,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                   />
                 </label>
               </div>
-              
+
               {editOrder.sourceOfMaterial === 'Internal' && editOrder.internalItems && (
                 <div className="rounded-xl bg-[var(--soft)] p-3">
                   <p className="text-[10px] font-bold uppercase text-[var(--muted)] mb-2">Internal Materials Summary</p>
@@ -489,7 +489,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
               <stat.icon size={22} />
             </div>
             <p className={`text-2xl font-black transition-colors ${activeFilter === stat.id ? 'text-[var(--accent)]' : 'text-[var(--text)]'}`}>{stat.value}</p>
-            <p className="mt-1 text-[10px] font-black uppercase tracking-[0.15em] text-[var(--muted)] group-hover:text-[var(--text)] transition-colors">{stat.label}</p>
+            <p className="mt-1 font-black uppercase tracking-[0.15em] text-[var(--muted)] group-hover:text-[var(--text)] transition-colors !text-[10px]">{stat.label}</p>
             {activeFilter === stat.id && (
               <div className="absolute -bottom-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-[var(--accent)]"></div>
             )}
@@ -555,8 +555,8 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                   { key: 'id', label: 'Order ID' },
                   { key: 'clientName', label: 'Client' }
                 ].map(header => (
-                  <th 
-                    key={header.key} 
+                  <th
+                    key={header.key}
                     className="cursor-pointer transition hover:text-[var(--accent)] group"
                     onClick={() => {
                       setSortConfig(prev => ({
@@ -575,7 +575,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                 ))}
                 <th>Photo</th>
                 <th>Details</th>
-                <th 
+                <th
                   className="cursor-pointer transition hover:text-[var(--accent)] group"
                   onClick={() => {
                     setSortConfig(prev => ({
@@ -600,8 +600,8 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
               {paginatedOrders.map((order) => {
                 const progress = getProgress(order)
                 return (
-                  <tr 
-                    key={order.id} 
+                  <tr
+                    key={order.id}
                     ref={el => rowRefs.current[order.id] = el}
                     className={`group transition-colors duration-1000 ${highlightOrderId === order.id ? 'bg-[var(--accent-soft)]/50 ring-2 ring-[var(--accent)] ring-inset' : (order.status === 'Completed' ? 'bg-green-500/10' : '')}`}
                   >
@@ -639,11 +639,10 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                     <td>
                       <div className="relative group min-w-[120px]">
                         <select
-                          className={`w-full appearance-none rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 pr-8 text-[11px] font-bold outline-none transition focus:border-[var(--accent)] cursor-pointer shadow-sm active:scale-95 ${
-                            order.status === 'Completed' ? 'text-green-600 border-green-500/30' : 
-                            order.status === 'Hold' ? 'text-orange-500 border-orange-500/30' : 
-                            'text-[var(--text)]'
-                          }`}
+                          className={`w-full appearance-none rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 pr-8 text-[11px] font-bold outline-none transition focus:border-[var(--accent)] cursor-pointer shadow-sm active:scale-95 ${order.status === 'Completed' ? 'text-green-600 border-green-500/30' :
+                            order.status === 'Hold' ? 'text-orange-500 border-orange-500/30' :
+                              'text-[var(--text)]'
+                            }`}
                           value={order.status || 'Not Ready'}
                           onChange={(e) => handleStatusChange(order.id, e.target.value)}
                           disabled={order.status === 'Sold'}
@@ -659,10 +658,10 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                         </div>
                       </div>
                       {order.startDate && order.status !== 'Pending' && (
-                        <p className="text-[10px] text-[var(--muted)] mt-1">Started: {formatDateDDMMYY(order.startDate)}</p>
+                        <p className="text-[var(--muted)] mt-1 !text-[10px]">Started: {formatDateDDMMYY(order.startDate)}</p>
                       )}
                       {(order.completedDate || order.closedDate) && (order.status === 'Completed' || order.status === 'Sold') && (
-                        <p className="text-[10px] text-[var(--muted)] mt-0.5">Completed: {formatDateDDMMYY(order.completedDate || order.closedDate)}</p>
+                        <p className="text-[var(--muted)] mt-0.5 !text-[10px]">Completed: {formatDateDDMMYY(order.completedDate || order.closedDate)}</p>
                       )}
                     </td>
                     <td>

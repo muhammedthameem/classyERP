@@ -195,12 +195,12 @@ function Dashboard({
       let cat = 'Luxury pret'; // Default
       if (pName.includes('bridal') || pType.includes('bridal') || pName.includes('lehenga')) cat = 'Bridal wear';
       else if (pName.includes('alteration') || pType.includes('alteration') || pName.includes('repair')) cat = 'Alterations';
-      
+
       const itemPrice = parseFloat(item.price || 0);
       const itemQty = parseFloat(item.qty || 1);
       const itemDisc = parseFloat(item.discount || 0);
       const itemTotal = (itemPrice * itemQty) * (1 - itemDisc / 100);
-      
+
       acc[cat] = (acc[cat] || 0) + itemTotal;
     });
     return acc;
@@ -628,7 +628,7 @@ function Dashboard({
                       <p className="flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-[#f8e6dc]">
                         <Palette size={16} /> Spring bridal collection is live
                       </p>
-                      <h2 className="mt-5 max-w-2xl text-4xl font-semibold leading-tight lg:text-5xl">
+                      <h2 className="mt-5 max-w-2xl text-h1 font-semibold leading-tight lg:text-5xl">
                         Boutique operations with fittings, fabrics, and client moments in one view.
                       </h2>
                       <div className="mt-6 flex flex-wrap gap-3">
@@ -644,7 +644,7 @@ function Dashboard({
                         <p className="flex items-center gap-2 text-sm text-[#f8e6dc]">
                           <TrendingUp size={16} /> Revenue pulse
                         </p>
-                        <p className="mt-3 text-5xl font-semibold">₹{allSales.reduce((acc, s) => acc + (parseFloat(s.totalAmount) || 0), 0).toLocaleString()}</p>
+                        <p className="mt-3 text-h1 font-semibold">₹{allSales.reduce((acc, s) => acc + (parseFloat(s.totalAmount) || 0), 0).toLocaleString()}</p>
                         <div className="mt-5 space-y-3">
                           {['Bridal wear', 'Luxury pret', 'Alterations'].map((item, index) => (
                             <div key={item}>
@@ -810,8 +810,8 @@ function Dashboard({
                                 <span className="text-h2 font-black text-[var(--accent)]">{item.percentage}%</span>
                               </div>
                               <div className="h-2.5 w-full rounded-full bg-[var(--soft)] overflow-hidden">
-                                <div 
-                                  className={`h-full rounded-full transition-all duration-1000 ease-out ${item.color}`} 
+                                <div
+                                  className={`h-full rounded-full transition-all duration-1000 ease-out ${item.color}`}
                                   style={{ width: `${item.percentage}%` }}
                                 />
                               </div>

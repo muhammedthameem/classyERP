@@ -83,7 +83,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
   // Pagination Logic
   const [currentPageNum, setCurrentPageNum] = useState(1);
   const itemsPerPage = 10;
-  
+
   const totalPages = Math.ceil(sortedSales.length / itemsPerPage);
   const paginatedSales = sortedSales.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage);
 
@@ -227,12 +227,12 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
               <div id="printable-bill-view" className="mb-8 bg-white p-4 text-black shadow-inner overflow-hidden mx-auto" style={{ width: '80mm', minHeight: '120mm', fontFamily: 'monospace' }}>
                 <div className="text-center mb-4 border-b-2 border-dashed border-gray-300 pb-4">
                   <img src="/logo-black.png" alt="Logo" className="w-28 h-32 mx-auto mb-4 object-contain" />
-                  <h3 className="text-xl font-bold uppercase tracking-tight">Classy Couture</h3>
+                  <h3 className="uppercase tracking-tight !text-[24px] !font-extrabold">Classy Couture</h3>
                   <p className="text-[10px] font-medium">Be Unique, Be Classy</p>
-                  <p style={{ margin: '2px 0', fontSize: '10px' }}>Ph : 8606154015</p>
-                  <div className="mt-2 text-[10px] text-gray-500">
-                    <p>Order ID: {viewSale.saleId}</p>
-                    <p>{new Date(viewSale.timestamp).toLocaleString()}</p>
+                  <p style={{ margin: '2px 0', fontSize: '12px' }}>Ph : 8606154015</p>
+                  <div className="mt-2 text-[8px] text-gray-500">
+                    <p className='!text-[10px]'>Order ID: {viewSale.saleId}</p>
+                    <p className='!text-[10px]'>{new Date(viewSale.timestamp).toLocaleString()}</p>
                   </div>
                 </div>
 
@@ -340,10 +340,10 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                         </div>
                       </div>
 
-                      <div style="text-align: center; margin-top: 30px; font-size: 10px; border-top: 1px dashed #ccc; padding-top: 15px; font-style: italic; color: #555;">
+                      <div style="text-align: center; margin-top: 30px; font-size: 10px; border-top: 1px dashed #ccc; padding-top: 15px; font-style: italic; color: #555; line-height:1.2">
                         <p style="margin: 2px 0; font-weight: bold; color: #000;">Thank you for shopping!</p>
-                        <p style="margin: 2px 0;">Your elegance is our priority.</p>
-                        <p style="margin: 2px 0;">Please visit again for more unique designs.</p>
+                        <p style="margin: 2px 0; font-size:10px">Your elegance is our priority.</p>
+                        <p style="margin: 2px 0; font-size:10px">Please visit again for more unique designs.</p>
                       </div>
                     `;
 
