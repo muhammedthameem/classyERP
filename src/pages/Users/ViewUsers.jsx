@@ -39,7 +39,7 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
       const { error } = await supabase.from('erp_users').delete().eq('id', id);
       if (error) throw error;
       
-      if (showGlobalToast) showGlobalToast('Success', 'User deleted successfully.')
+      if (showGlobalToast) showGlobalToast('Success', `${userToDelete.name} successfully deleted`)
     } catch (error) {
       // ROLLBACK: If cloud fails, put the user back
       setUsers(originalUsers);
