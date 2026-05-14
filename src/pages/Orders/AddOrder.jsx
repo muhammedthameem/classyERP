@@ -366,15 +366,16 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                       onChange={(e) => setClientSearch(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
-                          e.preventDefault(); // Stop form from submitting
-                          const filtered = (clientsList || []).filter(c => (c.name || '').toLowerCase().includes(clientSearch.toLowerCase()));
-                          if (filtered.length > 0) {
-                            // If there's a match, select the first one
-                            setClientName(filtered[0].name);
+                          e.preventDefault();
+                          const searchVal = clientSearch.trim();
+                          const filtered = (clientsList || []).filter(c => (c.name || '').toLowerCase().includes(searchVal.toLowerCase()));
+                          
+                          if (filtered.length > 0 && filtered.some(c => c.name.toLowerCase() === searchVal.toLowerCase())) {
+                            const exactMatch = filtered.find(c => c.name.toLowerCase() === searchVal.toLowerCase());
+                            setClientName(exactMatch.name);
                             setShowClientDropdown(false);
-                          } else if (clientSearch.trim()) {
-                            // If no match, trigger the "Quick Add"
-                            localStorage.setItem('prefillClientName', clientSearch);
+                          } else if (searchVal) {
+                            localStorage.setItem('prefillClientName', searchVal);
                             setCurrentPage('add-client');
                           }
                         }
