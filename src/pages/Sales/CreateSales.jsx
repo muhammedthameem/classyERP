@@ -587,8 +587,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
           <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-[var(--accent)] mb-1">
             <TrendingUp size={16} /> Checkout Terminal
           </p>
-          <h1 className="text-3xl font-semibold">Create Sales</h1>
-          <p className="mt-2 text-sm text-[var(--muted)]">Process boutique inventory or collect cash for finished orders.</p>
+          <h1 className="text-h1">Create Sales</h1>
+          <p className="text-para text-[var(--muted)] mt-2">Process boutique inventory or collect cash for finished orders.</p>
         </div>
       </div>
 

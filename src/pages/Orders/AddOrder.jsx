@@ -320,8 +320,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold">Create Order</h1>
-          <p className="mt-2 text-sm text-[var(--muted)]">Add multiple products to a single client order.</p>
+          <h1 className="text-h1">Create Order</h1>
+          <p className="text-para text-[var(--muted)] mt-2">Add multiple products to a single client order.</p>
         </div>
         <button
           type="button"
@@ -342,8 +342,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                 <UsersRound size={24} />
               </div>
               <div>
-                <h2 className="text-2xl font-bold tracking-tight">Client & Timeline</h2>
-                <p className="text-sm text-[var(--muted)] font-medium">Identify client and set delivery expectations</p>
+                <h2 className="text-h2">Client & Timeline</h2>
+                <p className="text-para text-[var(--muted)]">Identify client and set delivery expectations</p>
               </div>
             </div>
             {clientName && (
@@ -477,7 +477,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
         {/* Step 2: Order Items */}
         <section className="space-y-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-1 gap-4">
-            <h2 className="text-xl font-semibold flex items-center gap-2">
+            <h2 className="text-h2 flex items-center gap-2">
               <ShoppingBag size={20} className="text-[var(--accent)]" /> Products to Stitch
             </h2>
             <button

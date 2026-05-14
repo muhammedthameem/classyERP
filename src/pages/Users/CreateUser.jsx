@@ -81,8 +81,8 @@ function CreateUserPage({ themeStyle, setCurrentPage, showGlobalToast, users, se
   return (
     <div style={themeStyle} className="relative">
       <div className="mb-6">
-        <h1 className="text-3xl font-semibold">Create User</h1>
-        <p className="mt-2 text-sm text-[var(--muted)]">Add a new team member to the system</p>
+        <h1 className="text-h1">Create User</h1>
+        <p className="text-para text-[var(--muted)] mt-2">Add a new team member to the system</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">

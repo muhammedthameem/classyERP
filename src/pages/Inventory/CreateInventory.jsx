@@ -74,13 +74,13 @@ function CreateInventoryPage({ themeStyle, setCurrentPage, showGlobalToast, inve
   return (
     <div style={themeStyle} className="relative">
       <div className="mb-6">
-        <h1 className="text-3xl font-semibold">Create Inventory</h1>
-        <p className="mt-2 text-sm text-[var(--muted)]">Add a new product to your inventory</p>
+        <h1 className="text-h1">Create Inventory</h1>
+        <p className="text-para text-[var(--muted)] mt-2">Add a new product to your inventory</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6 pb-12">
         <section className="relative z-12 rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
-          <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold text-[var(--accent)]">
+          <h2 className="text-h2 mb-6 flex items-center gap-2 text-[var(--accent)]">
             <Package size={20} /> Product Details
           </h2>
           <div className="grid gap-6 sm:grid-cols-2">
@@ -175,7 +175,7 @@ function CreateInventoryPage({ themeStyle, setCurrentPage, showGlobalToast, inve
         </section>
 
         <section className="relative z-11 rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
-          <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold text-[var(--accent)]">
+          <h2 className="text-h2 mb-6 flex items-center gap-2 text-[var(--accent)]">
             <CircleDollarSign size={20} /> Stock & Pricing
           </h2>
           <div className="grid gap-6 sm:grid-cols-2">
@@ -319,7 +319,7 @@ function CreateInventoryPage({ themeStyle, setCurrentPage, showGlobalToast, inve
         </section>
 
         <section className="relative rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
-          <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold text-[var(--accent)]">
+          <h2 className="text-h2 mb-6 flex items-center gap-2 text-[var(--accent)]">
             <Sparkles size={20} /> Tax, Discount & Vendor
           </h2>
           <div className="grid gap-6 sm:grid-cols-2">
@@ -418,7 +418,7 @@ function CreateInventoryPage({ themeStyle, setCurrentPage, showGlobalToast, inve
           
           <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between relative z-10">
             <div className="text-center lg:text-left">
-              <h3 className="text-xl font-black text-[var(--accent)] tracking-tight">Inventory Summary</h3>
+              <h3 className="text-h3 text-[var(--accent)]">Inventory Summary</h3>
               <p className="text-sm font-medium text-[var(--muted)]">Live pricing calculation</p>
             </div>
             

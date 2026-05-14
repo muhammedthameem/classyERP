@@ -94,8 +94,8 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
           <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-[var(--accent)] mb-1">
             <TrendingUp size={16} /> Sales History
           </p>
-          <h1 className="text-3xl font-semibold">View Sales</h1>
-          <p className="mt-2 text-sm text-[var(--muted)]">Track all boutique transactions and manage records.</p>
+          <h1 className="text-h1">View Sales</h1>
+          <p className="text-para text-[var(--muted)] mt-2">Track all boutique transactions and manage records.</p>
         </div>
         <button
           onClick={() => setCurrentPage('create-sales')}

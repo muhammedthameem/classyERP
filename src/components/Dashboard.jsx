@@ -500,8 +500,8 @@ function Dashboard({
                   <div className="absolute right-0 mt-3 w-80 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl shadow-black/10">
                     <div className="bg-[var(--soft)] px-4 py-3 flex justify-between items-center">
                       <div>
-                        <p className="text-sm font-semibold">Activity Notifications</p>
-                        <p className="text-xs text-[var(--muted)]">{activities.length} recent events</p>
+                        <p className="text-label">Activity Notifications</p>
+                        <p className="text-meta">{activities.length} recent events</p>
                       </div>
                       {activities.length > 0 && (
                         <button
@@ -522,11 +522,11 @@ function Dashboard({
                             <Bell size={14} />
                           </span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-[var(--text)]">{activity.title}</p>
-                            <p className="text-xs text-[var(--muted)] mt-0.5 break-words">{activity.description}</p>
+                            <p className="text-label text-[var(--text)]">{activity.title}</p>
+                            <p className="text-meta mt-0.5 break-words">{activity.description}</p>
                             <div className="mt-1.5 flex items-center justify-between gap-2">
-                              <p className="text-[10px] text-[var(--muted)] font-medium">{formatDateTimeDDMMYY(activity.timestamp)}</p>
-                              <p className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[9px] font-bold text-[var(--accent)]">
+                              <p className="text-tiny text-[var(--muted)]">{formatDateTimeDDMMYY(activity.timestamp)}</p>
+                              <p className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-tiny text-[var(--accent)]">
                                 {activity.actor}
                               </p>
                             </div>
@@ -614,8 +614,8 @@ function Dashboard({
                 </svg>
               </span>
               <div>
-                <p className="text-sm font-semibold text-[var(--text)]">{globalToast.title}</p>
-                <p className="text-xs text-[var(--muted)]">{globalToast.message}</p>
+                <p className="text-label text-[var(--text)]">{globalToast.title}</p>
+                <p className="text-meta">{globalToast.message}</p>
               </div>
             </div>
           )}
@@ -710,8 +710,8 @@ function Dashboard({
                   <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
                     <div className="mb-5 flex items-center justify-between">
                       <div>
-                        <h2 className="text-xl font-semibold">Live boutique orders</h2>
-                        <p className="text-sm text-[var(--muted)]">Production queue for this week</p>
+                        <h2 className="text-h2">Live boutique orders</h2>
+                        <p className="text-para text-[var(--muted)]">Production queue for this week</p>
                       </div>
                       <button
                         className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-sm font-semibold hover:bg-[var(--soft)] transition"
@@ -762,8 +762,8 @@ function Dashboard({
                   <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
                     <div className="mb-5 flex items-center justify-between">
                       <div>
-                        <h2 className="text-xl font-semibold">Real-time sales</h2>
-                        <p className="text-sm text-[var(--muted)]">Recent transactions</p>
+                        <h2 className="text-h2">Real-time sales</h2>
+                        <p className="text-para text-[var(--muted)]">Recent transactions</p>
                       </div>
                       {user?.role === 'Admin' && (
                         <button
@@ -796,11 +796,11 @@ function Dashboard({
                     {user?.role === 'Admin' && (
                       <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
                         <div className="mb-6">
-                          <h2 className="flex items-center gap-2 text-xl font-bold">
+                          <h2 className="text-h2 flex items-center gap-2">
                             <BarChart3 size={22} className="text-[var(--accent)]" /> Revenue pulse
                           </h2>
                           <p className="text-3xl font-black mt-2">₹{totalRev.toLocaleString()}</p>
-                          <p className="text-xs text-[var(--muted)] font-medium uppercase tracking-widest mt-1">Total boutique income</p>
+                          <p className="text-tiny text-[var(--muted)] mt-1">Total boutique income</p>
                         </div>
                         <div className="space-y-6">
                           {liveRevenuePulse.map((item) => (
@@ -829,10 +829,10 @@ function Dashboard({
                     )}
 
                     <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
-                      <h2 className="flex items-center gap-2 text-xl font-semibold">
+                      <h2 className="text-h2 flex items-center gap-2">
                         <ShieldCheck size={20} /> Client elegance score
                       </h2>
-                      <p className="mt-1 text-sm text-[var(--muted)]">Retention, repeat orders, and fulfillment quality</p>
+                      <p className="text-para text-[var(--muted)] mt-1">Retention, repeat orders, and fulfillment quality</p>
                       <div className="mt-6 grid gap-4 sm:grid-cols-3">
                         {(() => {
                           const totalClientsCount = clients.length || 0;

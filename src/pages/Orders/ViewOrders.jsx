@@ -425,8 +425,8 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
 
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Orders History</h1>
-          <p className="mt-2 text-sm text-[var(--muted)]">View and manage all active studio orders.</p>
+          <h1 className="text-h1">Orders History</h1>
+          <p className="text-para text-[var(--muted)] mt-2">View and manage all active studio orders.</p>
         </div>
         <button
           className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 active:scale-95"

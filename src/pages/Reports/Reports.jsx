@@ -223,8 +223,8 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
           <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-[var(--accent)] mb-1">
             <BarChart3 size={16} /> Business Analytics
           </p>
-          <h1 className="text-3xl font-semibold">Reports & Insights</h1>
-          <p className="mt-2 text-sm text-[var(--muted)]">Analyze your boutique performance and financial growth.</p>
+          <h1 className="text-h1">Reports & Insights</h1>
+          <p className="text-para text-[var(--muted)] mt-2">Analyze your boutique performance and financial growth.</p>
         </div>
         <button
           onClick={downloadPDF}
@@ -286,7 +286,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
           <section className="rounded-[32px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] lg:p-8">
             <div className="mb-6 flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-bold">Purchase Analysis</h3>
+                <h3 className="text-h3">Purchase Analysis</h3>
                 <p className="text-xs text-[var(--muted)]">Filtered entries: ${filteredInventory.length}</p>
               </div>
               <button onClick={() => downloadCSV('inventory')} className="flex items-center gap-2 rounded-xl bg-[var(--soft)] px-4 py-2 text-xs font-bold text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white">
@@ -332,7 +332,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
           <section className="rounded-[32px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] lg:p-8">
             <div className="mb-6 flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-bold">Sales Analysis</h3>
+                <h3 className="text-h3">Sales Analysis</h3>
                 <p className="text-xs text-[var(--muted)]">Filtered results: ${filteredSales.length}</p>
               </div>
               <button onClick={() => downloadCSV('sales')} className="flex items-center gap-2 rounded-xl bg-[var(--soft)] px-4 py-2 text-xs font-bold text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white">
@@ -394,7 +394,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
           <section className="rounded-[32px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] lg:p-8">
             <div className="mb-6 flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-bold">Order Tracking</h3>
+                <h3 className="text-h3">Order Tracking</h3>
                 <p className="text-xs text-[var(--muted)]">Filtered results: ${filteredOrders.length}</p>
               </div>
               <button onClick={() => downloadCSV('orders')} className="flex items-center gap-2 rounded-xl bg-[var(--soft)] px-4 py-2 text-xs font-bold text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white">

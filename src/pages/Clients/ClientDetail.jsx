@@ -412,7 +412,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
       <div className="space-y-6">
         {(!isAddingMeasurement && !isEditingClient) || isAddingMeasurement ? (
           <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
-            <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold">
+            <h2 className="text-h2 mb-6 flex items-center gap-2">
               <UsersRound size={20} /> Personal Details
             </h2>
             <div className="grid gap-4 sm:grid-cols-3">
@@ -437,7 +437,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
             {/* Read-Only View */}
             {measurements.length > 1 && (
               <section className="relative z-9 rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
-                <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold">
+                <h2 className="text-h2 mb-4 flex items-center gap-2">
                   <ShoppingBag size={20} /> Select Product Measurement
                 </h2>
                 <div className="relative">
@@ -490,7 +490,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
             )}
 
             <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
-              <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold">
+              <h2 className="text-h2 mb-6 flex items-center gap-2">
                 <Package size={20} /> Product
               </h2>
               <div>
@@ -500,7 +500,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
             </section>
 
             <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur">
-              <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold">
+              <h2 className="text-h2 mb-6 flex items-center gap-2">
                 <Package size={20} /> Top Measurements
               </h2>
               <div className="measurement-grid">
@@ -549,7 +549,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
             </section>
 
             <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur">
-              <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold">
+              <h2 className="text-h2 mb-6 flex items-center gap-2">
                 <Package size={20} /> Bottom Measurements
               </h2>
               <div className="measurement-grid">
@@ -593,7 +593,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
 
             {currentMeasurement.note && (
               <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur">
-                <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold">
+                <h2 className="text-h2 mb-4 flex items-center gap-2">
                   <Settings size={20} /> Notes
                 </h2>
                 <p className="text-sm text-[var(--text)] whitespace-pre-wrap">{currentMeasurement.note}</p>

@@ -169,14 +169,14 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
   return (
     <div style={themeStyle} className="relative">
       <div className="mb-6">
-        <h1 className="text-3xl font-semibold">Add New Client</h1>
-        <p className="mt-2 text-sm text-[var(--muted)]">Enter client personal details and measurements</p>
+        <h1 className="text-h1">Add New Client</h1>
+        <p className="text-para text-[var(--muted)] mt-2">Enter client personal details and measurements</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Personal Details Section */}
         <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
-          <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold">
+          <h2 className="text-h2 mb-6 flex items-center gap-2">
             <UsersRound size={20} /> Personal Details
           </h2>
           <div className="grid gap-4 sm:grid-cols-3">
@@ -215,7 +215,7 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
 
         {/* Measurements Section */}
         <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur">
-          <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold">
+          <h2 className="text-h2 mb-6 flex items-center gap-2">
             <Package size={20} /> Measurements
           </h2>
           <div className="mb-6 relative">
