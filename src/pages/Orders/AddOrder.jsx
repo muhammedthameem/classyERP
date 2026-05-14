@@ -368,7 +368,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                     />
                   </div>
                   <div className="max-h-60 overflow-y-auto pr-1 space-y-1">
-                    {clientsList.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase())).map(c => (
+                    {(clientsList || []).filter(c => (c.name || '').toLowerCase().includes((clientSearch || '').toLowerCase())).map(c => (
                       <button
                         key={c.id || c.mobile}
                         type="button"
@@ -376,13 +376,13 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                         onClick={() => { setClientName(c.name); setShowClientDropdown(false) }}
                       >
                         <div>
-                          <p className="font-semibold text-[var(--text)]">{c.name}</p>
+                          <p className="font-semibold text-[var(--text)]">{c.name || 'Unnamed'}</p>
                           <p className="text-xs text-[var(--muted)]">{c.mobile || 'No contact'}</p>
                         </div>
                       </button>
                     ))}
                     
-                    {clientSearch && !clientsList.some(c => c.name.toLowerCase() === clientSearch.toLowerCase()) && (
+                    {clientSearch && !(clientsList || []).some(c => (c.name || '').toLowerCase() === clientSearch.toLowerCase()) && (
                       <button
                         type="button"
                         className="w-full rounded-xl px-4 py-3 text-left text-sm font-bold text-[var(--accent)] bg-[var(--accent-soft)] transition hover:brightness-95 flex items-center gap-2 mt-2"
