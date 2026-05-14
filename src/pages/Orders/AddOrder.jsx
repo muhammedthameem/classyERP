@@ -478,16 +478,16 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
 
         {/* Step 2: Order Items */}
         <section className="space-y-6">
-          <div className="flex items-center justify-between px-1">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-1 gap-4">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <ShoppingBag size={20} className="text-[var(--accent)]" /> Products to Stitch
             </h2>
             <button
               type="button"
               onClick={addOrderItem}
-              className="flex items-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:brightness-95 active:scale-95"
+              className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 active:scale-95"
             >
-              <Plus size={16} /> Add Product
+              <Plus size={18} /> Add New Product
             </button>
           </div>
 
@@ -1179,21 +1179,21 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                 </h2>
              </div>
              
-             <div className="flex gap-3 w-full sm:w-auto">
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage('view-orders')}
-                  className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-6 py-3 font-semibold transition hover:bg-[var(--soft)]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-lg shadow-[var(--accent)]/25 transition hover:brightness-95 flex items-center gap-2"
-                >
-                  <CheckCircle size={18} /> Confirm Order
-                </button>
-             </div>
+             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                 <button
+                   type="button"
+                   onClick={() => setCurrentPage('view-orders')}
+                   className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-8 py-4 font-bold transition hover:bg-[var(--soft)] text-center active:scale-95"
+                 >
+                   Cancel
+                 </button>
+                 <button
+                   type="submit"
+                   className="rounded-xl bg-[var(--accent)] px-10 py-4 font-bold text-white shadow-xl shadow-[var(--accent)]/25 transition hover:brightness-95 flex items-center justify-center gap-2 active:scale-95"
+                 >
+                   <CheckCircle size={20} /> Confirm & Place Order
+                 </button>
+              </div>
           </div>
         </section>
       </form>
