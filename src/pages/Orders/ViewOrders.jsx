@@ -3,7 +3,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, CircleDollarSign,
 import { formatDateDDMMYY, getIndianDate, orders } from '../../utils/constants'
 import supabase from '../../supabase'
 
-function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory, saveOrder }) {
+function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory, saveOrder, deleteOrder }) {
   // Safety guard for cloud sync
   if (!orders) return <div className="p-20 text-center flex flex-col items-center gap-4">
     <div className="w-12 h-12 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin"></div>
@@ -63,7 +63,11 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
 
       // 2. Background Cloud Sync
       try {
-        await supabase.from('erp_orders').delete().eq('id', idToDelete);
+        if (deleteOrder) {
+          await deleteOrder(idToDelete);
+        } else {
+          await supabase.from('erp_orders').delete().eq('id', idToDelete);
+        }
       } catch (err) {
         console.error("Cloud delete failed:", err);
       }
