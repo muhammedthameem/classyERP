@@ -12,7 +12,7 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
 
   const [userToDelete, setUserToDelete] = useState(null)
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!userToDelete) return
     const id = userToDelete.id
     if (userToDelete.designation === 'Admin') {
@@ -30,9 +30,24 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
       setUserToDelete(null)
       return
     }
-    setUsers(users.filter(u => u.id !== id))
-    if (showGlobalToast) showGlobalToast('Success', 'User deleted successfully.')
-    setUserToDelete(null)
+
+    try {
+      // 1. Delete from Supabase Database
+      const { error } = await supabase.from('erp_users').delete().eq('id', id);
+      if (error) throw error;
+
+      // 2. Update Local State
+      setUsers(users.filter(u => u.id !== id))
+      
+      if (showGlobalToast) {
+        showGlobalToast('Success', 'User removed from database. Please manually revoke their login in the Auth tab for full security.')
+      }
+    } catch (error) {
+      console.error("Delete Error:", error.message);
+      if (showGlobalToast) showGlobalToast('Error', 'Could not delete from cloud: ' + error.message)
+    } finally {
+      setUserToDelete(null)
+    }
   }
 
   const handleUpdateUser = (e) => {
