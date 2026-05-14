@@ -175,13 +175,14 @@ function Dashboard({
   const allSales = sales
 
   const liveStats = [
-    { label: 'Total Revenue', value: `₹${allSales.reduce((acc, s) => acc + (parseFloat(s.totalAmount) || 0), 0).toLocaleString()}`, note: 'Real-time sales', icon: TrendingUp, adminOnly: true },
+    { label: 'Total Revenue', value: `₹${allSales.reduce((acc, s) => acc + (parseFloat(s.total) || parseFloat(s.totalAmount) || parseFloat(s.paidAmount) || 0), 0).toLocaleString()}`, note: 'Real-time sales', icon: TrendingUp, adminOnly: true },
     { label: 'Active Orders', value: allOrders.filter(o => o.status !== 'Closed' && o.status !== 'Sold').length, note: 'In production', icon: ShoppingBag },
     { label: 'Studio Clients', value: allClients.length, note: 'Registered profiles', icon: UsersRound },
     { label: 'Stock Items', value: allInventory.length, note: 'Inventory items', icon: Package },
   ].filter(s => !s.adminOnly || user?.role === 'Admin')
 
   const liveRecentOrders = [...allOrders].sort((a, b) => new Date(b.orderDate || 0) - new Date(a.orderDate || 0)).slice(0, 5)
+  const liveRecentSales = [...allSales].sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0)).slice(0, 5)
   const liveRecentProducts = [...allInventory].reverse().slice(0, 3)
   const liveActivities = activities.slice(0, 4)
 
@@ -727,31 +728,39 @@ function Dashboard({
                   )}
                 </section>
 
-                <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-                  {user?.role === 'Admin' && (
-                    <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
-                      <h2 className="flex items-center gap-2 text-xl font-semibold">
-                        <Package size={20} /> Featured inventory
-                      </h2>
-                      <div className="mt-5 space-y-4">
-                        {liveRecentProducts.map((p, index) => (
-                          <div className="flex items-center gap-4" key={p.productId}>
-                            <div className={`h-16 w-16 rounded-md ${['bg-[#c76f5a]', 'bg-[#f0d8c8]', 'bg-[#1f6f63]'][index % 3]}`} />
-                            <div className="min-w-0 flex-1">
-                              <p className="font-semibold">{p.productName}</p>
-                              <p className="text-sm text-[var(--muted)]">Stock: {p.quantity} {p.unit}</p>
-                            </div>
-                            <span className="rounded-full bg-[var(--soft)] px-3 py-1 text-xs font-semibold text-[var(--muted)]">
-                              {p.category}
-                            </span>
-                          </div>
-                        ))}
-                        {liveRecentProducts.length === 0 && (
-                          <p className="p-8 text-center text-sm text-[var(--muted)] italic">Inventory is empty.</p>
-                        )}
+                <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+                  <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
+                    <div className="mb-5 flex items-center justify-between">
+                      <div>
+                        <h2 className="text-xl font-semibold">Real-time sales</h2>
+                        <p className="text-sm text-[var(--muted)]">Recent transactions</p>
                       </div>
+                      {user?.role === 'Admin' && (
+                        <button
+                          className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-sm font-semibold hover:bg-[var(--soft)] transition"
+                          type="button"
+                          onClick={() => setCurrentPage('view-sales')}
+                        >
+                          All Sales
+                        </button>
+                      )}
                     </div>
-                  )}
+                    <div className="overflow-hidden rounded-2xl border border-[var(--border)]">
+                      {liveRecentSales.map((s) => (
+                        <div className="grid gap-3 border-b border-[var(--border)] px-4 py-4 last:border-b-0 md:grid-cols-[100px_1fr_100px]" key={s.id || s.saleId}>
+                          <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-tight">{new Date(s.timestamp).toLocaleDateString()}</span>
+                          <div className="min-w-0">
+                            <p className="font-semibold truncate">{s.client?.name || 'Guest'}</p>
+                            <p className="text-[10px] text-[var(--muted)] truncate">ID: {s.saleId}</p>
+                          </div>
+                          <span className="font-black text-[var(--accent)] text-right">₹{s.total}</span>
+                        </div>
+                      ))}
+                      {liveRecentSales.length === 0 && (
+                        <p className="p-8 text-center text-sm text-[var(--muted)]">No sales records found.</p>
+                      )}
+                    </div>
+                  </div>
 
                   <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
                     <h2 className="flex items-center gap-2 text-xl font-semibold">
