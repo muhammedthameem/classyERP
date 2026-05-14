@@ -275,8 +275,6 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
         </div>
       </div>
 
-      </div>
-
       <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
         <div className="erp-table-container">
           <table className="erp-table">

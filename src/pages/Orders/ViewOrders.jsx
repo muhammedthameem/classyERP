@@ -421,8 +421,6 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
         </button>
       </div>
 
-      </div>
-
       {/* Mobile Stats Select */}
       <div className="mb-6 lg:hidden">
         <label className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-2 block">Quick Filter</label>

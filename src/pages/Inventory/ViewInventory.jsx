@@ -118,8 +118,6 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, setSelectedInventoryIte
         </div>
       </div>
 
-      </div>
-
       <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur overflow-hidden">
         <div className="erp-table-container">
           <table className="erp-table">
