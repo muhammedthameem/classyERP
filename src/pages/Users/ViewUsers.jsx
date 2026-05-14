@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Search, Eye, Pencil, Trash2 } from 'lucide-react'
+import supabase from '../../supabase'
 
 function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designations, setDesignations, showGlobalToast, currentUser }) {
   const [searchTerm, setSearchTerm] = useState('')
