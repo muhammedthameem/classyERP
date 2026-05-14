@@ -3,7 +3,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, CircleDollarSign,
 import { formatDateDDMMYY, getIndianDate, orders } from '../../utils/constants'
 import supabase from '../../supabase'
 
-function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory }) {
+function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory, saveOrder }) {
   // Safety guard for cloud sync
   if (!orders) return <div className="p-20 text-center flex flex-col items-center gap-4">
     <div className="w-12 h-12 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin"></div>
@@ -88,6 +88,13 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
       return o
     })
     saveOrders(updated)
+    
+    // Cloud Sync: Persist the specific order change
+    const changedOrder = updated.find(o => o.id === id)
+    if (changedOrder && saveOrder) {
+      saveOrder(changedOrder);
+    }
+
     if (showGlobalToast) showGlobalToast('Status Updated', `Order status changed to ${newStatus}`)
   }
 
