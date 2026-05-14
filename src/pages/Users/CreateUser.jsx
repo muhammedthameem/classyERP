@@ -39,16 +39,24 @@ function CreateUserPage({ themeStyle, setCurrentPage, showGlobalToast, users, se
         password: password,
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        alert("SECURITY ERROR: " + authError.message + "\n\nPlease check your Supabase Auth settings.");
+        throw authError;
+      }
+
+      if (!authData.user) {
+        alert("CRITICAL ERROR: Supabase created the account but returned no user data. Check if 'Allow new users to sign up' is ON.");
+        throw new Error("No user data returned");
+      }
 
       const newUser = {
-        id: email.toLowerCase(), // Use email as unique ID
+        id: email.toLowerCase(),
         name,
         email: email.toLowerCase(),
         phone,
         address,
         designation,
-        password, // Keep for display/reference
+        password,
         createdAt: new Date().toISOString()
       }
 
@@ -60,7 +68,7 @@ function CreateUserPage({ themeStyle, setCurrentPage, showGlobalToast, users, se
       setCurrentPage('view-users')
     } catch (error) {
       console.error("User Creation Error:", error.message);
-      if (showGlobalToast) showGlobalToast('Error', 'Could not register user: ' + error.message)
+      if (showGlobalToast) showGlobalToast('Error', error.message)
     } finally {
       setIsCreating(false)
     }
