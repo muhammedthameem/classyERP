@@ -198,6 +198,11 @@ function App() {
               const { error } = await supabase.from('erp_config').upsert([{ id, data }]);
               if (error) console.error("Config Save Failed:", error);
             }}
+            saveActivity={async (act) => {
+              const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+              const { error } = await supabase.from('erp_activities').upsert([{ id: act.id.toString(), data: clean(act) }]);
+              if (error) console.error("Activity Save Failed:", error);
+            }}
           />
           <DeliveryAlertModal orders={orders} />
         </>

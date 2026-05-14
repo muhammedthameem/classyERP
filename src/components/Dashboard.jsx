@@ -32,7 +32,7 @@ function Dashboard({
   inventoryUnits, setInventoryUnits,
   cloudLoaded,
   syncError,
-  saveSale, saveOrder, saveClient, saveUser, deleteClient, deleteOrder, saveConfig
+  saveSale, saveOrder, saveClient, saveUser, deleteClient, deleteOrder, saveConfig, saveActivity
 }) {
   const [showAccountMenu, setShowAccountMenu] = useState(false)
   const [showAccountPanel, setShowAccountPanel] = useState(false)
@@ -61,6 +61,7 @@ function Dashboard({
       const updated = [newActivity, ...prev].slice(0, 500)
       return updated
     })
+    if (saveActivity) saveActivity(newActivity)
   }
   const [showAlertsDropdown, setShowAlertsDropdown] = useState(false)
   const [expandedSubmenu, setExpandedSubmenu] = useState(null)
