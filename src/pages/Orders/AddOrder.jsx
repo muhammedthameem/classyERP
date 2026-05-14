@@ -364,6 +364,21 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                       className="w-full rounded-xl border border-[var(--border)] bg-transparent py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-[var(--accent)]"
                       value={clientSearch}
                       onChange={(e) => setClientSearch(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault(); // Stop form from submitting
+                          const filtered = (clientsList || []).filter(c => (c.name || '').toLowerCase().includes(clientSearch.toLowerCase()));
+                          if (filtered.length > 0) {
+                            // If there's a match, select the first one
+                            setClientName(filtered[0].name);
+                            setShowClientDropdown(false);
+                          } else if (clientSearch.trim()) {
+                            // If no match, trigger the "Quick Add"
+                            localStorage.setItem('prefillClientName', clientSearch);
+                            setCurrentPage('add-client');
+                          }
+                        }
+                      }}
                       autoFocus
                     />
                   </div>
