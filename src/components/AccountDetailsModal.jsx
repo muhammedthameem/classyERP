@@ -54,7 +54,7 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
 
       const updatedProfile = { ...userData.data, password: newPassword };
       await supabase.from('erp_users').upsert([{ id: email, data: updatedProfile }]);
-      
+
       setMessage('Password updated! Logging out...')
       setStatus('success')
       setTimeout(() => onChanged(), 2000)
@@ -70,7 +70,7 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
   return (
     <div className="fixed inset-0 z-[110] grid place-items-center bg-black/60 px-4 backdrop-blur-sm">
       <div className="w-full max-w-xl rounded-[32px] border border-[var(--border)] bg-[var(--surface-strong)] p-0 shadow-[var(--shadow)] relative max-h-[90vh] overflow-hidden text-[var(--text)] flex flex-col">
-        
+
         {/* Header */}
         <div className="p-8 pb-4 flex items-center justify-between border-b border-[var(--border)]">
           <div className="flex items-center gap-4">
@@ -82,7 +82,7 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
               <p className="text-[var(--muted)] text-xs">Manage your personal business profile</p>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 rounded-full hover:bg-[var(--soft)] transition text-[var(--muted)]"
           >
@@ -92,14 +92,14 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
 
         {/* Tabs */}
         <div className="flex px-8 gap-6 border-b border-[var(--border)] bg-[var(--surface)]">
-          <button 
+          <button
             onClick={() => setActiveTab('profile')}
             className={`py-4 text-xs font-bold uppercase tracking-widest transition-all relative ${activeTab === 'profile' ? 'text-[var(--accent)]' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
           >
             Profile Info
             {activeTab === 'profile' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[var(--accent)] rounded-t-full"></div>}
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('security')}
             className={`py-4 text-xs font-bold uppercase tracking-widest transition-all relative ${activeTab === 'security' ? 'text-[var(--accent)]' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
           >
@@ -152,7 +152,7 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
                 </div>
                 <p className="font-semibold text-[var(--text)] text-sm leading-relaxed">{fullUser?.address || 'No office address assigned.'}</p>
               </div>
-              
+
               <div className="pt-4 flex gap-4">
                 <button
                   onClick={onClose}
@@ -160,12 +160,7 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
                 >
                   Close Profile
                 </button>
-                <button
-                  onClick={onLogout}
-                  className="flex-1 px-6 py-4 rounded-xl border border-red-500/20 bg-red-500/5 font-bold text-sm text-red-500 hover:bg-red-500/10 transition"
-                >
-                  Log Out Session
-                </button>
+
               </div>
             </div>
           ) : (
@@ -181,8 +176,8 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
                       className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10 transition text-[var(--text)]"
                       required
                     />
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--text)]"
                     >
@@ -202,8 +197,8 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
                       required
                       minLength={6}
                     />
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setShowNewPassword(!showNewPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--text)]"
                     >
@@ -214,9 +209,8 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
               </div>
 
               {message && (
-                <div className={`flex items-center gap-3 p-4 rounded-xl border animate-in fade-in slide-in-from-top-2 duration-300 ${
-                  status === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-600' : 'bg-red-500/10 border-red-500/20 text-red-600'
-                }`}>
+                <div className={`flex items-center gap-3 p-4 rounded-xl border animate-in fade-in slide-in-from-top-2 duration-300 ${status === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-600' : 'bg-red-500/10 border-red-500/20 text-red-600'
+                  }`}>
                   {status === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
                   <p className="text-sm font-medium">{message}</p>
                 </div>
