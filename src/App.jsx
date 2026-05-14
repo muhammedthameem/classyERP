@@ -144,47 +144,49 @@ function App() {
     <main className="min-h-screen bg-[#f7f2ec] text-stone-900">
       {!isLoggedIn ? (
         <LoginScreen onLogin={handleLogin} users={users} />
-      ) : (
-        <Dashboard
-          onLogout={handleLogout}
-          user={user}
-          users={users} setUsers={setUsers}
-          designations={designations} setDesignations={setDesignations}
-          clients={clients} setClients={setClients}
-          orders={orders} setOrders={setOrders}
-          inventory={inventory} setInventory={setInventory}
-          sales={sales} setSales={setSales}
-          activities={activities} setActivities={setActivities}
-          orderTypes={orderTypes} setOrderTypes={setOrderTypes}
-          productTypes={productTypes} setProductTypes={setProductTypes}
-          inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits}
-          cloudLoaded={cloudLoaded}
-          syncError={syncError}
-          // Direct Save Functions for Supabase (FLEXIBLE SCHEMA & COMPRESSED)
-          saveSale={async (s) => {
-            const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
-            const { error } = await supabase.from('erp_sales').upsert([{ id: (s.id || s.saleId).toString(), data: clean(s) }]);
-            if (error) alert("Save Failed: " + error.message);
-          }}
-          saveOrder={async (o) => {
-            const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
-            const { error } = await supabase.from('erp_orders').upsert([{ id: (o.id || o.orderId).toString(), data: clean(o) }]);
-            if (error) alert("Save Failed: " + error.message);
-          }}
-          saveClient={async (c) => {
-            const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
-            const { error } = await supabase.from('erp_clients').upsert([{ id: (c.id || c.clientId || c.phone).toString(), data: clean(c) }]);
-            if (error) alert("Save Failed: " + error.message);
-          }}
-          saveUser={async (u) => {
-            const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
-            const { error } = await supabase.from('erp_users').upsert([{ id: u.email, data: clean(u) }]);
-            if (error) alert("Save Failed: " + error.message);
-          }}
-        />
-        <DeliveryAlertModal orders={orders} />
-      </main>
-    )
-  }
+        <>
+          <Dashboard
+            onLogout={handleLogout}
+            user={user}
+            users={users} setUsers={setUsers}
+            designations={designations} setDesignations={setDesignations}
+            clients={clients} setClients={setClients}
+            orders={orders} setOrders={setOrders}
+            inventory={inventory} setInventory={setInventory}
+            sales={sales} setSales={setSales}
+            activities={activities} setActivities={setActivities}
+            orderTypes={orderTypes} setOrderTypes={setOrderTypes}
+            productTypes={productTypes} setProductTypes={setProductTypes}
+            inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits}
+            cloudLoaded={cloudLoaded}
+            syncError={syncError}
+            // Direct Save Functions for Supabase (FLEXIBLE SCHEMA & COMPRESSED)
+            saveSale={async (s) => {
+              const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+              const { error } = await supabase.from('erp_sales').upsert([{ id: (s.id || s.saleId).toString(), data: clean(s) }]);
+              if (error) alert("Save Failed: " + error.message);
+            }}
+            saveOrder={async (o) => {
+              const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+              const { error } = await supabase.from('erp_orders').upsert([{ id: (o.id || o.orderId).toString(), data: clean(o) }]);
+              if (error) alert("Save Failed: " + error.message);
+            }}
+            saveClient={async (c) => {
+              const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+              const { error } = await supabase.from('erp_clients').upsert([{ id: (c.id || c.clientId || c.phone).toString(), data: clean(c) }]);
+              if (error) alert("Save Failed: " + error.message);
+            }}
+            saveUser={async (u) => {
+              const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+              const { error } = await supabase.from('erp_users').upsert([{ id: u.email, data: clean(u) }]);
+              if (error) alert("Save Failed: " + error.message);
+            }}
+          />
+          <DeliveryAlertModal orders={orders} />
+        </>
+      )}
+    </main>
+  )
+}
 
 export default App;
