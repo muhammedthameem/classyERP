@@ -620,18 +620,27 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                       </div>
                     </td>
                     <td>
-                      <select
-                        className={`rounded-lg border border-[var(--border)] bg-transparent px-2 py-1 outline-none transition focus:border-[var(--accent)] text-xs font-semibold text-[var(--text)] ${order.status === 'Closed' ? 'opacity-60 cursor-not-allowed' : ''}`}
-                        value={order.status || 'Pending'}
-                        onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                        disabled={order.status === 'Completed' || order.status === 'Sold' || currentUser?.role !== 'Admin'}
-                      >
-                        <option value="Not Ready">Not Ready</option>
-                        <option value="In Progress">In Progress</option>
-                        <option value="Hold">Hold</option>
-                        <option value="Completed">Completed</option>
-                        <option value="Sold" disabled>Sold</option>
-                      </select>
+                      <div className="relative group min-w-[120px]">
+                        <select
+                          className={`w-full appearance-none rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 pr-8 text-[11px] font-bold outline-none transition focus:border-[var(--accent)] cursor-pointer shadow-sm active:scale-95 ${
+                            order.status === 'Completed' ? 'text-green-600 border-green-500/30' : 
+                            order.status === 'Hold' ? 'text-orange-500 border-orange-500/30' : 
+                            'text-[var(--text)]'
+                          }`}
+                          value={order.status || 'Not Ready'}
+                          onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                          disabled={order.status === 'Sold'}
+                        >
+                          <option value="Not Ready">Not Ready</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Hold">Hold</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Sold">Sold</option>
+                        </select>
+                        <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--muted)]">
+                          <ChevronDown size={14} />
+                        </div>
+                      </div>
                       {order.startDate && order.status !== 'Pending' && (
                         <p className="text-[10px] text-[var(--muted)] mt-1">Started: {formatDateDDMMYY(order.startDate)}</p>
                       )}

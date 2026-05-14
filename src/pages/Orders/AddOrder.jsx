@@ -177,7 +177,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
       sourceOfMaterial: item.sourceOfMaterial,
       internalItems: item.sourceOfMaterial === 'Internal' ? item.internalItems : [],
       materialPhoto: item.materialPhoto,
-      notes: item.notes || notes, 
+      notes: item.notes || notes,
       orderDate,
       deliveryDate,
       photo: photoPreview,
@@ -211,7 +211,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
     }
 
     if (showGlobalToast) showGlobalToast('Success', `${orderItems.length} product(s) added for ${clientName}`);
-    
+
     // Reset form
     setClientName('')
     setOrderItems([{
@@ -340,7 +340,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
               </div>
             )}
           </div>
-          
+
           <div className="grid gap-6 md:grid-cols-3">
             <div className="relative">
               <span className="mb-2 block text-sm font-medium text-[var(--text)]">Client Name</span>
@@ -357,65 +357,65 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                 <>
                   <div className="fixed inset-0 z-[90]" onClick={() => setShowClientDropdown(false)} />
                   <div className="absolute left-0 top-full z-[100] mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-2xl backdrop-blur">
-                  <div className="relative mb-2">
-                    <Search size={16} className="absolute left-3 top-3 text-[var(--muted)]" />
-                    <input
-                      type="text"
-                      placeholder="Search client..."
-                      className="w-full rounded-xl border border-[var(--border)] bg-transparent py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-[var(--accent)]"
-                      value={clientSearch}
-                      onChange={(e) => setClientSearch(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          const searchVal = clientSearch.trim();
-                          const filtered = (clientsList || []).filter(c => (c.name || '').toLowerCase().includes(searchVal.toLowerCase()));
-                          
-                          if (filtered.length > 0) {
-                            // If there are matches, pick the first one (most relevant)
-                            setClientName(filtered[0].name);
-                            setShowClientDropdown(false);
-                          } else if (searchVal) {
-                            // Only go to Add Client if NO matches were found
-                            localStorage.setItem('prefillClientName', searchVal);
-                            setCurrentPage('add-clients');
+                    <div className="relative mb-2">
+                      <Search size={16} className="absolute left-3 top-3 text-[var(--muted)]" />
+                      <input
+                        type="text"
+                        placeholder="Search client..."
+                        className="w-full rounded-xl border border-[var(--border)] bg-transparent py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-[var(--accent)]"
+                        value={clientSearch}
+                        onChange={(e) => setClientSearch(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const searchVal = clientSearch.trim();
+                            const filtered = (clientsList || []).filter(c => (c.name || '').toLowerCase().includes(searchVal.toLowerCase()));
+
+                            if (filtered.length > 0) {
+                              // If there are matches, pick the first one (most relevant)
+                              setClientName(filtered[0].name);
+                              setShowClientDropdown(false);
+                            } else if (searchVal) {
+                              // Only go to Add Client if NO matches were found
+                              localStorage.setItem('prefillClientName', searchVal);
+                              setCurrentPage('add-clients');
+                            }
                           }
-                        }
-                      }}
-                      autoFocus
-                    />
-                  </div>
-                  <div className="max-h-60 overflow-y-auto pr-1 space-y-1">
-                    {(clientsList || []).filter(c => (c.name || '').toLowerCase().includes((clientSearch || '').toLowerCase())).map(c => (
-                      <button
-                        key={c.id || c.mobile}
-                        type="button"
-                        className="w-full rounded-xl px-4 py-3 text-left text-sm transition hover:bg-[var(--soft)] flex justify-between items-center"
-                        onClick={() => { setClientName(c.name); setShowClientDropdown(false) }}
-                      >
-                        <div>
-                          <p className="font-semibold text-[var(--text)]">{c.name || 'Unnamed'}</p>
-                          <p className="text-xs text-[var(--muted)]">{c.mobile || 'No contact'}</p>
-                        </div>
-                      </button>
-                    ))}
-                    
-                    {clientSearch && !(clientsList || []).some(c => (c.name || '').toLowerCase() === clientSearch.toLowerCase()) && (
-                      <button
-                        type="button"
-                        className="w-full rounded-xl px-4 py-3 text-left text-sm font-bold text-[var(--accent)] bg-[var(--accent-soft)] transition hover:brightness-95 flex items-center gap-2 mt-2"
-                        onClick={() => {
-                          localStorage.setItem('prefillClientName', clientSearch);
-                          setCurrentPage('add-clients');
                         }}
-                      >
-                        <Plus size={16} /> Add New Client: "{clientSearch}"
-                      </button>
-                    )}
+                        autoFocus
+                      />
+                    </div>
+                    <div className="max-h-60 overflow-y-auto pr-1 space-y-1">
+                      {(clientsList || []).filter(c => (c.name || '').toLowerCase().includes((clientSearch || '').toLowerCase())).map(c => (
+                        <button
+                          key={c.id || c.mobile}
+                          type="button"
+                          className="w-full rounded-xl px-4 py-3 text-left text-sm transition hover:bg-[var(--soft)] flex justify-between items-center"
+                          onClick={() => { setClientName(c.name); setShowClientDropdown(false) }}
+                        >
+                          <div>
+                            <p className="font-semibold text-[var(--text)]">{c.name || 'Unnamed'}</p>
+                            <p className="text-xs text-[var(--muted)]">{c.mobile || 'No contact'}</p>
+                          </div>
+                        </button>
+                      ))}
+
+                      {clientSearch && !(clientsList || []).some(c => (c.name || '').toLowerCase() === clientSearch.toLowerCase()) && (
+                        <button
+                          type="button"
+                          className="w-full rounded-xl px-4 py-3 text-left text-sm font-bold text-[var(--accent)] bg-[var(--accent-soft)] transition hover:brightness-95 flex items-center gap-2 mt-2"
+                          onClick={() => {
+                            localStorage.setItem('prefillClientName', clientSearch);
+                            setCurrentPage('add-clients');
+                          }}
+                        >
+                          <Plus size={16} /> Add New Client: "{clientSearch}"
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </>
-            )}
+                </>
+              )}
             </div>
 
             <div>
@@ -438,7 +438,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                   {allOrders.filter(o => o.clientName === clientName).length} Past Orders
                 </span>
               </div>
-              
+
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {allOrders
                   .filter(o => o.clientName === clientName)
@@ -451,9 +451,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                   .map((pastOrder) => (
                     <div key={pastOrder.id} className="relative rounded-2xl border border-[var(--border)] bg-[var(--soft)]/20 p-4 transition hover:bg-[var(--soft)]/40 group">
                       <div className="flex items-center gap-3">
-                        <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl font-bold text-white shadow-sm ${
-                          pastOrder.status === 'Closed' || pastOrder.status === 'Sold' ? 'bg-green-500' : 'bg-[var(--accent)]'
-                        }`}>
+                        <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl font-bold text-white shadow-sm ${pastOrder.status === 'Closed' || pastOrder.status === 'Sold' ? 'bg-green-500' : 'bg-[var(--accent)]'
+                          }`}>
                           {(pastOrder.product || 'P')[0]}
                         </div>
                         <div className="min-w-0 flex-1">
@@ -497,7 +496,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                 <div className="absolute -left-2 top-6 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent)] text-[10px] font-black text-white shadow-lg">
                   {idx + 1}
                 </div>
-                
+
                 <button
                   type="button"
                   onClick={() => removeOrderItem(idx)}
@@ -529,80 +528,80 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                           <>
                             <div className="fixed inset-0 z-[70]" onClick={() => updateOrderItem(idx, { showProductTypeDropdown: false })} />
                             <div className="absolute left-0 top-full z-[80] mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-2xl backdrop-blur">
-                            <input
-                              type="text"
-                              placeholder="Search..."
-                              className="mb-2 w-full rounded-xl border border-[var(--border)] bg-transparent py-2 px-3 text-sm outline-none"
-                              value={productTypeSearch}
-                              onChange={(e) => setProductTypeSearch(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  const nt = productTypeSearch.trim();
-                                  if (nt && !allProductTypes.some(t => t.toLowerCase() === nt.toLowerCase())) {
-                                    const updatedList = [...productTypesList, nt];
-                                    setProductTypesList(updatedList);
-                                    localStorage.setItem("productTypes", JSON.stringify(updatedList));
-                                    updateOrderItem(idx, { product: nt, showProductTypeDropdown: false });
-                                    if (showGlobalToast) showGlobalToast('Added', `New product "${nt}" created.`);
-                                  } else if (nt) {
-                                    const ex = allProductTypes.find(t => t.toLowerCase().includes(nt.toLowerCase()));
-                                    if (ex) updateOrderItem(idx, { product: ex, showProductTypeDropdown: false });
-                                  }
-                                }
-                              }}
-                              autoFocus
-                            />
-                            <div className="max-h-48 overflow-y-auto space-y-1">
-                              {allProductTypes.filter(t => t.toLowerCase().includes(productTypeSearch.toLowerCase())).map(t => (
-                                 <div key={t} className="flex items-center gap-1 group">
-                                   <button
-                                     type="button"
-                                     className="flex-1 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-[var(--soft)]"
-                                     onClick={() => {
-                                       updateOrderItem(idx, { product: t, showProductTypeDropdown: false })
-                                     }}
-                                   >
-                                     {t}
-                                   </button>
-                                   <button 
-                                     type="button"
-                                     className="p-2 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition"
-                                     onClick={(e) => {
-                                       e.stopPropagation();
-                                       const updated = productTypesList.filter(item => item !== t);
-                                       setProductTypesList(updated);
-                                       localStorage.setItem("productTypes", JSON.stringify(updated));
-                                       if (showGlobalToast) showGlobalToast('Removed', `"${t}" deleted.`);
-                                     }}
-                                   >
-                                     <Trash2 size={14} />
-                                   </button>
-                                 </div>
-                              ))}
-                              
-                              {productTypeSearch && !allProductTypes.some(t => t.toLowerCase() === productTypeSearch.toLowerCase()) && (
-                                <button
-                                  type="button"
-                                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-[var(--accent)] bg-[var(--accent-soft)] transition hover:brightness-95 flex items-center gap-2 mt-1"
-                                  onClick={() => {
+                              <input
+                                type="text"
+                                placeholder="Search..."
+                                className="mb-2 w-full rounded-xl border border-[var(--border)] bg-transparent py-2 px-3 text-sm outline-none"
+                                value={productTypeSearch}
+                                onChange={(e) => setProductTypeSearch(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
                                     const nt = productTypeSearch.trim();
-                                    if (nt) {
+                                    if (nt && !allProductTypes.some(t => t.toLowerCase() === nt.toLowerCase())) {
                                       const updatedList = [...productTypesList, nt];
                                       setProductTypesList(updatedList);
                                       localStorage.setItem("productTypes", JSON.stringify(updatedList));
                                       updateOrderItem(idx, { product: nt, showProductTypeDropdown: false });
                                       if (showGlobalToast) showGlobalToast('Added', `New product "${nt}" created.`);
+                                    } else if (nt) {
+                                      const ex = allProductTypes.find(t => t.toLowerCase().includes(nt.toLowerCase()));
+                                      if (ex) updateOrderItem(idx, { product: ex, showProductTypeDropdown: false });
                                     }
-                                  }}
-                                >
-                                  <Plus size={14} /> Add New Product: "{productTypeSearch}"
-                                </button>
-                              )}
+                                  }
+                                }}
+                                autoFocus
+                              />
+                              <div className="max-h-48 overflow-y-auto space-y-1">
+                                {allProductTypes.filter(t => t.toLowerCase().includes(productTypeSearch.toLowerCase())).map(t => (
+                                  <div key={t} className="flex items-center gap-1 group">
+                                    <button
+                                      type="button"
+                                      className="flex-1 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-[var(--soft)]"
+                                      onClick={() => {
+                                        updateOrderItem(idx, { product: t, showProductTypeDropdown: false })
+                                      }}
+                                    >
+                                      {t}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="p-2 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const updated = productTypesList.filter(item => item !== t);
+                                        setProductTypesList(updated);
+                                        localStorage.setItem("productTypes", JSON.stringify(updated));
+                                        if (showGlobalToast) showGlobalToast('Removed', `"${t}" deleted.`);
+                                      }}
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                ))}
+
+                                {productTypeSearch && !allProductTypes.some(t => t.toLowerCase() === productTypeSearch.toLowerCase()) && (
+                                  <button
+                                    type="button"
+                                    className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-[var(--accent)] bg-[var(--accent-soft)] transition hover:brightness-95 flex items-center gap-2 mt-1"
+                                    onClick={() => {
+                                      const nt = productTypeSearch.trim();
+                                      if (nt) {
+                                        const updatedList = [...productTypesList, nt];
+                                        setProductTypesList(updatedList);
+                                        localStorage.setItem("productTypes", JSON.stringify(updatedList));
+                                        updateOrderItem(idx, { product: nt, showProductTypeDropdown: false });
+                                        if (showGlobalToast) showGlobalToast('Added', `New product "${nt}" created.`);
+                                      }
+                                    }}
+                                  >
+                                    <Plus size={14} /> Add New Product: "{productTypeSearch}"
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </>
-                      )}
+                          </>
+                        )}
                       </div>
 
                       <div className="relative">
@@ -624,75 +623,75 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                           <>
                             <div className="fixed inset-0 z-[70]" onClick={() => updateOrderItem(idx, { showTypeDropdown: false })} />
                             <div className="absolute left-0 top-full z-[80] mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-2xl backdrop-blur">
-                            <input
-                              type="text"
-                              placeholder="Search..."
-                              className="mb-2 w-full rounded-xl border border-[var(--border)] bg-transparent py-2 px-3 text-sm outline-none"
-                              value={typeSearch}
-                              onChange={(e) => setTypeSearch(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  const nt = typeSearch.trim();
-                                  if (nt && !orderTypes.some(t => t.toLowerCase() === nt.toLowerCase())) {
-                                    setOrderTypes([...orderTypes, nt]);
-                                    updateOrderItem(idx, { orderType: nt, showTypeDropdown: false });
-                                    if (showGlobalToast) showGlobalToast('Added', `New type "${nt}" created.`);
-                                  } else if (nt) {
-                                    const ex = orderTypes.find(t => t.toLowerCase().includes(nt.toLowerCase()));
-                                    if (ex) updateOrderItem(idx, { orderType: ex, showTypeDropdown: false });
-                                  }
-                                }
-                              }}
-                              autoFocus
-                            />
-                            <div className="max-h-48 overflow-y-auto space-y-1">
-                              {orderTypes.filter(t => t.toLowerCase().includes(typeSearch.toLowerCase())).map(t => (
-                                 <div key={t} className="flex items-center gap-1 group">
-                                   <button
-                                     type="button"
-                                     className="flex-1 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-[var(--soft)]"
-                                     onClick={() => {
-                                       updateOrderItem(idx, { orderType: t, showTypeDropdown: false })
-                                     }}
-                                   >
-                                     {t}
-                                   </button>
-                                   <button 
-                                     type="button"
-                                     className="p-2 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition"
-                                     onClick={(e) => {
-                                       e.stopPropagation();
-                                       const updated = orderTypes.filter(item => item !== t);
-                                       setOrderTypes(updated);
-                                       if (showGlobalToast) showGlobalToast('Removed', `"${t}" deleted.`);
-                                     }}
-                                   >
-                                     <Trash2 size={14} />
-                                   </button>
-                                 </div>
-                              ))}
-                              
-                              {typeSearch && !orderTypes.some(t => t.toLowerCase() === typeSearch.toLowerCase()) && (
-                                <button
-                                  type="button"
-                                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-[var(--accent)] bg-[var(--accent-soft)] transition hover:brightness-95 flex items-center gap-2 mt-1"
-                                  onClick={() => {
+                              <input
+                                type="text"
+                                placeholder="Search..."
+                                className="mb-2 w-full rounded-xl border border-[var(--border)] bg-transparent py-2 px-3 text-sm outline-none"
+                                value={typeSearch}
+                                onChange={(e) => setTypeSearch(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
                                     const nt = typeSearch.trim();
-                                    if (nt) {
+                                    if (nt && !orderTypes.some(t => t.toLowerCase() === nt.toLowerCase())) {
                                       setOrderTypes([...orderTypes, nt]);
                                       updateOrderItem(idx, { orderType: nt, showTypeDropdown: false });
                                       if (showGlobalToast) showGlobalToast('Added', `New type "${nt}" created.`);
+                                    } else if (nt) {
+                                      const ex = orderTypes.find(t => t.toLowerCase().includes(nt.toLowerCase()));
+                                      if (ex) updateOrderItem(idx, { orderType: ex, showTypeDropdown: false });
                                     }
-                                  }}
-                                >
-                                  <Plus size={14} /> Add New Type: "{typeSearch}"
-                                </button>
-                              )}
+                                  }
+                                }}
+                                autoFocus
+                              />
+                              <div className="max-h-48 overflow-y-auto space-y-1">
+                                {orderTypes.filter(t => t.toLowerCase().includes(typeSearch.toLowerCase())).map(t => (
+                                  <div key={t} className="flex items-center gap-1 group">
+                                    <button
+                                      type="button"
+                                      className="flex-1 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-[var(--soft)]"
+                                      onClick={() => {
+                                        updateOrderItem(idx, { orderType: t, showTypeDropdown: false })
+                                      }}
+                                    >
+                                      {t}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="p-2 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const updated = orderTypes.filter(item => item !== t);
+                                        setOrderTypes(updated);
+                                        if (showGlobalToast) showGlobalToast('Removed', `"${t}" deleted.`);
+                                      }}
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                ))}
+
+                                {typeSearch && !orderTypes.some(t => t.toLowerCase() === typeSearch.toLowerCase()) && (
+                                  <button
+                                    type="button"
+                                    className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-[var(--accent)] bg-[var(--accent-soft)] transition hover:brightness-95 flex items-center gap-2 mt-1"
+                                    onClick={() => {
+                                      const nt = typeSearch.trim();
+                                      if (nt) {
+                                        setOrderTypes([...orderTypes, nt]);
+                                        updateOrderItem(idx, { orderType: nt, showTypeDropdown: false });
+                                        if (showGlobalToast) showGlobalToast('Added', `New type "${nt}" created.`);
+                                      }
+                                    }}
+                                  >
+                                    <Plus size={14} /> Add New Type: "{typeSearch}"
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </>
-                      )}
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -723,7 +722,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                               <span className="truncate text-sm font-medium">{item.unit || 'nos'}</span>
                               <ChevronDown size={14} />
                             </button>
-                            
+
                             {item.showUnitDropdown && (
                               <>
                                 <div className="fixed inset-0 z-[70]" onClick={() => updateOrderItem(idx, { showUnitDropdown: false })} />
@@ -760,7 +759,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                                         >
                                           {u}
                                         </button>
-                                        <button 
+                                        <button
                                           type="button"
                                           className="p-2 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition"
                                           onClick={(e) => {
@@ -886,95 +885,95 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                                   <>
                                     <div className="fixed inset-0 z-[80]" onClick={() => updateOrderItem(idx, { showInventoryDropdown: null })} />
                                     <div className="relative z-[90] mt-2 mb-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-sm">
-                                    <input
-                                      type="text"
-                                      className="w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-xs"
-                                      placeholder="Search..."
-                                      value={inventorySearch}
-                                      onChange={(e) => {
-                                        setInventorySearch(e.target.value);
-                                        setDropdownLimit(15);
-                                      }}
-                                      autoFocus
-                                    />
-                                    <div className="max-h-32 overflow-y-auto mt-1 space-y-1">
-                                      {inventory
-                                        .filter(p => p.productName.toLowerCase().includes(inventorySearch.toLowerCase()))
-                                        .slice(0, dropdownLimit)
-                                        .map(p => {
-                                          const usedInOrder = orderItems.reduce((totalUsed, oi) => {
-                                            return totalUsed + oi.internalItems.reduce((matUsed, m) => {
-                                              if (m.inventoryId === p.id || m.productId === p.productId) {
-                                                return matUsed + (parseFloat(m.quantity) || 0);
-                                              }
-                                              return matUsed;
+                                      <input
+                                        type="text"
+                                        className="w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-xs"
+                                        placeholder="Search..."
+                                        value={inventorySearch}
+                                        onChange={(e) => {
+                                          setInventorySearch(e.target.value);
+                                          setDropdownLimit(15);
+                                        }}
+                                        autoFocus
+                                      />
+                                      <div className="max-h-32 overflow-y-auto mt-1 space-y-1">
+                                        {inventory
+                                          .filter(p => p.productName.toLowerCase().includes(inventorySearch.toLowerCase()))
+                                          .slice(0, dropdownLimit)
+                                          .map(p => {
+                                            const usedInOrder = orderItems.reduce((totalUsed, oi) => {
+                                              return totalUsed + oi.internalItems.reduce((matUsed, m) => {
+                                                if (m.inventoryId === p.id || m.productId === p.productId) {
+                                                  return matUsed + (parseFloat(m.quantity) || 0);
+                                                }
+                                                return matUsed;
+                                              }, 0);
                                             }, 0);
-                                          }, 0);
 
-                                          const currentItemUsage = (mat.inventoryId === p.id || mat.productId === p.productId) ? (parseFloat(mat.quantity) || 0) : 0;
-                                          const availableStock = (parseFloat(p.quantity) || 0) - (usedInOrder - currentItemUsage);
-                                          
-                                          const isOutOfStock = availableStock <= 0;
-                                          return (
-                                            <button
-                                              key={p.id}
-                                              type="button"
-                                              disabled={isOutOfStock}
-                                              className={`w-full rounded-lg px-2 py-1.5 text-left text-[10px] flex justify-between items-center transition ${isOutOfStock ? 'opacity-40 cursor-not-allowed bg-stone-100' : 'hover:bg-[var(--soft)]'}`}
-                                              onClick={() => {
-                                                const mats = [...item.internalItems];
-                                                const priceValue = parseFloat(p.finalPrice) || 0;
-                                                mats[midx] = { 
-                                                   ...mats[midx], 
-                                                   inventoryId: p.id,
-                                                   productId: p.productId, 
-                                                   productName: p.productName, 
-                                                   unit: p.unit, 
-                                                   unitPrice: priceValue, 
-                                                   totalPrice: priceValue * (mats[midx].quantity || 1) 
-                                                };
-                                                
-                                                const totalMatQ = mats.reduce((s, m) => s + (parseFloat(m.quantity) || 0), 0);
-                                                updateOrderItem(idx, { 
-                                                  internalItems: mats, 
-                                                  unit: p.unit,
-                                                  quantity: totalMatQ.toString(),
-                                                  showInventoryDropdown: null
-                                                });
-                                              }}
-                                            >
-                                              <div className="min-w-0 flex-1 pr-2">
-                                                <div className="flex items-center gap-1.5">
-                                                  <p className="font-bold truncate">{p.productName}</p>
-                                                  {usedInOrder > 0 && (
-                                                    <span className="px-1 py-0.5 rounded bg-blue-100 text-blue-600 text-[8px] font-black uppercase">In Cart</span>
-                                                  )}
+                                            const currentItemUsage = (mat.inventoryId === p.id || mat.productId === p.productId) ? (parseFloat(mat.quantity) || 0) : 0;
+                                            const availableStock = (parseFloat(p.quantity) || 0) - (usedInOrder - currentItemUsage);
+
+                                            const isOutOfStock = availableStock <= 0;
+                                            return (
+                                              <button
+                                                key={p.id}
+                                                type="button"
+                                                disabled={isOutOfStock}
+                                                className={`w-full rounded-lg px-2 py-1.5 text-left text-[10px] flex justify-between items-center transition ${isOutOfStock ? 'opacity-40 cursor-not-allowed bg-stone-100' : 'hover:bg-[var(--soft)]'}`}
+                                                onClick={() => {
+                                                  const mats = [...item.internalItems];
+                                                  const priceValue = parseFloat(p.finalPrice) || 0;
+                                                  mats[midx] = {
+                                                    ...mats[midx],
+                                                    inventoryId: p.id,
+                                                    productId: p.productId,
+                                                    productName: p.productName,
+                                                    unit: p.unit,
+                                                    unitPrice: priceValue,
+                                                    totalPrice: priceValue * (mats[midx].quantity || 1)
+                                                  };
+
+                                                  const totalMatQ = mats.reduce((s, m) => s + (parseFloat(m.quantity) || 0), 0);
+                                                  updateOrderItem(idx, {
+                                                    internalItems: mats,
+                                                    unit: p.unit,
+                                                    quantity: totalMatQ.toString(),
+                                                    showInventoryDropdown: null
+                                                  });
+                                                }}
+                                              >
+                                                <div className="min-w-0 flex-1 pr-2">
+                                                  <div className="flex items-center gap-1.5">
+                                                    <p className="font-bold truncate">{p.productName}</p>
+                                                    {usedInOrder > 0 && (
+                                                      <span className="px-1 py-0.5 rounded bg-blue-100 text-blue-600 text-[8px] font-black uppercase">In Cart</span>
+                                                    )}
+                                                  </div>
+                                                  <p className={`text-[9px] font-black ${isOutOfStock ? 'text-red-500' : 'text-[var(--accent)]'}`}>
+                                                    Available: {availableStock.toFixed(2)} {p.unit}
+                                                    <span className="text-stone-400 font-normal ml-1">(Total: {p.quantity})</span>
+                                                  </p>
                                                 </div>
-                                                <p className={`text-[9px] font-black ${isOutOfStock ? 'text-red-500' : 'text-[var(--accent)]'}`}>
-                                                  Available: {availableStock.toFixed(2)} {p.unit}
-                                                  <span className="text-stone-400 font-normal ml-1">(Total: {p.quantity})</span>
-                                                </p>
-                                              </div>
-                                              <span className="font-bold whitespace-nowrap">₹{p.finalPrice}</span>
-                                            </button>
-                                          );
-                                      })}
-                                      {inventory.filter(p => p.productName.toLowerCase().includes(inventorySearch.toLowerCase())).length > dropdownLimit && (
-                                        <button
-                                          type="button"
-                                          className="w-full py-2 text-[10px] font-bold text-[var(--accent)] hover:bg-[var(--soft)] rounded-lg transition"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setDropdownLimit(prev => prev + 20);
-                                          }}
-                                        >
-                                          Load More Results...
-                                        </button>
-                                      )}
+                                                <span className="font-bold whitespace-nowrap">₹{p.finalPrice}</span>
+                                              </button>
+                                            );
+                                          })}
+                                        {inventory.filter(p => p.productName.toLowerCase().includes(inventorySearch.toLowerCase())).length > dropdownLimit && (
+                                          <button
+                                            type="button"
+                                            className="w-full py-2 text-[10px] font-bold text-[var(--accent)] hover:bg-[var(--soft)] rounded-lg transition"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setDropdownLimit(prev => prev + 20);
+                                            }}
+                                          >
+                                            Load More Results...
+                                          </button>
+                                        )}
+                                      </div>
                                     </div>
-                                  </div>
-                                </>
-                              )}
+                                  </>
+                                )}
                               </div>
                               <input
                                 type="number"
@@ -985,10 +984,10 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                                   const mats = [...item.internalItems];
                                   mats[midx].quantity = q;
                                   mats[midx].totalPrice = q * mats[midx].unitPrice;
-                                  
+
                                   const totalMatQ = mats.reduce((s, m) => s + (parseFloat(m.quantity) || 0), 0);
                                   // Sync with main quantity (SUM of all materials)
-                                  updateOrderItem(idx, { 
+                                  updateOrderItem(idx, {
                                     internalItems: mats,
                                     quantity: totalMatQ.toString()
                                   });
@@ -1050,13 +1049,13 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                           Upload a photo of the client's fabric for verification.
                         </p>
                         <div className="w-full">
-                           <input 
-                             type="text" 
-                             placeholder="Fabric details (color, pattern)..."
-                             className="w-full text-center text-[10px] bg-transparent border-b border-[var(--border)] pb-1 outline-none focus:border-[var(--accent)]"
-                             value={item.notes || ''}
-                             onChange={(e) => updateOrderItem(idx, { notes: e.target.value })}
-                           />
+                          <input
+                            type="text"
+                            placeholder="Fabric details (color, pattern)..."
+                            className="w-full text-center text-[10px] bg-transparent border-b border-[var(--border)] pb-1 outline-none focus:border-[var(--accent)]"
+                            value={item.notes || ''}
+                            onChange={(e) => updateOrderItem(idx, { notes: e.target.value })}
+                          />
                         </div>
                       </div>
                     )}
@@ -1081,119 +1080,119 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
         {/* Global Details */}
         <section className="grid gap-6 lg:grid-cols-2">
           <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)]">
-             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-               <Info size={18} className="text-[var(--accent)]" /> Global Order Notes
-             </h3>
-             <textarea
-               placeholder="Shared instructions for the entire order..."
-               className="w-full h-24 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] p-4 text-sm outline-none transition focus:border-[var(--accent)]"
-               value={notes}
-               onChange={(e) => setNotes(e.target.value)}
-             />
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Info size={18} className="text-[var(--accent)]" /> Global Order Notes
+            </h3>
+            <textarea
+              placeholder="Shared instructions for the entire order..."
+              className="w-full h-24 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] p-4 text-sm outline-none transition focus:border-[var(--accent)]"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
           </div>
 
           <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)]">
-             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-               <Package size={18} className="text-[var(--accent)]" /> Reference Photo
-             </h3>
-             {!photoPreview ? (
-                <label className="flex flex-col items-center justify-center w-full h-24 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-strong)] hover:bg-[var(--soft)] transition cursor-pointer">
-                  <Plus size={24} className="text-[var(--muted)] mb-1" />
-                  <p className="text-[10px] font-bold text-[var(--muted)] uppercase">Upload Reference</p>
-                  <input type="file" className="hidden" accept="image/*" onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      const reader = new FileReader();
-                      reader.onload = (event) => setPhotoPreview(event.target.result);
-                      reader.readAsDataURL(e.target.files[0]);
-                    }
-                  }} />
-                </label>
-              ) : (
-                <div className="relative h-24 w-full">
-                  <img src={photoPreview} alt="Preview" className="h-full w-full object-cover rounded-xl border border-[var(--border)]" />
-                  <button
-                    type="button"
-                    onClick={() => setPhotoPreview(null)}
-                    className="absolute top-1 right-1 grid h-6 w-6 place-items-center rounded-lg bg-red-500 text-white shadow-lg"
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              )}
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Package size={18} className="text-[var(--accent)]" /> Reference Photo
+            </h3>
+            {!photoPreview ? (
+              <label className="flex flex-col items-center justify-center w-full h-24 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-strong)] hover:bg-[var(--soft)] transition cursor-pointer">
+                <Plus size={24} className="text-[var(--muted)] mb-1" />
+                <p className="text-[10px] font-bold text-[var(--muted)] uppercase">Upload Reference</p>
+                <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => setPhotoPreview(event.target.result);
+                    reader.readAsDataURL(e.target.files[0]);
+                  }
+                }} />
+              </label>
+            ) : (
+              <div className="relative h-24 w-full">
+                <img src={photoPreview} alt="Preview" className="h-full w-full object-cover rounded-xl border border-[var(--border)]" />
+                <button
+                  type="button"
+                  onClick={() => setPhotoPreview(null)}
+                  className="absolute top-1 right-1 grid h-6 w-6 place-items-center rounded-lg bg-red-500 text-white shadow-lg"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            )}
           </div>
         </section>
 
         {/* Grand Summary & Actions */}
         <section className="mt-8 flex flex-col md:flex-row gap-8 items-center justify-between rounded-[32px] border border-[var(--border)] bg-[var(--surface)] p-8 shadow-2xl relative z-40 overflow-hidden">
           <div className="absolute top-0 left-0 w-1 h-full bg-[var(--accent)]" />
-          
+
           <div className="flex flex-wrap gap-8 items-center">
-             <div className="space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Total Volume</p>
-                <p className="text-xl font-bold text-[var(--text)] flex items-baseline gap-1">
-                   {orderItems.reduce((s, i) => {
-                     const mainQ = parseFloat(i.quantity) || 0;
-                     const matQ = i.sourceOfMaterial === 'Internal' 
-                        ? i.internalItems.reduce((sm, m) => sm + (parseFloat(m.quantity) || 0), 0)
-                        : 0;
-                     // For internal, materials count. For outside, main quantity counts.
-                     return s + (i.sourceOfMaterial === 'Internal' ? matQ : mainQ);
-                   }, 0)}
-                   <span className="text-xs font-medium text-[var(--muted)] lowercase">units</span>
-                </p>
-             </div>
-             
-             <div className="h-10 w-px bg-[var(--border)] hidden sm:block" />
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Total Volume</p>
+              <p className="text-xl font-bold text-[var(--text)] flex items-baseline gap-1">
+                {orderItems.reduce((s, i) => {
+                  const mainQ = parseFloat(i.quantity) || 0;
+                  const matQ = i.sourceOfMaterial === 'Internal'
+                    ? i.internalItems.reduce((sm, m) => sm + (parseFloat(m.quantity) || 0), 0)
+                    : 0;
+                  // For internal, materials count. For outside, main quantity counts.
+                  return s + (i.sourceOfMaterial === 'Internal' ? matQ : mainQ);
+                }, 0)}
+                <span className="text-xs font-medium text-[var(--muted)] lowercase">units</span>
+              </p>
+            </div>
 
-             <div className="space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Total Stitching</p>
-                <p className="text-xl font-bold text-[var(--text)]">
-                   ₹{orderItems.reduce((s, i) => s + (parseFloat(i.price) || 0), 0).toFixed(2)}
-                </p>
-             </div>
+            <div className="h-10 w-px bg-[var(--border)] hidden sm:block" />
 
-             <div className="h-10 w-px bg-[var(--border)] hidden sm:block" />
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Total Stitching</p>
+              <p className="text-xl font-bold text-[var(--text)]">
+                ₹{orderItems.reduce((s, i) => s + (parseFloat(i.price) || 0), 0).toFixed(2)}
+              </p>
+            </div>
 
-             <div className="space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Materials Cost</p>
-                <p className="text-xl font-bold text-orange-500">
-                   ₹{orderItems.reduce((s, item) => {
-                      if (item.sourceOfMaterial !== 'Internal') return s;
-                      return s + item.internalItems.reduce((sm, m) => sm + (m.totalPrice || 0), 0);
-                   }, 0).toFixed(2)}
-                </p>
-             </div>
+            <div className="h-10 w-px bg-[var(--border)] hidden sm:block" />
+
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Materials Cost</p>
+              <p className="text-xl font-bold text-orange-500">
+                ₹{orderItems.reduce((s, item) => {
+                  if (item.sourceOfMaterial !== 'Internal') return s;
+                  return s + item.internalItems.reduce((sm, m) => sm + (m.totalPrice || 0), 0);
+                }, 0).toFixed(2)}
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-col items-center md:items-end gap-5 w-full md:w-auto pt-6 md:pt-0 border-t md:border-t-0 border-[var(--border)]">
-             <div className="text-center md:text-right">
-                <p className="text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.2em] mb-1">Final Grand Total</p>
-                <h2 className="text-5xl font-black text-[var(--text)] tracking-tighter">
-                  ₹{(
-                    orderItems.reduce((s, i) => s + (parseFloat(i.price) || 0), 0) +
-                    orderItems.reduce((s, item) => {
-                      if (item.sourceOfMaterial !== 'Internal') return s;
-                      return s + item.internalItems.reduce((sm, m) => sm + (m.totalPrice || 0), 0);
-                    }, 0)
-                  ).toFixed(2)}
-                </h2>
-             </div>
-             
-             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                 <button
-                   type="button"
-                   onClick={() => setCurrentPage('view-orders')}
-                   className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-8 py-4 font-bold transition hover:bg-[var(--soft)] text-center active:scale-95"
-                 >
-                   Cancel
-                 </button>
-                 <button
-                   type="submit"
-                   className="rounded-xl bg-[var(--accent)] px-10 py-4 font-bold text-white shadow-xl shadow-[var(--accent)]/25 transition hover:brightness-95 flex items-center justify-center gap-2 active:scale-95"
-                 >
-                   <CheckCircle size={20} /> Confirm & Place Order
-                 </button>
-              </div>
+            <div className="text-center md:text-right">
+              <p className="text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.2em] mb-1">Final Grand Total</p>
+              <h2 className="text-5xl font-black text-[var(--text)] tracking-tighter">
+                ₹{(
+                  orderItems.reduce((s, i) => s + (parseFloat(i.price) || 0), 0) +
+                  orderItems.reduce((s, item) => {
+                    if (item.sourceOfMaterial !== 'Internal') return s;
+                    return s + item.internalItems.reduce((sm, m) => sm + (m.totalPrice || 0), 0);
+                  }, 0)
+                ).toFixed(2)}
+              </h2>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => setCurrentPage('view-orders')}
+                className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-8 py-4 font-bold transition hover:bg-[var(--soft)] text-center active:scale-95"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="rounded-xl bg-[var(--accent)] px-10 py-4 font-bold text-white shadow-xl shadow-[var(--accent)]/25 transition hover:brightness-95 flex items-center justify-center gap-2 active:scale-95"
+              >
+                <CheckCircle size={20} /> Confirm Order
+              </button>
+            </div>
           </div>
         </section>
       </form>
