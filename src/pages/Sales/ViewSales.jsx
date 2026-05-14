@@ -99,10 +99,22 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightS
         </div>
         <button
           onClick={() => setCurrentPage('create-sales')}
-          className="flex items-center gap-2 rounded-xl bg-[var(--accent)] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95"
+          className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 active:scale-95 whitespace-nowrap"
         >
-          <TrendingUp size={18} /> New Transaction
+          <Plus size={18} />
+          <span className="hidden sm:inline">New Transaction</span>
+          <span className="sm:hidden">New Sale</span>
         </button>
+      </div>
+
+      {/* Mobile Floating Action Button */}
+      <button
+        onClick={() => setCurrentPage('create-sales')}
+        className="fixed bottom-24 right-6 z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent)] text-white shadow-2xl transition hover:scale-110 active:scale-95 sm:hidden"
+        title="New Transaction"
+      >
+        <Plus size={24} />
+      </button>
       </div>
 
       <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">

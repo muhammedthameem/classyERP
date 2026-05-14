@@ -412,13 +412,23 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
           <p className="mt-2 text-sm text-[var(--muted)]">View and manage all active studio orders.</p>
         </div>
         <button
-          className="flex items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 active:scale-95"
+          className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 active:scale-95"
           onClick={() => setCurrentPage('add-order')}
         >
           <Plus size={18} />
-          Add New Order
+          <span className="hidden sm:inline">Add New Order</span>
+          <span className="sm:hidden">Add Order</span>
         </button>
       </div>
+
+      {/* Mobile Floating Action Button */}
+      <button
+        onClick={() => setCurrentPage('add-order')}
+        className="fixed bottom-24 right-6 z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent)] text-white shadow-2xl transition hover:scale-110 active:scale-95 sm:hidden"
+        title="Add New Order"
+      >
+        <Plus size={24} />
+      </button>
 
       {/* Mobile Stats Select */}
       <div className="mb-6 lg:hidden">
