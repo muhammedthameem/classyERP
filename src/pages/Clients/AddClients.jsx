@@ -3,18 +3,17 @@ import { ChevronDown, Package, Search, Settings, UsersRound } from 'lucide-react
 import { products } from '../../utils/constants'
 
 function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, setClients, saveClient }) {
-  const [personalDetails, setPersonalDetails] = useState({ name: '', address: '', mobile: '' })
+  const [personalDetails, setPersonalDetails] = useState(() => {
+    const prefill = localStorage.getItem('prefillClientName')
+    if (prefill) {
+      localStorage.removeItem('prefillClientName')
+      return { name: prefill, address: '', mobile: '' }
+    }
+    return { name: '', address: '', mobile: '' }
+  })
   const [showTopMeasurements, setShowTopMeasurements] = useState(true)
   const [showBottomMeasurements, setShowBottomMeasurements] = useState(false)
   const [isConverting, setIsConverting] = useState(false)
-
-  useEffect(() => {
-    const prefill = localStorage.getItem('prefillClientName')
-    if (prefill) {
-      setPersonalDetails(prev => ({ ...prev, name: prefill }))
-      localStorage.removeItem('prefillClientName')
-    }
-  }, [])
   const [product, setProduct] = useState('')
   const [showProductDropdown, setShowProductDropdown] = useState(false)
   const [productSearch, setProductSearch] = useState('')
