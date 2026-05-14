@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ChevronDown, ChevronLeft, Package, Search, Settings, ShoppingBag, UsersRound, Pencil, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronLeft, Package, Search, Settings, ShoppingBag, UsersRound, Pencil, Trash2, Plus } from 'lucide-react'
 import { formatDateDDMMYY, formatDateTimeDDMMYY, products } from '../../utils/constants'
 
 function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClient, initialMode, setClientDetailMode, showGlobalToast }) {
@@ -9,6 +9,13 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
 
   useEffect(() => {
     setClientsList(JSON.parse(localStorage.getItem('clients') || '[]'))
+  }, [])
+
+  useEffect(() => {
+    if (localStorage.getItem('triggerAddMeasurement') === 'true') {
+      setIsAddingMeasurement(true)
+      localStorage.removeItem('triggerAddMeasurement')
+    }
   }, [])
 
   const [selectedMeasurementIndex, setSelectedMeasurementIndex] = useState(0)
@@ -339,27 +346,27 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
           )}
         </div>
         {!isAddingMeasurement && !isEditingClient && (
-          <div className="flex gap-3">
+          <div className="grid grid-cols-2 sm:flex gap-3 w-full sm:w-auto">
             <button
-              className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-5 py-2.5 text-sm font-semibold transition hover:bg-[var(--soft)] flex items-center gap-2"
+              className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 text-sm font-bold transition hover:bg-[var(--soft)] flex items-center justify-center gap-2 shadow-sm active:scale-95"
               onClick={() => setIsEditingClient(true)}
             >
               <Pencil size={18} />
-              Edit Client
+              Edit Profile
             </button>
             <button
-              className="rounded-xl border border-red-500/30 bg-red-50 text-red-600 px-5 py-2.5 text-sm font-semibold transition hover:bg-red-600 hover:text-white flex items-center gap-2"
+              className="rounded-xl border border-red-500/20 bg-red-50 text-red-600 px-4 py-3 text-sm font-bold transition hover:bg-red-600 hover:text-white flex items-center justify-center gap-2 shadow-sm active:scale-95"
               onClick={() => setClientToDelete(client)}
             >
               <Trash2 size={18} />
-              Delete Client
+              Delete
             </button>
             <button
-              className="rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 flex items-center gap-2"
+              className="col-span-2 sm:col-auto rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 flex items-center justify-center gap-2 active:scale-95"
               onClick={() => setIsAddingMeasurement(true)}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              Add New Measurement
+              <Plus size={20} />
+              Add Measurement
             </button>
           </div>
         )}

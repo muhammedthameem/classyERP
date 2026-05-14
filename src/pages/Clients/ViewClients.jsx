@@ -310,7 +310,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
                     <td className="text-right">
                       <div className="flex justify-end gap-2">
                         <button
-                          className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white"
+                          className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white shadow-sm active:scale-95"
                           title="View Details"
                           onClick={() => {
                             setSelectedClient(client)
@@ -318,10 +318,10 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
                             setCurrentPage('client-detail')
                           }}
                         >
-                          <Eye size={16} />
+                          <Eye size={18} />
                         </button>
                         <button
-                          className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white"
+                          className="grid h-10 w-10 place-items-center rounded-xl bg-amber-50 text-amber-600 transition hover:bg-amber-600 hover:text-white shadow-sm active:scale-95"
                           title="Edit Client"
                           onClick={() => {
                             setSelectedClient(client)
@@ -329,23 +329,37 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
                             setCurrentPage('client-detail')
                           }}
                         >
-                          <Pencil size={16} />
+                          <Pencil size={18} />
+                        </button>
+                        <button
+                          className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-50 text-emerald-600 transition hover:bg-emerald-600 hover:text-white shadow-sm active:scale-95"
+                          title="Add Measurement"
+                          onClick={() => {
+                            setSelectedClient(client)
+                            if (setClientDetailMode) setClientDetailMode('view')
+                            setCurrentPage('client-detail')
+                            // We need a way to trigger 'Add Measurement' mode once we navigate
+                            // For now, setting a flag in localStorage is a quick way to communicate between pages
+                            localStorage.setItem('triggerAddMeasurement', 'true')
+                          }}
+                        >
+                          <Plus size={18} />
                         </button>
                         {currentUser?.role === 'Admin' && (
                           <button
-                            className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white"
+                            className="grid h-10 w-10 place-items-center rounded-xl bg-red-50 text-red-600 transition hover:bg-red-600 hover:text-white shadow-sm active:scale-95"
                             title="Delete Client"
                             onClick={() => setClientToDelete(client)}
                           >
-                            <Trash2 size={16} />
+                            <Trash2 size={18} />
                           </button>
                         )}
                         <button
-                          className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white"
+                          className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-600 transition hover:bg-blue-600 hover:text-white shadow-sm active:scale-95"
                           title="Download PDF"
                           onClick={() => downloadClientPdf(client)}
                         >
-                          <Download size={16} />
+                          <Download size={18} />
                         </button>
                       </div>
                     </td>
