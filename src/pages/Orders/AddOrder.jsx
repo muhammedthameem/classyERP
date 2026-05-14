@@ -57,6 +57,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
 
   const [typeSearch, setTypeSearch] = useState('')
   const [productTypeSearch, setProductTypeSearch] = useState('')
+  const [unitSearch, setUnitSearch] = useState('')
   const [inventorySearch, setInventorySearch] = useState('')
   const [dropdownLimit, setDropdownLimit] = useState(15)
 
@@ -554,16 +555,30 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                             />
                             <div className="max-h-48 overflow-y-auto space-y-1">
                               {allProductTypes.filter(t => t.toLowerCase().includes(productTypeSearch.toLowerCase())).map(t => (
-                                <button
-                                  key={t}
-                                  type="button"
-                                  className="w-full rounded-lg px-3 py-2 text-left text-sm transition hover:bg-[var(--soft)]"
-                                  onClick={() => {
-                                    updateOrderItem(idx, { product: t, showProductTypeDropdown: false })
-                                  }}
-                                >
-                                  {t}
-                                </button>
+                                 <div key={t} className="flex items-center gap-1 group">
+                                   <button
+                                     type="button"
+                                     className="flex-1 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-[var(--soft)]"
+                                     onClick={() => {
+                                       updateOrderItem(idx, { product: t, showProductTypeDropdown: false })
+                                     }}
+                                   >
+                                     {t}
+                                   </button>
+                                   <button 
+                                     type="button"
+                                     className="p-2 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition"
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       const updated = productTypesList.filter(item => item !== t);
+                                       setProductTypesList(updated);
+                                       localStorage.setItem("productTypes", JSON.stringify(updated));
+                                       if (showGlobalToast) showGlobalToast('Removed', `"${t}" deleted.`);
+                                     }}
+                                   >
+                                     <Trash2 size={14} />
+                                   </button>
+                                 </div>
                               ))}
                               
                               {productTypeSearch && !allProductTypes.some(t => t.toLowerCase() === productTypeSearch.toLowerCase()) && (
@@ -633,16 +648,29 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                             />
                             <div className="max-h-48 overflow-y-auto space-y-1">
                               {orderTypes.filter(t => t.toLowerCase().includes(typeSearch.toLowerCase())).map(t => (
-                                <button
-                                  key={t}
-                                  type="button"
-                                  className="w-full rounded-lg px-3 py-2 text-left text-sm transition hover:bg-[var(--soft)]"
-                                  onClick={() => {
-                                    updateOrderItem(idx, { orderType: t, showTypeDropdown: false })
-                                  }}
-                                >
-                                  {t}
-                                </button>
+                                 <div key={t} className="flex items-center gap-1 group">
+                                   <button
+                                     type="button"
+                                     className="flex-1 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-[var(--soft)]"
+                                     onClick={() => {
+                                       updateOrderItem(idx, { orderType: t, showTypeDropdown: false })
+                                     }}
+                                   >
+                                     {t}
+                                   </button>
+                                   <button 
+                                     type="button"
+                                     className="p-2 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition"
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       const updated = orderTypes.filter(item => item !== t);
+                                       setOrderTypes(updated);
+                                       if (showGlobalToast) showGlobalToast('Removed', `"${t}" deleted.`);
+                                     }}
+                                   >
+                                     <Trash2 size={14} />
+                                   </button>
+                                 </div>
                               ))}
                               
                               {typeSearch && !orderTypes.some(t => t.toLowerCase() === typeSearch.toLowerCase()) && (
@@ -680,14 +708,94 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                             onChange={(e) => updateOrderItem(idx, { quantity: e.target.value })}
                             disabled={item.sourceOfMaterial === 'Internal'}
                           />
-                          <select
-                            className={`w-20 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-2 text-sm outline-none ${item.sourceOfMaterial === 'Internal' ? 'opacity-60 cursor-not-allowed' : ''}`}
-                            value={item.unit}
-                            onChange={(e) => updateOrderItem(idx, { unit: e.target.value })}
-                            disabled={item.sourceOfMaterial === 'Internal'}
-                          >
-                            {unitsList.map(u => <option key={u} value={u}>{u}</option>)}
-                          </select>
+                          <div className="relative w-28">
+                            <button
+                              type="button"
+                              className="flex w-full items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2.5 text-left outline-none transition focus:border-[var(--accent)]"
+                              onClick={() => {
+                                const updated = [...orderItems];
+                                updated[idx].showUnitDropdown = !item.showUnitDropdown;
+                                setOrderItems(updated);
+                                setUnitSearch('');
+                              }}
+                              disabled={item.sourceOfMaterial === 'Internal'}
+                            >
+                              <span className="truncate text-sm font-medium">{item.unit || 'nos'}</span>
+                              <ChevronDown size={14} />
+                            </button>
+                            
+                            {item.showUnitDropdown && (
+                              <>
+                                <div className="fixed inset-0 z-[70]" onClick={() => updateOrderItem(idx, { showUnitDropdown: false })} />
+                                <div className="absolute left-0 top-full z-[80] mt-2 w-48 rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-2xl backdrop-blur">
+                                  <input
+                                    type="text"
+                                    placeholder="Unit..."
+                                    className="mb-2 w-full rounded-xl border border-[var(--border)] bg-transparent py-2 px-3 text-sm outline-none"
+                                    value={unitSearch}
+                                    onChange={(e) => setUnitSearch(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        const nu = unitSearch.trim();
+                                        if (nu && !unitsList.some(u => u.toLowerCase() === nu.toLowerCase())) {
+                                          const updated = [...unitsList, nu];
+                                          setUnitsList(updated);
+                                          localStorage.setItem("inventoryUnits", JSON.stringify(updated));
+                                          updateOrderItem(idx, { unit: nu, showUnitDropdown: false });
+                                        }
+                                      }
+                                    }}
+                                    autoFocus
+                                  />
+                                  <div className="max-h-48 overflow-y-auto space-y-1">
+                                    {unitsList.filter(u => u.toLowerCase().includes(unitSearch.toLowerCase())).map(u => (
+                                      <div key={u} className="flex items-center gap-1 group">
+                                        <button
+                                          type="button"
+                                          className="flex-1 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-[var(--soft)]"
+                                          onClick={() => {
+                                            updateOrderItem(idx, { unit: u, showUnitDropdown: false })
+                                          }}
+                                        >
+                                          {u}
+                                        </button>
+                                        <button 
+                                          type="button"
+                                          className="p-2 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const updated = unitsList.filter(item => item !== u);
+                                            setUnitsList(updated);
+                                            localStorage.setItem("inventoryUnits", JSON.stringify(updated));
+                                          }}
+                                        >
+                                          <Trash2 size={12} />
+                                        </button>
+                                      </div>
+                                    ))}
+                                    {unitSearch && !unitsList.some(u => u.toLowerCase() === unitSearch.toLowerCase()) && (
+                                      <button
+                                        type="button"
+                                        className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-[var(--accent)] bg-[var(--accent-soft)] transition hover:brightness-95"
+                                        onClick={() => {
+                                          const nu = unitSearch.trim();
+                                          if (nu) {
+                                            const updated = [...unitsList, nu];
+                                            setUnitsList(updated);
+                                            localStorage.setItem("inventoryUnits", JSON.stringify(updated));
+                                            updateOrderItem(idx, { unit: nu, showUnitDropdown: false });
+                                          }
+                                        }}
+                                      >
+                                        + Add Unit: "{unitSearch}"
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div>
