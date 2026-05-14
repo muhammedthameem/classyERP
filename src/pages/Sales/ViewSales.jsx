@@ -115,7 +115,6 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightS
       >
         <Plus size={24} />
       </button>
-      </div>
 
       <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
         <div className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
