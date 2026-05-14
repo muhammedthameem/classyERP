@@ -187,6 +187,35 @@ function Dashboard({
   const liveRecentProducts = [...allInventory].reverse().slice(0, 3)
   const liveActivities = activities.slice(0, 4)
 
+  // Revenue Pulse Calculation
+  const categoryRevenue = allSales.reduce((acc, s) => {
+    (s.items || []).forEach(item => {
+      const pName = (item.productName || '').toLowerCase();
+      const pType = (item.productType || '').toLowerCase();
+      let cat = 'Luxury pret'; // Default
+      if (pName.includes('bridal') || pType.includes('bridal') || pName.includes('lehenga')) cat = 'Bridal wear';
+      else if (pName.includes('alteration') || pType.includes('alteration') || pName.includes('repair')) cat = 'Alterations';
+      
+      const itemPrice = parseFloat(item.price || 0);
+      const itemQty = parseFloat(item.qty || 1);
+      const itemDisc = parseFloat(item.discount || 0);
+      const itemTotal = (itemPrice * itemQty) * (1 - itemDisc / 100);
+      
+      acc[cat] = (acc[cat] || 0) + itemTotal;
+    });
+    return acc;
+  }, {});
+
+  const totalRev = Object.values(categoryRevenue).reduce((a, b) => a + b, 0);
+  const liveRevenuePulse = [
+    { label: 'Bridal wear', value: categoryRevenue['Bridal wear'] || 0, color: 'bg-[var(--accent)]' },
+    { label: 'Luxury pret', value: categoryRevenue['Luxury pret'] || 0, color: 'bg-[var(--jewel)]' },
+    { label: 'Alterations', value: categoryRevenue['Alterations'] || 0, color: 'bg-[var(--gold)]' },
+  ].map(item => ({
+    ...item,
+    percentage: totalRev > 0 ? Math.round((item.value / totalRev) * 100) : 0
+  }));
+
   // Global Search Logic
   const searchResults = React.useMemo(() => {
     if (!globalSearch.trim()) return { clients: [], orders: [], inventory: [], sales: [] }
@@ -763,51 +792,88 @@ function Dashboard({
                     </div>
                   </div>
 
-                  <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
-                    <h2 className="flex items-center gap-2 text-xl font-semibold">
-                      <ShieldCheck size={20} /> Client elegance score
-                    </h2>
-                    <p className="mt-1 text-sm text-[var(--muted)]">Retention, repeat orders, and fulfillment quality</p>
-                    <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                      {(() => {
-                        const totalClients = clients.length || 0;
-                        const totalOrders = orders.length || 0;
+                  <div className="flex flex-col gap-6">
+                    {user?.role === 'Admin' && (
+                      <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
+                        <div className="mb-6">
+                          <h2 className="flex items-center gap-2 text-xl font-bold">
+                            <BarChart3 size={22} className="text-[var(--accent)]" /> Revenue pulse
+                          </h2>
+                          <p className="text-3xl font-black mt-2">₹{totalRev.toLocaleString()}</p>
+                          <p className="text-xs text-[var(--muted)] font-medium uppercase tracking-widest mt-1">Total boutique income</p>
+                        </div>
+                        <div className="space-y-6">
+                          {liveRevenuePulse.map((item) => (
+                            <div key={item.label}>
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-bold text-[var(--text)]">{item.label}</span>
+                                <span className="text-sm font-black text-[var(--accent)]">{item.percentage}%</span>
+                              </div>
+                              <div className="h-2.5 w-full rounded-full bg-[var(--soft)] overflow-hidden">
+                                <div 
+                                  className={`h-full rounded-full transition-all duration-1000 ease-out ${item.color}`} 
+                                  style={{ width: `${item.percentage}%` }}
+                                />
+                              </div>
+                              <div className="flex justify-between mt-1.5">
+                                <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-tight">Market share</span>
+                                <span className="text-[10px] font-bold text-[var(--text)]">₹{item.value.toLocaleString()}</span>
+                              </div>
+                            </div>
+                          ))}
+                          {totalRev === 0 && (
+                            <p className="text-center text-xs text-[var(--muted)] py-4 italic">No categorical sales data available.</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
-                        // 1. Retention: Clients with > 1 transaction
-                        const clientTransactionMap = {};
-                        orders.forEach(o => {
-                          const cid = o.client?.id || o.clientId || o.client;
-                          if (cid) clientTransactionMap[cid] = (clientTransactionMap[cid] || 0) + 1;
-                        });
-                        sales.forEach(s => {
-                          const cid = s.client?.id || s.client;
-                          if (cid) clientTransactionMap[cid] = (clientTransactionMap[cid] || 0) + 1;
-                        });
-                        const repeatClientsCount = Object.values(clientTransactionMap).filter(count => count > 1).length;
-                        const retentionRate = totalClients > 0 ? Math.round((repeatClientsCount / totalClients) * 100) : 0;
+                    <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
+                      <h2 className="flex items-center gap-2 text-xl font-semibold">
+                        <ShieldCheck size={20} /> Client elegance score
+                      </h2>
+                      <p className="mt-1 text-sm text-[var(--muted)]">Retention, repeat orders, and fulfillment quality</p>
+                      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                        {(() => {
+                          const totalClientsCount = clients.length || 0;
+                          const totalOrdersCount = orders.length || 0;
 
-                        // 2. Repeat Orders: % of total orders from repeat clients
-                        const repeatOrdersCount = orders.filter(o => {
-                          const cid = o.client?.id || o.clientId || o.client;
-                          return clientTransactionMap[cid] > 1;
-                        }).length;
-                        const repeatOrdersRate = totalOrders > 0 ? Math.round((repeatOrdersCount / totalOrders) * 100) : 0;
+                          // 1. Retention: Clients with > 1 transaction
+                          const clientTransactionMap = {};
+                          orders.forEach(o => {
+                            const cid = o.client?.id || o.clientId || o.client;
+                            if (cid) clientTransactionMap[cid] = (clientTransactionMap[cid] || 0) + 1;
+                          });
+                          sales.forEach(s => {
+                            const cid = s.client?.id || s.client;
+                            if (cid) clientTransactionMap[cid] = (clientTransactionMap[cid] || 0) + 1;
+                          });
+                          const repeatClientsCount = Object.values(clientTransactionMap).filter(count => count > 1).length;
+                          const retentionRate = totalClientsCount > 0 ? Math.round((repeatClientsCount / totalClientsCount) * 100) : 0;
 
-                        // 3. Fulfillment Rate: % of orders completed
-                        const completedOrders = orders.filter(o => o.status === 'Completed').length;
-                        const fulfillmentRate = totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0;
+                          // 2. Repeat Orders: % of total orders from repeat clients
+                          const repeatOrdersCount = orders.filter(o => {
+                            const cid = o.client?.id || o.clientId || o.client;
+                            return clientTransactionMap[cid] > 1;
+                          }).length;
+                          const repeatOrdersRate = totalOrdersCount > 0 ? Math.round((repeatOrdersCount / totalOrdersCount) * 100) : 0;
 
-                        return [
-                          { label: 'Retention', value: `${retentionRate}%` },
-                          { label: 'Repeat orders', value: `${repeatOrdersRate}%` },
-                          { label: 'Fulfillment', value: `${fulfillmentRate}%` }
-                        ].map((item) => (
-                          <div className="rounded-2xl bg-[var(--soft)] p-4" key={item.label}>
-                            <p className="text-2xl font-semibold">{item.value}</p>
-                            <p className="mt-1 text-sm text-[var(--muted)]">{item.label}</p>
-                          </div>
-                        ));
-                      })()}
+                          // 3. Fulfillment Rate: % of orders completed
+                          const completedOrders = orders.filter(o => o.status === 'Completed').length;
+                          const fulfillmentRate = totalOrdersCount > 0 ? Math.round((completedOrders / totalOrdersCount) * 100) : 0;
+
+                          return [
+                            { label: 'Retention', value: `${retentionRate}%` },
+                            { label: 'Repeat orders', value: `${repeatOrdersRate}%` },
+                            { label: 'Fulfillment', value: `${fulfillmentRate}%` }
+                          ].map((item) => (
+                            <div className="rounded-2xl bg-[var(--soft)] p-4" key={item.label}>
+                              <p className="text-2xl font-semibold">{item.value}</p>
+                              <p className="mt-1 text-sm text-[var(--muted)]">{item.label}</p>
+                            </div>
+                          ));
+                        })()}
+                      </div>
                     </div>
                   </div>
                 </section>
