@@ -13,10 +13,6 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
   // Global order metadata
   const [photoPreview, setPhotoPreview] = useState(null)
   const [notes, setNotes] = useState('')
-  const lastItemRef = useRef(null)
-  const isInitialMount = useRef(true)
-  const prevLengthRef = useRef(orderItems.length)
-
   // Multiple Products (Order Items)
   const [orderItems, setOrderItems] = useState([
     {
@@ -36,6 +32,10 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
       deliveryDate: ''
     }
   ])
+
+  const lastItemRef = useRef(null)
+  const isInitialMount = useRef(true)
+  const prevLengthRef = useRef(orderItems.length)
 
   // Auto-scroll to current last item (Addition or Deletion) - Ignore initial mount & no-change
   useEffect(() => {
