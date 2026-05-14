@@ -30,7 +30,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
       notes: '',
       showTypeDropdown: false,
       showProductTypeDropdown: false,
-      showInventoryDropdown: null // Index of internal item
+      showInventoryDropdown: null,
+      deliveryDate: '' 
     }
   ])
 
@@ -78,7 +79,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
       notes: '',
       showTypeDropdown: false,
       showProductTypeDropdown: false,
-      showInventoryDropdown: null
+      showInventoryDropdown: null,
+      deliveryDate: deliveryDate || ''
     }])
   }
 
@@ -109,9 +111,9 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
       return
     }
 
-    const incompleteItem = orderItems.find(item => !item.product || !item.orderType)
+    const incompleteItem = orderItems.find(item => !item.product || !item.orderType || !item.deliveryDate)
     if (incompleteItem) {
-      if (showGlobalToast) showGlobalToast('Error', 'Please fill product and order type for all items.')
+      if (showGlobalToast) showGlobalToast('Error', 'Please fill product, type, and delivery date for all items.')
       return
     }
 
@@ -145,12 +147,19 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
       }
     }
 
-    const ordersOnDate = orders.filter(o => o.deliveryDate === deliveryDate).length
-    const limitForDate = specificDateLimits[deliveryDate] !== undefined ? specificDateLimits[deliveryDate] : dailyOrderLimit
+    // Group items by date to check limits
+    const itemsByDate = orderItems.reduce((acc, item) => {
+      acc[item.deliveryDate] = (acc[item.deliveryDate] || 0) + 1;
+      return acc;
+    }, {});
 
-    if (ordersOnDate + orderItems.length > limitForDate) {
-      if (showGlobalToast) showGlobalToast('Limit Reached', `Maximum ${limitForDate} orders allowed for ${deliveryDate}. Adding ${orderItems.length} more would exceed this.`)
-      return
+    for (const [date, count] of Object.entries(itemsByDate)) {
+      const existingCount = orders.filter(o => o.deliveryDate === date).length;
+      const limit = specificDateLimits[date] !== undefined ? specificDateLimits[date] : dailyOrderLimit;
+      if (existingCount + count > limit) {
+        if (showGlobalToast) showGlobalToast('Limit Reached', `Maximum ${limit} orders allowed for ${date}. You are trying to add ${count} more.`);
+        return;
+      }
     }
 
     // Save each item as a separate order record
@@ -167,7 +176,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
       materialPhoto: item.materialPhoto,
       notes: item.notes || notes,
       orderDate,
-      deliveryDate,
+      deliveryDate: item.deliveryDate,
       photo: photoPreview,
       status: 'Not Ready'
     }))
@@ -412,8 +421,18 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
             </div>
 
             <div>
-              <span className="mb-2 block text-sm font-medium text-[var(--text)]">Delivery Date <span className="text-red-500">*</span></span>
-              <CustomDatePicker value={deliveryDate} onChange={setDeliveryDate} minDate={orderDate} placeholder="Required" />
+              <span className="mb-2 block text-sm font-medium text-[var(--text)]">Delivery Date (Set All)</span>
+              <CustomDatePicker 
+                value={deliveryDate} 
+                onChange={(val) => {
+                  setDeliveryDate(val);
+                  // Bulk update all items
+                  const updated = orderItems.map(item => ({ ...item, deliveryDate: val }));
+                  setOrderItems(updated);
+                }} 
+                minDate={orderDate} 
+                placeholder="Bulk set date..." 
+              />
             </div>
           </div>
 
@@ -593,6 +612,16 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                       </div>
 
                       <div className="relative">
+                        <span className="mb-2 block text-sm font-medium text-[var(--text)]">Delivery Date <span className="text-red-500">*</span></span>
+                        <CustomDatePicker 
+                          value={item.deliveryDate} 
+                          onChange={(val) => updateOrderItem(idx, { deliveryDate: val })} 
+                          minDate={orderDate}
+                          placeholder="Select date"
+                        />
+                      </div>
+
+                      <div className="relative">
                         <span className="mb-2 block text-sm font-medium text-[var(--text)]">Order Type</span>
                         <button
                           type="button"
@@ -727,8 +756,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                                         const nu = unitSearch.trim();
                                         if (nu && !unitsList.some(u => u.toLowerCase() === nu.toLowerCase())) {
                                           const updated = [...unitsList, nu];
-                                          setUnitsList(updated);
-                                          localStorage.setItem("inventoryUnits", JSON.stringify(updated));
+                                          setInventoryUnits(updated);
+                                          if (saveConfig) saveConfig("inventoryUnits", updated);
                                           updateOrderItem(idx, { unit: nu, showUnitDropdown: false });
                                         }
                                       }
@@ -753,8 +782,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             const updated = unitsList.filter(item => item !== u);
-                                            setUnitsList(updated);
-                                            localStorage.setItem("inventoryUnits", JSON.stringify(updated));
+                                            setInventoryUnits(updated);
+                                            if (saveConfig) saveConfig("inventoryUnits", updated);
                                           }}
                                         >
                                           <Trash2 size={12} />
@@ -769,8 +798,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                                           const nu = unitSearch.trim();
                                           if (nu) {
                                             const updated = [...unitsList, nu];
-                                            setUnitsList(updated);
-                                            localStorage.setItem("inventoryUnits", JSON.stringify(updated));
+                                            setInventoryUnits(updated);
+                                            if (saveConfig) saveConfig("inventoryUnits", updated);
                                             updateOrderItem(idx, { unit: nu, showUnitDropdown: false });
                                           }
                                         }}
