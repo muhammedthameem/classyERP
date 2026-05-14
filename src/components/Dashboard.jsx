@@ -757,14 +757,47 @@ function Dashboard({
                     <h2 className="flex items-center gap-2 text-xl font-semibold">
                       <ShieldCheck size={20} /> Client elegance score
                     </h2>
-                    <p className="mt-1 text-sm text-[var(--muted)]">Retention, repeat orders, and consultation quality</p>
+                    <p className="mt-1 text-sm text-[var(--muted)]">Retention, repeat orders, and fulfillment quality</p>
                     <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                      {['Retention 92%', 'Repeat orders 68%', 'On-time delivery 96%'].map((item) => (
-                        <div className="rounded-2xl bg-[var(--soft)] p-4" key={item}>
-                          <p className="text-2xl font-semibold">{item.split(' ').at(-1)}</p>
-                          <p className="mt-1 text-sm text-[var(--muted)]">{item.replace(item.split(' ').at(-1), '')}</p>
-                        </div>
-                      ))}
+                      {(() => {
+                        const totalClients = clients.length || 0;
+                        const totalOrders = orders.length || 0;
+
+                        // 1. Retention: Clients with > 1 transaction
+                        const clientTransactionMap = {};
+                        orders.forEach(o => {
+                          const cid = o.client?.id || o.clientId || o.client;
+                          if (cid) clientTransactionMap[cid] = (clientTransactionMap[cid] || 0) + 1;
+                        });
+                        sales.forEach(s => {
+                          const cid = s.client?.id || s.client;
+                          if (cid) clientTransactionMap[cid] = (clientTransactionMap[cid] || 0) + 1;
+                        });
+                        const repeatClientsCount = Object.values(clientTransactionMap).filter(count => count > 1).length;
+                        const retentionRate = totalClients > 0 ? Math.round((repeatClientsCount / totalClients) * 100) : 0;
+
+                        // 2. Repeat Orders: % of total orders from repeat clients
+                        const repeatOrdersCount = orders.filter(o => {
+                          const cid = o.client?.id || o.clientId || o.client;
+                          return clientTransactionMap[cid] > 1;
+                        }).length;
+                        const repeatOrdersRate = totalOrders > 0 ? Math.round((repeatOrdersCount / totalOrders) * 100) : 0;
+
+                        // 3. Fulfillment Rate: % of orders completed
+                        const completedOrders = orders.filter(o => o.status === 'Completed').length;
+                        const fulfillmentRate = totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0;
+
+                        return [
+                          { label: 'Retention', value: `${retentionRate}%` },
+                          { label: 'Repeat orders', value: `${repeatOrdersRate}%` },
+                          { label: 'Fulfillment', value: `${fulfillmentRate}%` }
+                        ].map((item) => (
+                          <div className="rounded-2xl bg-[var(--soft)] p-4" key={item.label}>
+                            <p className="text-2xl font-semibold">{item.value}</p>
+                            <p className="mt-1 text-sm text-[var(--muted)]">{item.label}</p>
+                          </div>
+                        ));
+                      })()}
                     </div>
                   </div>
                 </section>
