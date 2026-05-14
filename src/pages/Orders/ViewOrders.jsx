@@ -27,7 +27,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
   const [viewOrder, setViewOrder] = useState(null)
 
   // Sorting & Filtering
-  const [sortConfig, setSortConfig] = useState({ key: 'orderDate', direction: 'desc' })
+  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'desc' })
   const [dateFilter, setDateFilter] = useState('All') // All, Today, Tomorrow, Week, Custom
   const [customDate, setCustomDate] = useState(getIndianDate())
 
