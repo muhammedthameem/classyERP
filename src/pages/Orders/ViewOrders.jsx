@@ -59,7 +59,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
       const updated = orders.filter(o => o.id !== idToDelete)
       saveOrders(updated)
       setOrderToDelete(null)
-      if (showGlobalToast) showGlobalToast('Deleted', 'Order removed instantly.')
+      if (showGlobalToast) showGlobalToast('Deleted', `Order for ${orderToDelete.clientName} removed successfully.`)
 
       // 2. Background Cloud Sync
       try {

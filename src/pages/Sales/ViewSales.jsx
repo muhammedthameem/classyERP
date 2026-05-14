@@ -35,7 +35,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightS
     setInventory(updatedInventory);
     setOrders(updatedOrders);
     setSaleToDelete(null);
-    if (showGlobalToast) showGlobalToast('Sale Deleted', 'Record removed instantly.');
+    if (showGlobalToast) showGlobalToast('Sale Deleted', 'Sales record removed successfully.');
 
     // 3. Background Cloud Sync
     try {

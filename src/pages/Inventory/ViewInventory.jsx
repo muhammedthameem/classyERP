@@ -50,7 +50,7 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, setSelectedInventoryIte
       const updated = inventory.filter(item => item.id !== idToDelete);
       setInventory(updated);
       setItemToDelete(null);
-      if (showGlobalToast) showGlobalToast('Deleted!', 'Item removed instantly.');
+      if (showGlobalToast) showGlobalToast('Deleted!', 'Stock item removed successfully.');
 
       // 2. Background Cloud Sync
       try {

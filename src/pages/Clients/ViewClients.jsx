@@ -244,7 +244,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
                     // 2. Update local UI (Optimistic)
                     setClients(prev => prev.filter(c => c.id !== idToDelete))
                     setClientToDelete(null)
-                    if (showGlobalToast) showGlobalToast('Client Removed', 'Record deleted from cloud.')
+                    if (showGlobalToast) showGlobalToast('Client Removed', `Client "${clientToDelete.name}" removed successfully.`)
                   } catch (err) {
                     console.error("Delete failed:", err);
                   }
