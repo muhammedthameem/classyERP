@@ -421,14 +421,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
         </button>
       </div>
 
-      {/* Mobile Floating Action Button */}
-      <button
-        onClick={() => setCurrentPage('add-order')}
-        className="fixed bottom-24 right-6 z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent)] text-white shadow-2xl transition hover:scale-110 active:scale-95 sm:hidden"
-        title="Add New Order"
-      >
-        <Plus size={24} />
-      </button>
+      </div>
 
       {/* Mobile Stats Select */}
       <div className="mb-6 lg:hidden">

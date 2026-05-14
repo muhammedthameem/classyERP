@@ -275,14 +275,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
         </div>
       </div>
 
-      {/* Mobile Floating Action Button */}
-      <button
-        onClick={() => setCurrentPage('add-clients')}
-        className="fixed bottom-24 right-6 z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent)] text-white shadow-2xl transition hover:scale-110 active:scale-95 sm:hidden"
-        title="Add New Client"
-      >
-        <Plus size={24} />
-      </button>
+      </div>
 
       <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
         <div className="erp-table-container">

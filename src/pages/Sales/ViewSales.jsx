@@ -107,13 +107,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, highlightS
         </button>
       </div>
 
-      {/* Mobile FAB */}
-      <button
-        onClick={() => setCurrentPage('create-sales')}
-        className="fixed bottom-24 right-6 z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent)] text-white shadow-2xl transition hover:scale-110 active:scale-95 sm:hidden"
-      >
-        <Plus size={24} />
-      </button>
+      </div>
 
       <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
         <div className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
