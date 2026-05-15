@@ -138,15 +138,24 @@ function App() {
     localStorage.removeItem('erp_session')
   }
 
-  const [activeBillId, setActiveBillId] = useState(null);
-
-  useEffect(() => {
+  // 0. DETECT DIGITAL RECEIPT MODE (Synchronous to avoid mobile race conditions)
+  const getInitialBillId = () => {
+    if (typeof window === 'undefined') return null;
     const params = new URLSearchParams(window.location.search);
-    const bId = params.get('bill');
-    if (bId) {
-      setActiveBillId(bId.trim());
-    }
-  }, []);
+    return params.get('bill')?.trim() || null;
+  };
+
+  const [activeBillId, setActiveBillId] = useState(getInitialBillId);
+
+  // Sync state if URL changes (e.g. back/forward buttons)
+  useEffect(() => {
+    const handlePopState = () => {
+      const bId = getInitialBillId();
+      if (bId !== activeBillId) setActiveBillId(bId);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [activeBillId]);
 
   if (activeBillId) {
     return <PublicReceipt billId={activeBillId} onClear={() => setActiveBillId(null)} />;

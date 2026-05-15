@@ -345,7 +345,9 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
         .from('receipts')
         .getPublicUrl(fileName);
 
-      const appUrl = `${window.location.origin}/?bill=${showReceipt.saleId}`;
+      const appUrlObj = new URL(window.location.origin);
+      appUrlObj.searchParams.set('bill', showReceipt.saleId);
+      const finalAppUrl = appUrlObj.toString();
       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
       let message = `*✨ INVOICE: ${showReceipt.saleId} ✨*%0A`;
       message += `------------------------------%0A`;
@@ -361,7 +363,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       const grandTotal = parseFloat(showReceipt.total || 0).toFixed(2);
       message += `%0AGrand Total: *₹${grandTotal}*%0A`;
       message += `------------------------------%0A`;
-      message += `📄 *Download Digital Receipt:*%0A${appUrl}%0A%0A`;
+      message += `📄 *Download Digital Receipt:*%0A${finalAppUrl}%0A%0A`;
       if (publicUrl) {
         message += `📎 *Direct PDF Download:*%0A${publicUrl}%0A%0A`;
       }
@@ -374,7 +376,9 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
     } catch (err) {
       console.error('WhatsApp Share Error:', err);
-      const appUrl = `${window.location.origin}/?bill=${showReceipt.saleId}`;
+      const appUrlObj = new URL(window.location.origin);
+      appUrlObj.searchParams.set('bill', showReceipt.saleId);
+      const finalAppUrl = appUrlObj.toString();
       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
       let message = `*✨ INVOICE: ${showReceipt.saleId} ✨*%0A`;
       message += `------------------------------%0A`;
@@ -388,7 +392,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       const grandTotalFallback = parseFloat(showReceipt.total || 0).toFixed(2);
       message += `%0AGrand Total: *₹${grandTotalFallback}*%0A`;
       message += `------------------------------%0A`;
-      message += `📄 *Download Digital Receipt:*%0A${appUrl}%0A%0A`;
+      message += `📄 *Download Digital Receipt:*%0A${finalAppUrl}%0A%0A`;
       message += `Visit again for more unique designs!%0A`;
       message += `*Classy Couture - Be Unique, Be Classy*`;
 

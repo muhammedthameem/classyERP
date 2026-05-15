@@ -411,7 +411,9 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                         .from('receipts')
                         .getPublicUrl(fileName);
 
-                      const appUrl = `${window.location.origin}/?bill=${viewSale.saleId}`;
+                      const appUrlObj = new URL(window.location.origin);
+                      appUrlObj.searchParams.set('bill', viewSale.saleId);
+                      const finalAppUrl = appUrlObj.toString();
 
                       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
                       let msg = `*✨ INVOICE: ${viewSale.saleId} ✨*%0A`;
@@ -428,7 +430,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       const grandTotal = parseFloat(viewSale.total || 0).toFixed(2);
                       msg += `%0AGrand Total: *₹${grandTotal}*%0A`;
                       msg += `------------------------------%0A`;
-                      msg += `📄 *Download Digital Receipt:*%0A${appUrl}%0A%0A`;
+                      msg += `📄 *Download Digital Receipt:*%0A${finalAppUrl}%0A%0A`;
                       if (publicUrl) {
                         msg += `📎 *Direct PDF Download:*%0A${publicUrl}%0A%0A`;
                       }
@@ -440,7 +442,9 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       window.open(`https://wa.me/${formattedPhone}?text=${msg}`, '_blank');
                     } catch (err) {
                       console.error('WhatsApp Share Error:', err);
-                      const appUrl = `${window.location.origin}/?bill=${viewSale.saleId}`;
+                      const appUrlObj = new URL(window.location.origin);
+                      appUrlObj.searchParams.set('bill', viewSale.saleId);
+                      const finalAppUrl = appUrlObj.toString();
                       // Fallback: Send message WITH APP link even if PDF upload fails
                       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
                       let msg = `*✨ INVOICE: ${viewSale.saleId} ✨*%0A`;
@@ -455,7 +459,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       const grandTotalFallback = parseFloat(viewSale.total || 0).toFixed(2);
                       msg += `%0AGrand Total: *₹${grandTotalFallback}*%0A`;
                       msg += `------------------------------%0A`;
-                      msg += `📄 *Download Digital Receipt:*%0A${appUrl}%0A%0A`;
+                      msg += `📄 *Download Digital Receipt:*%0A${finalAppUrl}%0A%0A`;
                       msg += `Visit again for more unique designs!%0A`;
                       msg += `*Classy Couture - Be Unique, Be Classy*`;
 
