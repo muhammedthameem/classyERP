@@ -700,7 +700,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       <div className="relative">
                         <span className="mb-2 block text-sm font-medium text-[var(--text)]">Order Date</span>
                         <CustomDatePicker
