@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { db } from '../firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import supabase from '../supabase';
 import { CheckCircle, Download, Package } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 
@@ -11,10 +10,14 @@ function PublicReceipt({ billId }) {
   useEffect(() => {
     const fetchSale = async () => {
       try {
-        const q = query(collection(db, "sales"), where("saleId", "==", billId));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-          setSale(querySnapshot.docs[0].data());
+        const { data, error } = await supabase
+          .from('erp_sales')
+          .select('*')
+          .eq('id', billId)
+          .single();
+
+        if (data) {
+          setSale(data.data || data);
         }
       } catch (error) {
         console.error("Error fetching sale:", error);
@@ -27,6 +30,7 @@ function PublicReceipt({ billId }) {
 
   const handleDownload = () => {
     const element = document.getElementById('printable-bill');
+    if (!element) return;
     const opt = {
       margin: 0,
       filename: `Receipt_${sale.saleId}.pdf`,
@@ -40,7 +44,7 @@ function PublicReceipt({ billId }) {
   if (loading) return (
     <div className="flex h-screen items-center justify-center bg-[#f7f2ec]">
       <div className="text-center">
-        <div className="h-12 w-12 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <div className="h-12 w-12 border-4 border-[#8B4513] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
         <p className="text-stone-500 font-bold uppercase tracking-widest text-xs">Loading Receipt...</p>
       </div>
     </div>
@@ -62,11 +66,11 @@ function PublicReceipt({ billId }) {
   return (
     <div className="min-h-screen bg-[#f7f2ec] p-4 lg:p-10 flex flex-col items-center">
       <div className="w-full max-w-lg mb-8 text-center">
-        <div className="flex items-center justify-center gap-2 text-[var(--accent)] mb-2">
+        <div className="flex items-center justify-center gap-2 text-[#8B4513] mb-2">
           <CheckCircle size={18} />
           <span className="text-[10px] font-black uppercase tracking-[0.2em]">Verified Digital Receipt</span>
         </div>
-        <h1 className="text-3xl font-black mb-2">Classy Couture</h1>
+        <h1 className="text-3xl font-black mb-2 text-stone-900">Classy Couture</h1>
         <p className="text-stone-500 text-sm">Thank you for your purchase!</p>
       </div>
 
@@ -83,8 +87,8 @@ function PublicReceipt({ billId }) {
         </div>
 
         <div className="mb-6 text-[11px]">
-          <p className="font-bold">Customer: {sale.client.name}</p>
-          {sale.client.phone && <p>Tel: {sale.client.phone}</p>}
+          <p className="font-bold">Customer: {sale.client?.name || 'Guest'}</p>
+          {sale.client?.phone && <p>Tel: {sale.client.phone}</p>}
         </div>
 
         <table className="w-full text-[10px] mb-6">
@@ -96,14 +100,14 @@ function PublicReceipt({ billId }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-dashed divide-gray-200">
-            {sale.items.map((item, idx) => (
+            {(sale.items || []).map((item, idx) => (
               <tr key={idx}>
                 <td className="py-3 pr-2">
                   <p className="font-bold">{item.productName}</p>
                   <p className="text-[8px] opacity-60">Rate: ₹{item.rate}</p>
                 </td>
                 <td className="py-3 text-center">{item.qty}</td>
-                <td className="py-3 text-right font-bold">₹{parseFloat(item.price).toFixed(2)}</td>
+                <td className="py-3 text-right font-bold">₹{parseFloat(item.price || 0).toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
@@ -112,7 +116,7 @@ function PublicReceipt({ billId }) {
         <div className="border-t-2 border-dashed border-gray-300 pt-4 mb-6">
           <div className="flex justify-between text-base font-black">
             <span>GRAND TOTAL</span>
-            <span>₹{parseFloat(sale.total).toFixed(2)}</span>
+            <span>₹{parseFloat(sale.total || 0).toFixed(2)}</span>
           </div>
         </div>
 
@@ -125,7 +129,7 @@ function PublicReceipt({ billId }) {
 
       <button 
         onClick={handleDownload}
-        className="flex items-center gap-3 px-10 py-5 bg-[var(--accent)] text-white rounded-3xl font-bold shadow-2xl shadow-[var(--accent)]/30 hover:scale-105 active:scale-95 transition-all"
+        className="flex items-center gap-3 px-10 py-5 bg-stone-900 text-white rounded-3xl font-bold shadow-2xl hover:scale-105 active:scale-95 transition-all"
       >
         <Download size={20} /> Download PDF Receipt
       </button>

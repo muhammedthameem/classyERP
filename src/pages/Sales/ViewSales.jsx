@@ -463,6 +463,11 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       if (showGlobalToast) showGlobalToast('Warning', 'Bill sent without PDF link (Supabase storage not ready).');
                     } finally {
                       setIsSendingPdf(false);
+                      // CLEANUP stuck html2pdf overlays
+                      setTimeout(() => {
+                        const stuckOverlays = document.querySelectorAll('.html2pdf__overlay');
+                        stuckOverlays.forEach(o => o.remove());
+                      }, 500);
                     }
                   }}
                   className={`flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] py-3 text-sm font-bold text-white shadow-lg shadow-[#25D366]/20 transition hover:brightness-95 ${isSendingPdf ? 'opacity-50 cursor-not-allowed' : ''}`}

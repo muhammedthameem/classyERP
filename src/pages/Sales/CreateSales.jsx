@@ -397,6 +397,11 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       if (showGlobalToast) showGlobalToast('Warning', 'Bill sent without PDF link (Supabase storage not ready).');
     } finally {
       setIsSendingPdf(false);
+      // CLEANUP stuck html2pdf overlays
+      setTimeout(() => {
+        const stuckOverlays = document.querySelectorAll('.html2pdf__overlay');
+        stuckOverlays.forEach(o => o.remove());
+      }, 500);
     }
   };
 
