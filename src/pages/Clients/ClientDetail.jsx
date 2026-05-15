@@ -21,7 +21,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
   const [selectedMeasurementIndex, setSelectedMeasurementIndex] = useState(0)
   const [showMeasurementDropdown, setShowMeasurementDropdown] = useState(false)
 
-  const defaultTop = { length: '', upChestLength: '', upChestRound: '', chestLength: '', chestRound: '', bustLength: '', bustRound: '', waistLength: '', waistRound: '', hipLength: '', hipRound: '', shoulderLength: '', shoulderRound: '', frontLength: '', frontRound: '', backLength: '', backRound: '', neckFLength: '', neckFRound: '', neckBLength: '', neckBRound: '', fullSleevesLength: '', fullSleevesRound: '', threeQuarterSleevesLength: '', threeQuarterSleevesRound: '', elbowLength: '', elbowRound: '' }
+  const defaultTop = { length: '', upChestLength: '', upChestRound: '', chestLength: '', chestRound: '', bustLength: '', bustRound: '', waistLength: '', waistRound: '', hipLength: '', hipRound: '', shoulderLength: '', shoulderRound: '', armRoundLength: '', armRoundRound: '', yokeLength: '', yokeRound: '', frontLength: '', frontRound: '', backLength: '', backRound: '', neckFLength: '', neckFRound: '', neckBLength: '', neckBRound: '', fullSleevesLength: '', fullSleevesRound: '', threeQuarterSleevesLength: '', threeQuarterSleevesRound: '', elbowLength: '', elbowRound: '' }
   const defaultBottom = { length: '', waistLength: '', waistRound: '', hipLength: '', hipRound: '', thighsLength: '', thighsRound: '', kneeLength: '', kneeRound: '', calfLength: '', calfRound: '', ankleLength: '', ankleRound: '', crotchLength: '', crotchRound: '' }
 
   const [isAddingMeasurement, setIsAddingMeasurement] = useState(false)
@@ -534,6 +534,8 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                   { key: 'waist', label: 'Waist' },
                   { key: 'hip', label: 'Hip' },
                   { key: 'shoulder', label: 'Shoulder' },
+                  { key: 'armRound', label: 'Arm Round' },
+                  { key: 'yoke', label: 'Yoke' },
                   { key: 'front', label: 'Front' },
                   { key: 'back', label: 'Back' },
                   { key: 'neckF', label: 'Neck F' },
