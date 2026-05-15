@@ -141,8 +141,35 @@ function App() {
   // 0. DETECT DIGITAL RECEIPT MODE (Synchronous to avoid mobile race conditions)
   const getInitialBillId = () => {
     if (typeof window === 'undefined') return null;
-    const params = new URLSearchParams(window.location.search);
-    return params.get('bill')?.trim() || null;
+    
+    let id = null;
+    // 1. Standard Search Params
+    const searchParams = new URLSearchParams(window.location.search);
+    id = searchParams.get('bill');
+
+    // 2. Hash Params (Social apps sometimes move query params after the hash)
+    if (!id) {
+      const hash = window.location.hash;
+      if (hash.includes('bill=')) {
+        const hashSearchParams = new URLSearchParams(hash.substring(hash.indexOf('?') !== -1 ? hash.indexOf('?') + 1 : 1));
+        id = hashSearchParams.get('bill');
+      }
+    }
+
+    // 3. Regex Fallback
+    if (!id) {
+      const match = window.location.href.match(/[?&]bill=([^&#/]+)/);
+      if (match && match[1]) id = decodeURIComponent(match[1]);
+    }
+
+    const finalId = id?.trim() || null;
+    
+    // 4. Persistence: If we found it, save it. If not, check if we had one.
+    if (finalId) {
+      localStorage.setItem('active_bill_id', finalId);
+      return finalId;
+    }
+    return localStorage.getItem('active_bill_id');
   };
 
   const [activeBillId, setActiveBillId] = useState(getInitialBillId);
@@ -157,8 +184,13 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [activeBillId]);
 
+  const clearBill = () => {
+    localStorage.removeItem('active_bill_id');
+    setActiveBillId(null);
+  };
+
   if (activeBillId) {
-    return <PublicReceipt billId={activeBillId} onClear={() => setActiveBillId(null)} />;
+    return <PublicReceipt billId={activeBillId} onClear={clearBill} />;
   }
 
   return (
