@@ -47,8 +47,12 @@ function Dashboard({
   const notificationsPerPage = 10
  
    const [dashboardCards, setDashboardCards] = useState(() => {
-     const saved = localStorage.getItem('erp_dashboard_cards');
-     if (saved) return JSON.parse(saved);
+     try {
+       const saved = localStorage.getItem('erp_dashboard_cards');
+       if (saved) return JSON.parse(saved);
+     } catch (e) {
+       console.error("Dashboard Layout Load Error:", e);
+     }
      return [
        { id: 'Hero', label: 'Welcome Banner', visible: true },
        { id: 'Stats', label: 'Quick Stats', visible: true },
@@ -84,29 +88,15 @@ function Dashboard({
    };
  
    const cycleCardSize = (id) => {
-     setDashboardCards(prev => prev.map(c => {
-       if (c.id === id) {
-         let currentSpan = c.span;
-         if (!currentSpan) {
-           switch (id) {
-             case 'Hero': currentSpan = 3; break;
-             case 'Stats': currentSpan = 3; break;
-             case 'Calendar': currentSpan = 1; break;
-             case 'Orders': currentSpan = 2; break;
-             case 'Team': currentSpan = 1; break;
-             case 'Sales': currentSpan = 2; break;
-             case 'Revenue': currentSpan = 1; break;
-             case 'Elegance': currentSpan = 3; break;
-             default: currentSpan = 1; break;
-           }
-         }
-         const nextSpan = currentSpan >= 3 ? 1 : currentSpan + 1;
-         return { ...c, span: nextSpan };
-       }
-       return c;
-     }));
-   };
- 
+    setDashboardCards(prev => prev.map(c => {
+      if (c.id === id) {
+        const nextSpan = c.span === 3 ? 1 : (c.span || 1) + 1;
+        return { ...c, span: nextSpan };
+      }
+      return c;
+    }));
+  };
+
    const [showManageMenu, setShowManageMenu] = useState(false);
 
 
@@ -339,10 +329,8 @@ function Dashboard({
         default: span = 1; break;
       }
     }
-    if (span === 1) return 'col-span-1';
-    if (span === 2) return 'col-span-1 md:col-span-2';
-    if (span === 3) return 'col-span-1 md:col-span-2 xl:col-span-3';
-    return 'col-span-1';
+    if (span === 3) return 'masonry-item-full';
+    return 'masonry-item';
   };
 
   return (
@@ -735,19 +723,20 @@ function Dashboard({
           )}
               <div className="space-y-6 p-5 lg:p-8 pb-28 lg:pb-8">
              {currentPage === 'overview' && (
-               <div className="grid grid-flow-row-dense gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+               <div id="dashboard-overview-wrapper">
+               <div className="masonry-container">
                  {dashboardCards.filter(c => c.visible && (!c.adminOnly || user?.role === 'Admin')).map((card) => (
-                   <div
-                     key={card.id}
-                     draggable
-                     onDragStart={() => setDraggedCardId(card.id)}
-                     onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                     onDrop={() => {
-                       if (draggedCardId && draggedCardId !== card.id) handleCardMove(draggedCardId, card.id);
-                       setDraggedCardId(null);
-                     }}
-                     className={`relative group/card transition-all duration-300 ${getCardSpan(card)} ${draggedCardId === card.id ? 'opacity-30 scale-95' : 'opacity-100 scale-100'}`}
-                   >
+                    <div
+                      key={card.id}
+                      draggable
+                      onDragStart={() => setDraggedCardId(card.id)}
+                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                      onDrop={() => {
+                        if (draggedCardId && draggedCardId !== card.id) handleCardMove(draggedCardId, card.id);
+                        setDraggedCardId(null);
+                      }}
+                      className={`relative group/card transition-all duration-300 ${getCardSpan(card)} ${draggedCardId === card.id ? 'opacity-30 scale-95' : 'opacity-100 scale-100'}`}
+                    >
                      {/* Drag Handle & Close Button Overlay */}
                      <div className="absolute right-4 top-4 z-10 flex items-center gap-2 opacity-0 group-hover/card:opacity-100 transition-opacity">
                        <button 
@@ -1044,9 +1033,10 @@ function Dashboard({
                     )}
                   </div>
                 ))}
- 
+              </div>
+
                 {/* Manage Cards Button */}
-                 <div className="col-span-1 md:col-span-2 xl:col-span-3 flex items-center justify-center pt-8">
+                 <div className="flex items-center justify-center pt-8">
                    <div className="relative">
                      <button 
                        onClick={() => setShowManageMenu(!showManageMenu)}
@@ -1079,8 +1069,8 @@ function Dashboard({
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+               </div>
+             )}
             <Suspense fallback={
               <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
                 <div className="relative h-16 w-16">

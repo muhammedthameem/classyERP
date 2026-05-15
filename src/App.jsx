@@ -7,16 +7,16 @@ import supabase from './supabase'
 
 function App() {
   // SHARED STATES
-  const [users, setUsers] = useState(() => JSON.parse(localStorage.getItem('erp_users') || '[]'))
-  const [designations, setDesignations] = useState(() => JSON.parse(localStorage.getItem('erp_designations') || '[]'))
-  const [clients, setClients] = useState(() => JSON.parse(localStorage.getItem('clients') || '[]'))
-  const [orders, setOrders] = useState(() => JSON.parse(localStorage.getItem('orders') || '[]'))
-  const [inventory, setInventory] = useState(() => JSON.parse(localStorage.getItem('inventory') || '[]'))
-  const [sales, setSales] = useState(() => JSON.parse(localStorage.getItem('sales') || '[]'))
-  const [activities, setActivities] = useState(() => JSON.parse(localStorage.getItem('activities') || '[]'))
-  const [orderTypes, setOrderTypes] = useState(() => JSON.parse(localStorage.getItem('orderTypes') || '["Customisation", "Stitching"]'))
-  const [productTypes, setProductTypes] = useState(() => JSON.parse(localStorage.getItem('productTypes') || '[]'))
-  const [inventoryUnits, setInventoryUnits] = useState(() => JSON.parse(localStorage.getItem('inventoryUnits') || '["nos", "mtr", "kg", "yd", "set"]'))
+  const [users, setUsers] = useState(() => { try { return JSON.parse(localStorage.getItem('erp_users') || '[]') } catch(e) { return [] } })
+  const [designations, setDesignations] = useState(() => { try { return JSON.parse(localStorage.getItem('erp_designations') || '[]') } catch(e) { return [] } })
+  const [clients, setClients] = useState(() => { try { return JSON.parse(localStorage.getItem('clients') || '[]') } catch(e) { return [] } })
+  const [orders, setOrders] = useState(() => { try { return JSON.parse(localStorage.getItem('orders') || '[]') } catch(e) { return [] } })
+  const [inventory, setInventory] = useState(() => { try { return JSON.parse(localStorage.getItem('inventory') || '[]') } catch(e) { return [] } })
+  const [sales, setSales] = useState(() => { try { return JSON.parse(localStorage.getItem('sales') || '[]') } catch(e) { return [] } })
+  const [activities, setActivities] = useState(() => { try { return JSON.parse(localStorage.getItem('activities') || '[]') } catch(e) { return [] } })
+  const [orderTypes, setOrderTypes] = useState(() => { try { return JSON.parse(localStorage.getItem('orderTypes') || '["Customisation", "Stitching"]') } catch(e) { return ["Customisation", "Stitching"] } })
+  const [productTypes, setProductTypes] = useState(() => { try { return JSON.parse(localStorage.getItem('productTypes') || '[]') } catch(e) { return [] } })
+  const [inventoryUnits, setInventoryUnits] = useState(() => { try { return JSON.parse(localStorage.getItem('inventoryUnits') || '["nos", "mtr", "kg", "yd", "set"]') } catch(e) { return ["nos", "mtr", "kg", "yd", "set"] } })
   const [cloudLoaded, setCloudLoaded] = useState(false)
   const [syncError, setSyncError] = useState(null)
 
@@ -101,11 +101,12 @@ function App() {
         // Fetch profile from erp_users to get Name/Role
         supabase.from('erp_users').select('*').eq('id', session.user.email).single().then(({ data }) => {
           if (data) {
+            const profile = data.data || data;
             setUser({
-              id: data.data.id,
-              email: data.data.email,
-              name: data.data.name,
-              role: data.data.designation || 'Staff'
+              id: profile.id || profile.email,
+              email: profile.email,
+              name: profile.name,
+              role: profile.designation || 'Staff'
             });
           } else {
             setUser({ id: session.user.id, email: session.user.email, name: session.user.email.split('@')[0], role: 'Admin' });

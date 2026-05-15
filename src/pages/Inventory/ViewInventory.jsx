@@ -64,7 +64,7 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
   return (
     <div style={themeStyle} className="relative">
       {itemToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-3xl border border-[var(--border)] bg-[var(--surface-strong)] p-6 shadow-2xl">
             <h3 className="text-xl font-semibold text-[var(--text)]">Delete Inventory Item</h3>
             <p className="mt-2 text-sm text-[var(--muted)]">

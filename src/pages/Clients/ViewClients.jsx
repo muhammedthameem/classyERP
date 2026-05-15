@@ -9,33 +9,19 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
   const rowRefs = useRef({})
   const [searchQuery, setSearchQuery] = useState('')
   const [clientToDelete, setClientToDelete] = useState(null)
-
-  // Safety guard for initial load
-  if (!currentUser || !clients) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[var(--accent-soft)] border-t-[var(--accent)] mx-auto"></div>
-          <p className="text-sm font-semibold text-[var(--muted)]">Syncing Boutique Records...</p>
-        </div>
-      </div>
-    )
-  }
-
-  const filteredClients = clients.filter(client =>
-    (client.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (client.mobile || '').includes(searchQuery) ||
-    (client.address || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (client.clientProduct || '').toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
   const [currentPageNum, setCurrentPageNum] = useState(1)
   const itemsPerPage = 10
+
+  const filteredClients = (clients || []).filter(client =>
+    (client.name?.toString() || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (client.mobile?.toString() || '').includes(searchQuery) ||
+    (client.address?.toString() || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (client.clientProduct?.toString() || '').toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   const sortedClients = [...filteredClients].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
   const totalPages = Math.ceil(sortedClients.length / itemsPerPage)
 
-  // Scroll to highlight logic
   useEffect(() => {
     if (highlightClientId) {
       const index = sortedClients.findIndex(c => c.id === highlightClientId);
@@ -54,7 +40,18 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
         }, 300);
       }
     }
-  }, [highlightClientId, sortedClients]);
+  }, [highlightClientId, sortedClients, itemsPerPage, setHighlightClientId]);
+
+  if (!currentUser || !clients) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="text-center">
+          <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[var(--accent-soft)] border-t-[var(--accent)] mx-auto"></div>
+          <p className="text-sm font-semibold text-[var(--muted)]">Syncing Boutique Records...</p>
+        </div>
+      </div>
+    )
+  }
 
   const paginatedClients = sortedClients.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage)
 
@@ -216,7 +213,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
   return (
     <div style={themeStyle}>
       {clientToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-3xl border border-[var(--border)] bg-[var(--surface-strong)] p-6 shadow-2xl">
             <h3 className="text-xl font-semibold text-[var(--text)]">Delete Client</h3>
             <p className="mt-2 text-sm text-[var(--muted)]">

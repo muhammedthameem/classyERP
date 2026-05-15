@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react'
 import { ChevronDown, Package, Search, Settings, UsersRound } from 'lucide-react'
 
 function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, setClients, saveClient, currentUser }) {
-  // Safety check for non-admin or uninitialized users
-  if (!clients) return <div className="p-10 text-center">Loading clients...</div>;
   const [personalDetails, setPersonalDetails] = useState(() => {
     const prefill = localStorage.getItem('prefillClientName')
     if (prefill) {
@@ -92,6 +90,9 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
   })
   const [note, setNote] = useState('')
 
+  // Safety check for non-admin or uninitialized users
+  if (!clients) return <div className="p-10 text-center">Loading clients...</div>;
+
   const handleSubmit = (event) => {
     event.preventDefault()
     const measurementData = {
@@ -106,7 +107,7 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
     const existingClients = [...clients]
     const existingClientIndex = existingClients.findIndex(c => 
       c.mobile === personalDetails.mobile && 
-      c.name?.trim().toLowerCase() === personalDetails.name.trim().toLowerCase()
+      (c.name || '').trim().toLowerCase() === (personalDetails.name || '').trim().toLowerCase()
     )
 
     if (existingClientIndex >= 0) {

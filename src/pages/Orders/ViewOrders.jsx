@@ -4,32 +4,23 @@ import { formatDateDDMMYY, getIndianDate, orders } from '../../utils/constants'
 import supabase from '../../supabase'
 
 function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory, saveOrder, deleteOrder }) {
+  const rowRefs = useRef({});
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPageNum, setCurrentPageNum] = useState(1)
+  const itemsPerPage = 10
+  const [imagePopup, setImagePopup] = useState(null)
+  const [editOrder, setEditOrder] = useState(null)
+  const [orderToDelete, setOrderToDelete] = useState(null)
+  const [viewOrder, setViewOrder] = useState(null)
+  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'desc' })
+  const [dateFilter, setDateFilter] = useState('All') // All, Today, Tomorrow, Week, Custom
+  const [customDate, setCustomDate] = useState(getIndianDate())
+
   // Safety guard for cloud sync
   if (!orders) return <div className="p-20 text-center flex flex-col items-center gap-4">
     <div className="w-12 h-12 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin"></div>
     <p className="text-[var(--muted)] font-medium">Syncing Boutique Records...</p>
   </div>;
-
-  const rowRefs = useRef({});
-  const [searchQuery, setSearchQuery] = useState('')
-  const [currentPageNum, setCurrentPageNum] = useState(1)
-  const itemsPerPage = 10
-
-  const [imagePopup, setImagePopup] = useState(null)
-
-  // Edit modal
-  const [editOrder, setEditOrder] = useState(null)
-
-  // Delete modal
-  const [orderToDelete, setOrderToDelete] = useState(null)
-
-  // View modal
-  const [viewOrder, setViewOrder] = useState(null)
-
-  // Sorting & Filtering
-  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'desc' })
-  const [dateFilter, setDateFilter] = useState('All') // All, Today, Tomorrow, Week, Custom
-  const [customDate, setCustomDate] = useState(getIndianDate())
 
   const saveOrders = (newOrders) => {
     setOrders(newOrders)
@@ -227,7 +218,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
     <div style={themeStyle} className="relative">
 
       {viewOrder && (
-        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/50 px-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[2000] grid place-items-center bg-black/50 px-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto">
             <button className="absolute top-4 right-4 text-[var(--muted)] hover:text-[var(--text)] transition" onClick={() => setViewOrder(null)}>
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -318,7 +309,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
       )}
 
       {orderToDelete && (
-        <div className="fixed inset-0 z-[110] grid place-items-center bg-black/50 px-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[2000] grid place-items-center bg-black/50 px-4 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl p-6 text-center">
             <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-red-50 text-red-500">
               <Trash2 size={24} />
@@ -334,7 +325,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
       )}
 
       {editOrder && (
-        <div className="fixed inset-0 z-[90] grid place-items-center bg-black/50 px-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[2000] grid place-items-center bg-black/50 px-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-semibold mb-4">Edit Order #{editOrder.id}</h2>
             <div className="space-y-4">
@@ -767,7 +758,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
       </section>
 
       {imagePopup && (
-        <div className="fixed inset-0 z-[150] grid place-items-center bg-black/80 px-4 backdrop-blur-sm" onClick={() => setImagePopup(null)}>
+        <div className="fixed inset-0 z-[2100] grid place-items-center bg-black/80 px-4 backdrop-blur-sm" onClick={() => setImagePopup(null)}>
           <div className="relative">
             <button className="absolute -top-4 -right-4 grid h-8 w-8 place-items-center rounded-full bg-[var(--surface)] text-[var(--text)] shadow-lg hover:bg-[var(--soft)]" onClick={() => setImagePopup(null)}>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>

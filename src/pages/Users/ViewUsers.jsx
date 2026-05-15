@@ -98,7 +98,7 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
     <div style={themeStyle} className="relative">
       {/* View User Modal */}
       {viewUser && (
-        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/50 px-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[2000] grid place-items-center bg-black/50 px-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl p-8 relative">
             <button className="absolute top-6 right-6 text-[var(--muted)] hover:text-[var(--text)] transition" onClick={() => setViewUser(null)}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -152,7 +152,7 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
 
       {/* Edit User Modal */}
       {editUser && (
-        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/50 px-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[2000] grid place-items-center bg-black/50 px-4 backdrop-blur-sm">
           <div className="w-full max-w-2xl rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl p-8 relative max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
               <Pencil size={24} className="text-[var(--accent)]" /> Edit User: {editUser.name}
@@ -314,7 +314,7 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
 
       {/* Delete Confirmation Modal */}
       {userToDelete && (
-        <div className="fixed inset-0 z-[110] grid place-items-center bg-black/60 px-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[2000] grid place-items-center bg-black/60 px-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-[28px] border border-[var(--border)] bg-[var(--surface-strong)] p-8 shadow-2xl">
             <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-500">
               <Trash2 size={32} />

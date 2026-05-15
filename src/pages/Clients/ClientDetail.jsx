@@ -241,7 +241,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
   return (
     <div style={themeStyle} className="relative">
       {clientToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-3xl border border-[var(--border)] bg-[var(--surface-strong)] p-6 shadow-2xl">
             <h3 className="text-xl font-semibold text-[var(--text)]">Delete Client</h3>
             <p className="mt-2 text-sm text-[var(--muted)]">
@@ -330,7 +330,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                 />
               </div>
               <div className="max-h-60 overflow-y-auto pr-1 space-y-1">
-                {clientsList.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()) || c.mobile?.includes(clientSearch)).map(c => (
+                {clientsList.filter(c => (c.name?.toString() || '').toLowerCase().includes((clientSearch || '').toLowerCase()) || (c.mobile?.toString() || '').includes(clientSearch)).map(c => (
                   <button
                     key={c.id || c.mobile}
                     className="w-full rounded-xl px-4 py-3 text-left text-sm transition hover:bg-[var(--soft)] flex justify-between items-center"
@@ -350,7 +350,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                     {c.id === client.id && <span className="h-2 w-2 rounded-full bg-[var(--accent)]"></span>}
                   </button>
                 ))}
-                {clientSearch && clientsList.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase())).length === 0 && (
+                {clientSearch && clientsList.filter(c => (c.name?.toString() || '').toLowerCase().includes((clientSearch || '').toLowerCase())).length === 0 && (
                   <button
                     className="flex w-full items-center gap-2 rounded-xl bg-[var(--accent-soft)] px-4 py-3 text-left text-sm font-semibold text-[var(--accent)] transition hover:brightness-95"
                     onClick={() => {
