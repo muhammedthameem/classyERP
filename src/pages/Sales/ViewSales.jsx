@@ -389,7 +389,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                         jsPDF: { unit: 'mm', format: [80, 200], orientation: 'portrait' }
                       };
 
-                      const fileName = `receipts/${viewSale.saleId}_${Date.now()}.pdf`;
+                      const fileName = `receipts/${viewSale.saleId}.pdf`;
                       
       
                       const pdfBlob = await html2pdf().set(opt).from(visualBill).toPdf().get('pdf').output('blob');
@@ -399,7 +399,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                         .upload(fileName, pdfBlob, {
                           contentType: 'application/pdf',
                           cacheControl: '3600',
-                          upsert: false
+                          upsert: true
                         });
 
                       if (uploadError) {
@@ -429,6 +429,9 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       msg += `%0AGrand Total: *₹${grandTotal}*%0A`;
                       msg += `------------------------------%0A`;
                       msg += `📄 *Download Digital Receipt:*%0A${appUrl}%0A%0A`;
+                      if (publicUrl) {
+                        msg += `📎 *Direct PDF Download:*%0A${publicUrl}%0A%0A`;
+                      }
                       msg += `Visit again for more unique designs!%0A`;
                       msg += `*Classy Couture - Be Unique, Be Classy*`;
 

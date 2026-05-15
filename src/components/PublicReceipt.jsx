@@ -10,11 +10,12 @@ function PublicReceipt({ billId }) {
   useEffect(() => {
     const fetchSale = async () => {
       try {
+        // Search by ID or by saleId inside the data JSON
         const { data, error } = await supabase
           .from('erp_sales')
           .select('*')
-          .eq('id', billId)
-          .single();
+          .or(`id.eq.${billId},data->>saleId.eq.${billId}`)
+          .maybeSingle();
 
         if (data) {
           setSale(data.data || data);

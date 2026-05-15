@@ -325,27 +325,26 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
         jsPDF: { unit: 'mm', format: [80, 200], orientation: 'portrait' }
       };
 
-      const fileName = `receipts/${showReceipt.saleId}_${Date.now()}.pdf`;
+      const fileName = `receipts/${showReceipt.saleId}.pdf`;
       
-      // Pre-generate public URL so we have it for the message
-      const { data: { publicUrl } } = supabase.storage
-        .from('receipts')
-        .getPublicUrl(fileName);
-
       const pdfBlob = await html2pdf().set(opt).from(visualBill).toPdf().get('pdf').output('blob');
 
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('receipts')
         .upload(fileName, pdfBlob, {
           contentType: 'application/pdf',
           cacheControl: '3600',
-          upsert: false
+          upsert: true
         });
 
       if (uploadError) {
         console.warn('Supabase Upload Error:', uploadError);
         throw uploadError;
       }
+      const { data: { publicUrl } } = supabase.storage
+        .from('receipts')
+        .getPublicUrl(fileName);
+
       const appUrl = `${window.location.origin}/?bill=${showReceipt.saleId}`;
       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
       let message = `*✨ INVOICE: ${showReceipt.saleId} ✨*%0A`;
@@ -363,6 +362,9 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       message += `%0AGrand Total: *₹${grandTotal}*%0A`;
       message += `------------------------------%0A`;
       message += `📄 *Download Digital Receipt:*%0A${appUrl}%0A%0A`;
+      if (publicUrl) {
+        message += `📎 *Direct PDF Download:*%0A${publicUrl}%0A%0A`;
+      }
       message += `Visit again for more unique designs!%0A`;
       message += `*Classy Couture - Be Unique, Be Classy*`;
 
