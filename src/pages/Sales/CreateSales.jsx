@@ -344,25 +344,24 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
 
       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
       let message = `*✨ INVOICE: ${showReceipt.saleId} ✨*%0A`;
-      message += `*------------------------------*%0A`;
+      message += `------------------------------%0A`;
       message += `Hello *${showReceipt.client.name}*,%0A`;
       message += `${greeting}%0A%0A`;
 
       message += `*ORDER SUMMARY:*%0A`;
       showReceipt.items.forEach(item => {
         const itemPrice = parseFloat(item.price || 0).toFixed(2);
-        message += `• ${item.productName} (x${item.qty}) - ₹${itemPrice}%0A`;
+        message += `* ${item.productName} (x${item.qty}) - ₹${itemPrice}%0A`;
       });
 
       const grandTotal = parseFloat(showReceipt.total || 0).toFixed(2);
-      message += `%0A*Grand Total: ₹${grandTotal}*%0A`;
-      message += `*------------------------------*%0A`;
+      message += `%0AGrand Total: *₹${grandTotal}*%0A`;
+      message += `------------------------------%0A`;
       if (publicUrl) {
-        message += `📄 *DOWNLOAD DIGITAL RECEIPT:*%0A${publicUrl}%0A`;
-        message += `*------------------------------*%0A`;
+        message += `📄 *Download Digital Receipt:*%0A${publicUrl}%0A%0A`;
       }
-      message += `*Visit again for more unique designs!*%0A`;
-      message += `_Classy Couture - Be Unique, Be Classy_`;
+      message += `Visit again for more unique designs!%0A`;
+      message += `*Classy Couture - Be Unique, Be Classy*`;
 
       const phone = showReceipt.client.phone ? showReceipt.client.phone.replace(/[^0-9]/g, '') : '';
       const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
@@ -379,13 +378,13 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       message += `*ORDER SUMMARY:*%0A`;
       showReceipt.items.forEach(item => {
         const itemPrice = parseFloat(item.price || 0).toFixed(2);
-        message += `• ${item.productName} (x${item.qty}) - ₹${itemPrice}%0A`;
+        message += `* ${item.productName} (x${item.qty}) - ₹${itemPrice}%0A`;
       });
       const grandTotalFallback = parseFloat(showReceipt.total || 0).toFixed(2);
-      message += `%0A*Grand Total: ₹${grandTotalFallback}*%0A`;
-      message += `*------------------------------*%0A`;
-      message += `*Visit again for more unique designs!*%0A`;
-      message += `_Classy Couture - Be Unique, Be Classy_`;
+      message += `%0AGrand Total: *₹${grandTotalFallback}*%0A`;
+      message += `------------------------------%0A`;
+      message += `Visit again for more unique designs!%0A`;
+      message += `*Classy Couture - Be Unique, Be Classy*`;
 
       const phone = showReceipt.client.phone ? showReceipt.client.phone.replace(/[^0-9]/g, '') : '';
       const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
