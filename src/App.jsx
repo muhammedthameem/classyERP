@@ -182,8 +182,13 @@ function App() {
   const [currentPage, setCurrentPage] = useState(() => localStorage.getItem('erp_current_page') || 'overview');
   const [appearance, setAppearance] = useState('light')
   const [themeName, setThemeName] = useState('champagne')
-  const [selectedClient, setSelectedClient] = useState(null)
-  const [clientDetailMode, setClientDetailMode] = useState('view')
+  const [selectedClient, setSelectedClient] = useState(() => {
+    try {
+      const saved = localStorage.getItem('erp_selected_client');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) { return null; }
+  })
+  const [clientDetailMode, setClientDetailMode] = useState(() => localStorage.getItem('erp_client_mode') || 'view')
 
   const palette = boutiqueThemes[themeName]
   const tokens = appearanceTokens[appearance]
@@ -210,6 +215,15 @@ function App() {
   useEffect(() => {
     localStorage.setItem('erp_current_page', currentPage);
   }, [currentPage]);
+
+  useEffect(() => {
+    if (selectedClient) localStorage.setItem('erp_selected_client', JSON.stringify(selectedClient));
+    else localStorage.removeItem('erp_selected_client');
+  }, [selectedClient]);
+
+  useEffect(() => {
+    localStorage.setItem('erp_client_mode', clientDetailMode);
+  }, [clientDetailMode]);
 
   // Sync state if URL changes (e.g. back/forward buttons)
   useEffect(() => {
