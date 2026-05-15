@@ -3,7 +3,16 @@ import { ChevronDown, Search, Settings, ShoppingBag, Pencil, Trash2, Plus, Packa
 import { formatDateDDMMYY, getIndianDate } from '../../utils/constants'
 import CustomDatePicker from '../../components/CustomDatePicker'
 
-function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, setOrders, clients, inventory, setInventory, orderTypes, setOrderTypes, productTypes, setProductTypes, inventoryUnits, setInventoryUnits, saveOrder, saveConfig }) {
+function AddOrderPage({ 
+  themeStyle, setCurrentPage, showGlobalToast, 
+  orders, setOrders, clients, 
+  inventory, setInventory, 
+  orderTypes, setOrderTypes, 
+  productTypes, setProductTypes, 
+  inventoryUnits, setInventoryUnits,
+  orderLimits, setOrderLimits, 
+  saveOrder, saveConfig 
+}) {
   const [clientName, setClientName] = useState('')
   const [showClientDropdown, setShowClientDropdown] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
@@ -13,7 +22,11 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
   // Global order metadata
   const [photoPreview, setPhotoPreview] = useState(null)
   const [notes, setNotes] = useState('')
-  // Multiple Products (Order Items)
+  
+  // Use Global Limits from Prop
+  const dailyOrderLimit = orderLimits?.global || 6;
+  const specificDateLimits = orderLimits || {};
+
   const [orderItems, setOrderItems] = useState([
     {
       id: Date.now(),
@@ -56,11 +69,12 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
   const productTypesList = productTypes || []
   const unitsList = inventoryUnits || []
 
-  const [dailyOrderLimit, setDailyOrderLimit] = useState(6)
-  const [specificDateLimits, setSpecificDateLimits] = useState({})
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [settingsDate, setSettingsDate] = useState("")
   const [settingsDateLimit, setSettingsDateLimit] = useState("")
+
+  const [settingsGlobalLimit, setSettingsGlobalLimit] = useState(dailyOrderLimit)
+  const [localSpecificLimits, setLocalSpecificLimits] = useState(specificDateLimits)
 
   const [typeSearch, setTypeSearch] = useState('')
   const [productTypeSearch, setProductTypeSearch] = useState('')
@@ -71,11 +85,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
   useEffect(() => {
     setClientsList(clients)
     setAllOrders(orders)
-
-    const savedLimit = localStorage.getItem("dailyOrderLimit")
-    if (savedLimit) setDailyOrderLimit(parseInt(savedLimit, 10))
-    const savedSpecific = localStorage.getItem("specificDateLimits")
-    if (savedSpecific) setSpecificDateLimits(JSON.parse(savedSpecific))
+    setSettingsGlobalLimit(dailyOrderLimit)
+    setLocalSpecificLimits(specificDateLimits)
 
     const prefillClient = localStorage.getItem("prefillOrderClientName")
     if (prefillClient) {
@@ -280,8 +291,8 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                     type="number"
                     min="1"
                     className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 outline-none transition focus:border-[var(--accent)]"
-                    value={dailyOrderLimit}
-                    onChange={(e) => setDailyOrderLimit(parseInt(e.target.value, 10))}
+                    value={settingsGlobalLimit}
+                    onChange={(e) => setSettingsGlobalLimit(e.target.value)}
                   />
                 </label>
                 <div className="border-t border-[var(--border)] pt-4">
@@ -301,24 +312,42 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                     className="mt-3 w-full rounded-xl bg-[var(--accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--accent)] transition hover:brightness-95"
                     onClick={() => {
                       if (!settingsDate || !settingsDateLimit) return
-                      setSpecificDateLimits({ ...specificDateLimits, [settingsDate]: parseInt(settingsDateLimit, 10) })
+                      setLocalSpecificLimits({ ...localSpecificLimits, [settingsDate]: parseInt(settingsDateLimit, 10) })
                       setSettingsDate(''); setSettingsDateLimit('')
                     }}
                   >
                     Add Override
                   </button>
+                  {Object.keys(localSpecificLimits).length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      {Object.entries(localSpecificLimits).map(([d, l]) => (
+                        <div key={d} className="flex items-center justify-between rounded-lg bg-[var(--soft)] px-3 py-2 text-xs">
+                          <span>{d}: <strong>{l} orders</strong></span>
+                          <button onClick={() => {
+                            const next = { ...localSpecificLimits };
+                            delete next[d];
+                            setLocalSpecificLimits(next);
+                          }} className="text-red-500">Remove</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex justify-end gap-3">
                 <button type="button" className="rounded-xl border border-[var(--border)] px-4 py-2 text-sm font-semibold" onClick={() => setShowSettingsModal(false)}>Cancel</button>
                 <button
                   type="button"
-                  className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white shadow-lg"
+                  className="rounded-xl bg-[var(--accent)] px-6 py-2 text-sm font-semibold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-110 active:scale-95"
                   onClick={() => {
-                    localStorage.setItem('dailyOrderLimit', dailyOrderLimit.toString())
-                    localStorage.setItem('specificDateLimits', JSON.stringify(specificDateLimits))
+                    const gLimit = settingsGlobalLimit === "" ? 999 : parseInt(settingsGlobalLimit, 10);
+                    const final = { ...localSpecificLimits, global: gLimit };
+                    setOrderLimits(final);
+                    if (saveConfig) saveConfig('orderLimits', final);
                     setShowSettingsModal(false)
-                    if (showGlobalToast) showGlobalToast('Success', 'Order settings updated.')
+                    if (showGlobalToast) {
+                      showGlobalToast('Success', gLimit >= 999 ? 'Global limits removed. Capacity is now unlimited!' : `Global limit updated to ${gLimit} orders daily.`);
+                    }
                   }}
                 >
                   Save Settings
@@ -719,14 +748,37 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                           onChange={(val) => updateOrderItem(idx, { orderDate: val })}
                         />
                       </div>
-                      <div className="relative">
-                        <span className="mb-2 block text-sm font-medium text-[var(--text)]">Delivery Date <span className="text-red-500">*</span></span>
-                        <CustomDatePicker
-                          value={item.deliveryDate}
-                          onChange={(val) => updateOrderItem(idx, { deliveryDate: val })}
-                          minDate={item.orderDate}
-                          placeholder="Select date"
-                        />
+                      <div>
+                        <label className="mb-2 block text-xs font-medium text-[var(--text-soft)]">Delivery Date</label>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <CustomDatePicker
+                              value={item.deliveryDate}
+                              onChange={(val) => updateOrderItem(item.id, 'deliveryDate', val)}
+                              placeholder="Select date"
+                            />
+                          </div>
+                          {item.deliveryDate && (
+                            <div className="flex items-center gap-2 rounded-xl bg-[var(--soft)] px-3 py-2 border border-[var(--border)]">
+                              <Calendar size={14} className="text-[var(--jewel)]" />
+                              <div className="flex flex-col">
+                                <span className="text-[10px] font-bold uppercase text-[var(--text-soft)] leading-none">Capacity</span>
+                                <span className="text-xs font-semibold text-[var(--text)]">
+                                  {(() => {
+                                    const existing = orders.filter(o => o.deliveryDate === item.deliveryDate).length;
+                                    const limit = orderLimits[item.deliveryDate] !== undefined ? orderLimits[item.deliveryDate] : (orderLimits.global || 6);
+                                    const isOverride = orderLimits[item.deliveryDate] !== undefined;
+                                    return (
+                                      <span className={existing >= limit ? 'text-red-500' : isOverride ? 'text-[var(--jewel)]' : ''}>
+                                        {existing} / {limit} {isOverride && '✨'}
+                                      </span>
+                                    );
+                                  })()}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 

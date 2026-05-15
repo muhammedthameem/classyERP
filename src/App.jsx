@@ -19,6 +19,7 @@ function App() {
   const [orderTypes, setOrderTypes] = useState(() => { try { return JSON.parse(localStorage.getItem('orderTypes') || '["Customisation", "Stitching"]') } catch(e) { return ["Customisation", "Stitching"] } })
   const [productTypes, setProductTypes] = useState(() => { try { return JSON.parse(localStorage.getItem('productTypes') || '[]') } catch(e) { return [] } })
   const [inventoryUnits, setInventoryUnits] = useState(() => { try { return JSON.parse(localStorage.getItem('inventoryUnits') || '["nos", "mtr", "kg", "yd", "set"]') } catch(e) { return ["nos", "mtr", "kg", "yd", "set"] } })
+  const [orderLimits, setOrderLimits] = useState(() => { try { return JSON.parse(localStorage.getItem('orderLimits') || '{}') } catch(e) { return {} } })
   const [cloudLoaded, setCloudLoaded] = useState(false)
   const [syncError, setSyncError] = useState(null)
 
@@ -52,6 +53,7 @@ function App() {
             if (item.id === 'orderTypes') setOrderTypes(item.data);
             if (item.id === 'productTypes') setProductTypes(item.data);
             if (item.id === 'inventoryUnits') setInventoryUnits(item.data);
+            if (item.id === 'orderLimits') setOrderLimits(item.data);
           });
         }
         setCloudLoaded(true);
@@ -91,6 +93,7 @@ function App() {
   useEffect(() => { localStorage.setItem('orderTypes', JSON.stringify(orderTypes)) }, [orderTypes])
   useEffect(() => { localStorage.setItem('productTypes', JSON.stringify(productTypes)) }, [productTypes])
   useEffect(() => { localStorage.setItem('inventoryUnits', JSON.stringify(inventoryUnits)) }, [inventoryUnits])
+  useEffect(() => { localStorage.setItem('orderLimits', JSON.stringify(orderLimits)) }, [orderLimits])
 
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser] = useState(null)
@@ -239,6 +242,7 @@ function App() {
               setCurrentPage={setCurrentPage}
               appearance={appearance} setAppearance={setAppearance}
               themeName={themeName} setThemeName={setThemeName}
+              orderLimits={orderLimits} setOrderLimits={setOrderLimits}
               users={users} setUsers={setUsers}
             designations={designations} setDesignations={setDesignations}
             clients={clients} setClients={setClients}
@@ -290,19 +294,32 @@ function App() {
               if (error) console.error("Activity Save Failed:", error);
             }}
           />
+          {/* Classy AI Digital Manager */}
           <ClassyAI 
             user={user}
-            clients={clients} setClients={setClients} saveClient={async (c) => {
+            isAdmin={user?.role === 'Admin' || user?.role === 'Owner'}
+            clients={clients} 
+            setClients={setClients} 
+            saveClient={async (c) => {
               const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
               await supabase.from('erp_clients').upsert([{ id: (c.id || c.clientId || c.phone).toString(), data: clean(c) }]);
             }}
-            orders={orders} setOrders={setOrders} saveOrder={async (o) => {
+            orders={orders} 
+            setOrders={setOrders} 
+            saveOrder={async (o) => {
               const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
               await supabase.from('erp_orders').upsert([{ id: (o.id || o.orderId).toString(), data: clean(o) }]);
             }}
             setCurrentPage={setCurrentPage}
             activities={activities}
             inventory={inventory}
+            users={users}
+            sales={sales}
+            orderLimits={orderLimits}
+            setOrderLimits={setOrderLimits}
+            saveConfig={async (id, data) => {
+              await supabase.from('erp_config').upsert([{ id, data }]);
+            }}
             saveActivity={async (act) => {
               const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
               await supabase.from('erp_activities').upsert([{ id: act.id.toString(), data: clean(act) }]);
