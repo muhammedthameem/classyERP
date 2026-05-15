@@ -251,7 +251,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                     <tr className="border-b border-dashed border-gray-300 text-left">
                       <th className="py-1 min-w-[100px]">Item</th>
                       <th className="py-1 text-center px-2">Qty</th>
-                      <th className="py-1 text-right px-2 whitespace-nowrap">Disc (%)</th>
+                      <th className="py-1 text-right px-2 whitespace-nowrap">Disc (₹/%)</th>
                       <th className="py-1 text-right px-2 whitespace-nowrap">Total</th>
                     </tr>
                   </thead>
@@ -263,8 +263,14 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                           <p className="text-[8px] opacity-70">Rate: ₹{item.rate}</p>
                         </td>
                         <td className="py-2 text-center px-2">{item.qty}</td>
-                        <td className="py-2 text-right px-2">{item.discount || 0}%</td>
-                        <td className="py-2 text-right px-2 font-bold">₹{((item.qty * item.price) * (1 - (item.discount || 0) / 100)).toFixed(2)}</td>
+                        <td className="py-2 text-right px-2">
+                          {item.rowTotal !== undefined ? '₹' : ''}{item.discount || 0}{item.rowTotal !== undefined ? '' : '%'}
+                        </td>
+                        <td className="py-2 text-right px-2 font-bold">
+                          ₹{(item.rowTotal !== undefined 
+                            ? item.rowTotal 
+                            : (item.qty * item.price) * (1 - (item.discount || 0) / 100)).toFixed(2)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -295,17 +301,25 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                     container.style.color = '#000';
                     container.style.fontFamily = 'monospace';
 
-                    let itemsHtml = viewSale.items.map(item => `
+                    let itemsHtml = viewSale.items.map(item => {
+                      const finalTotal = item.rowTotal !== undefined 
+                        ? item.rowTotal 
+                        : (item.qty * item.price) * (1 - (item.discount || 0) / 100);
+                      const discDisplay = item.rowTotal !== undefined 
+                        ? `₹${parseFloat(item.discount || 0).toFixed(0)}` 
+                        : `${item.discount || 0}%`;
+
+                      return `
                       <tr>
                         <td style="padding: 4px 0; border-bottom: 1px dashed #eee;">
                           <div style="font-weight: bold; font-size: 11px;">${item.productName}</div>
                           <div style="font-size: 9px; color: #666;">Rate: ₹${item.rate}</div>
                         </td>
                         <td style="text-align: center; font-size: 11px; padding: 4px 8px;">${item.qty}</td>
-                        <td style="text-align: right; font-size: 11px; padding: 4px 8px;">${item.discount || 0}%</td>
-                        <td style="text-align: right; font-size: 11px; font-weight: bold; padding: 4px 8px;">₹${((item.qty * item.price) * (1 - (item.discount || 0) / 100)).toFixed(2)}</td>
+                        <td style="text-align: right; font-size: 11px; padding: 4px 8px;">${discDisplay}</td>
+                        <td style="text-align: right; font-size: 11px; font-weight: bold; padding: 4px 8px;">₹${parseFloat(finalTotal).toFixed(2)}</td>
                       </tr>
-                    `).join('');
+                    `}).join('');
 
                     container.innerHTML = `
                       <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px dashed #000; padding-bottom: 10px;">

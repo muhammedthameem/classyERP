@@ -146,8 +146,9 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
   const calculateSubtotal = () => {
     const total = cart.reduce((sum, item) => {
       const itemTotal = parseFloat(item.finalPrice) * item.qty;
-      const discountAmount = itemTotal * ((parseFloat(item.discount) || 0) / 100);
-      return sum + (itemTotal - discountAmount);
+      const discountAmount = parseFloat(item.discount) || 0;
+      const finalLineTotal = Math.max(0, itemTotal - discountAmount);
+      return sum + finalLineTotal;
     }, 0);
     return Number(total.toFixed(2));
   };
@@ -197,16 +198,23 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       id: Date.now(),
       saleId: `SALE-${Math.floor(1000 + Math.random() * 9000)}`,
       client: selectedClient ? { id: selectedClient.id, name: selectedClient.name, phone: selectedClient.phone } : { name: 'Guest', phone: '' },
-      items: cart.map(item => ({
-        id: item.productId || item.id,
-        productName: item.productName,
-        qty: item.qty,
-        unit: item.unit || 'nos',
-        rate: item.rate,
-        discount: item.discount || 0,
-        price: item.finalPrice,
-        type: item.type
-      })),
+      items: cart.map(item => {
+        const itemTotal = parseFloat(item.finalPrice) * item.qty;
+        const discountAmount = parseFloat(item.discount) || 0;
+        const finalLineTotal = Math.max(0, itemTotal - discountAmount);
+        
+        return {
+          id: item.productId || item.id,
+          productName: item.productName,
+          qty: item.qty,
+          unit: item.unit || 'nos',
+          rate: item.rate,
+          discount: discountAmount,
+          price: item.finalPrice,
+          rowTotal: finalLineTotal, // STORE PRE-CALCULATED TOTAL
+          type: item.type
+        };
+      }),
       total: calculateSubtotal(),
       timestamp: new Date().toISOString()
     };
@@ -240,8 +248,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
           <div style="font-size: 9px; color: #666;">Rate: ₹${item.rate}</div>
         </td>
         <td style="text-align: center; font-size: 11px;">${item.qty}</td>
-        <td style="text-align: right; font-size: 11px;">${item.discount}%</td>
-        <td style="text-align: right; font-size: 11px; font-weight: bold;">₹${parseFloat(item.price).toFixed(2)}</td>
+        <td style="text-align: right; font-size: 11px;">₹${parseFloat(item.discount || 0).toFixed(0)}</td>
+        <td style="text-align: right; font-size: 11px; font-weight: bold;">₹${parseFloat(item.rowTotal || (item.qty * item.price) - (item.discount || 0)).toFixed(2)}</td>
       </tr>
     `).join('');
 
@@ -445,8 +453,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
           <div style="font-size: 9px; color: #666;">Rate: ₹${item.rate}</div>
         </td>
         <td style="text-align: center; font-size: 11px;">${item.qty}</td>
-        <td style="text-align: right; font-size: 11px;">${item.discount}%</td>
-        <td style="text-align: right; font-size: 11px; font-weight: bold;">₹${parseFloat(item.price).toFixed(2)}</td>
+        <td style="text-align: right; font-size: 11px;">₹${parseFloat(item.discount || 0).toFixed(0)}</td>
+        <td style="text-align: right; font-size: 11px; font-weight: bold;">₹${parseFloat(item.rowTotal || (item.qty * item.price) - (item.discount || 0)).toFixed(2)}</td>
       </tr>
     `).join('');
 
@@ -826,7 +834,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                     <th>Item Details</th>
                     <th>Qty</th>
                     <th>Rate/Price</th>
-                    <th>Disc (%)</th>
+                    <th>Disc (₹)</th>
                     <th className="text-right">Total</th>
                     <th className="text-right"></th>
                   </tr>
@@ -875,7 +883,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                         />
                       </td>
                       <td className="text-right font-bold text-[var(--accent)]">
-                        ₹{((item.finalPrice * item.qty) * (1 - (item.discount || 0) / 100)).toFixed(2)}
+                        ₹{Math.max(0, (item.finalPrice * item.qty) - (item.discount || 0)).toFixed(2)}
                       </td>
                       <td className="text-right">
                         <button onClick={() => removeFromCart(item.id)} className="text-red-400 hover:text-red-600 transition p-2 hover:bg-red-50 rounded-lg">

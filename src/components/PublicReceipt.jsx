@@ -111,20 +111,31 @@ function PublicReceipt({ billId, onClear }) {
             <tr className="border-b border-dashed border-gray-300 text-left uppercase">
               <th className="py-2">Item</th>
               <th className="py-2 text-center">Qty</th>
+              <th className="py-2 text-right">Disc</th>
               <th className="py-2 text-right">Total</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-dashed divide-gray-200">
-            {(sale.items || []).map((item, idx) => (
-              <tr key={idx}>
-                <td className="py-3 pr-2">
-                  <p className="font-bold">{item.productName}</p>
-                  <p className="text-[8px] opacity-60">Rate: ₹{item.rate}</p>
-                </td>
-                <td className="py-3 text-center">{item.qty}</td>
-                <td className="py-3 text-right font-bold">₹{parseFloat(item.price || 0).toFixed(2)}</td>
-              </tr>
-            ))}
+            {(sale.items || []).map((item, idx) => {
+              const rowTotal = item.rowTotal !== undefined 
+                ? item.rowTotal 
+                : (item.qty * item.price) * (1 - (item.discount || 0) / 100);
+              const discDisplay = item.rowTotal !== undefined 
+                ? `₹${parseFloat(item.discount || 0).toFixed(0)}` 
+                : `${item.discount || 0}%`;
+
+              return (
+                <tr key={idx}>
+                  <td className="py-3 pr-2">
+                    <p className="font-bold">{item.productName}</p>
+                    <p className="text-[8px] opacity-60">Rate: ₹{item.rate}</p>
+                  </td>
+                  <td className="py-3 text-center">{item.qty}</td>
+                  <td className="py-3 text-right text-[9px]">{discDisplay}</td>
+                  <td className="py-3 text-right font-bold">₹{parseFloat(rowTotal).toFixed(2)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 
