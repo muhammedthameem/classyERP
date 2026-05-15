@@ -45,6 +45,43 @@ function Dashboard({
   const [showAllNotifications, setShowAllNotifications] = useState(false)
   const [notificationsPage, setNotificationsPage] = useState(1)
   const notificationsPerPage = 10
+ 
+   const [dashboardCards, setDashboardCards] = useState(() => {
+     const saved = localStorage.getItem('erp_dashboard_cards');
+     if (saved) return JSON.parse(saved);
+     return [
+       { id: 'Hero', label: 'Welcome Banner', visible: true },
+       { id: 'Stats', label: 'Quick Stats', visible: true },
+       { id: 'Calendar', label: 'Delivery Tracker', visible: true },
+       { id: 'Orders', label: 'Production Queue', visible: true },
+       { id: 'Team', label: 'Staff Activity', visible: true, adminOnly: true },
+       { id: 'Sales', label: 'Recent Transactions', visible: true },
+       { id: 'Revenue', label: 'Income Analytics', visible: true, adminOnly: true },
+       { id: 'Elegance', label: 'Client Performance', visible: true }
+     ];
+   });
+ 
+   useEffect(() => {
+     localStorage.setItem('erp_dashboard_cards', JSON.stringify(dashboardCards));
+   }, [dashboardCards]);
+ 
+   const [draggedCardId, setDraggedCardId] = useState(null);
+ 
+   const handleCardMove = (draggedId, targetId) => {
+     const newCards = [...dashboardCards];
+     const draggedIdx = newCards.findIndex(c => c.id === draggedId);
+     const targetIdx = newCards.findIndex(c => c.id === targetId);
+     const [movedCard] = newCards.splice(draggedIdx, 1);
+     newCards.splice(targetIdx, 0, movedCard);
+     setDashboardCards(newCards);
+   };
+ 
+   const toggleCardVisibility = (id, visible) => {
+     setDashboardCards(prev => prev.map(c => c.id === id ? { ...c, visible } : c));
+     if (showGlobalToast) {
+       showGlobalToast(visible ? 'Card Added' : 'Card Removed', `${dashboardCards.find(c => c.id === id).label} has been ${visible ? 'restored' : 'hidden'}.`);
+     }
+   };
 
   const showGlobalToast = (title, message) => {
     setGlobalToast({ title, message })
@@ -230,6 +267,35 @@ function Dashboard({
     }
   }, [globalSearch, allClients, allOrders, allInventory, allSales, user?.role])
   const hasSearchResults = Object.values(searchResults).some(arr => arr.length > 0)
+ 
+   // Smart Delivery Calendar Logic
+   const deliveryStats = React.useMemo(() => {
+     const counts = {};
+     orders.forEach(o => {
+       if (o.deliveryDate) {
+         counts[o.deliveryDate] = (counts[o.deliveryDate] || 0) + 1;
+       }
+     });
+     return counts;
+   }, [orders]);
+ 
+   const [calendarDate, setCalendarDate] = useState(new Date());
+   const generateCalendarDays = () => {
+     const days = [];
+     const start = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 1);
+     const end = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 0);
+     
+     // Pad beginning
+     for (let i = 0; i < start.getDay(); i++) {
+       days.push({ day: null });
+     }
+     
+     for (let d = 1; d <= end.getDate(); d++) {
+       const dateStr = `${calendarDate.getFullYear()}-${String(calendarDate.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+       days.push({ day: d, date: dateStr, count: deliveryStats[dateStr] || 0 });
+     }
+     return days;
+   };
 
   return (
     <section className="min-h-screen bg-[var(--app-bg)] text-[var(--text)] transition-colors duration-500" style={themeStyle}>
@@ -612,8 +678,7 @@ function Dashboard({
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
-              </span>
-              <div>
+                           <div>
                 <p className="text-label text-[var(--text)]">{globalToast.title}</p>
                 <p className="text-meta">{globalToast.message}</p>
               </div>
@@ -621,265 +686,336 @@ function Dashboard({
           )}
           <div className="space-y-6 p-5 lg:p-8 pb-28 lg:pb-8">
             {currentPage === 'overview' && (
-              <>
-                <section className="overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--jewel)] text-white shadow-[var(--shadow)]">
-                  <div className="grid gap-6 bg-[var(--hero)] p-6 md:grid-cols-[1fr_320px] lg:p-8">
-                    <div>
-                      <p className="flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-[#f8e6dc]">
-                        <Palette size={16} /> Spring bridal collection is live
-                      </p>
-                      <h2 className="mt-5 max-w-2xl text-h1 font-semibold leading-tight lg:text-5xl">
-                        Boutique operations with fittings, fabrics, and client moments in one view.
-                      </h2>
-                      <div className="mt-6 flex flex-wrap gap-3">
-                        {['42 priority orders', '18 fittings today', '96% delivery score'].map((item) => (
-                          <span className="rounded-xl border border-white/10 bg-white/12 px-4 py-2 text-sm font-semibold backdrop-blur" key={item}>
-                            {item}
-                          </span>
-                        ))}
+              <div className="space-y-6">
+                {dashboardCards.filter(c => c.visible && (!c.adminOnly || user?.role === 'Admin')).map((card) => (
+                  <div
+                    key={card.id}
+                    draggable
+                    onDragStart={() => setDraggedCardId(card.id)}
+                    onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                    onDrop={() => {
+                      if (draggedCardId && draggedCardId !== card.id) handleCardMove(draggedCardId, card.id);
+                      setDraggedCardId(null);
+                    }}
+                    className={`relative group/card transition-all duration-300 ${draggedCardId === card.id ? 'opacity-30 scale-95' : 'opacity-100 scale-100'}`}
+                  >
+                    {/* Drag Handle & Close Button Overlay */}
+                    <div className="absolute right-4 top-4 z-10 flex items-center gap-2 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                      <div className="cursor-move p-1.5 rounded-lg bg-[var(--surface-strong)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--accent)] shadow-sm" title="Drag to reorder">
+                        <Menu size={16} />
                       </div>
+                      <button 
+                        onClick={() => toggleCardVisibility(card.id, false)}
+                        className="p-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white shadow-sm transition-all" 
+                        title="Close card"
+                      >
+                        <AlertCircle size={16} />
+                      </button>
                     </div>
-                    {user?.role === 'Admin' && (
-                      <div className="rounded-2xl border border-white/15 bg-white/12 p-5 backdrop-blur">
-                        <p className="flex items-center gap-2 text-sm text-[#f8e6dc]">
-                          <TrendingUp size={16} /> Revenue pulse
-                        </p>
-                        <p className="mt-3 text-h1 font-semibold">₹{allSales.reduce((acc, s) => acc + (parseFloat(s.totalAmount) || 0), 0).toLocaleString()}</p>
-                        <div className="mt-5 space-y-3">
-                          {['Bridal wear', 'Luxury pret', 'Alterations'].map((item, index) => (
-                            <div key={item}>
-                              <div className="mb-1 flex justify-between text-xs text-[#f8e6dc]">
-                                <span>{item}</span>
-                                <span>{[78, 54, 38][index]}%</span>
+ 
+                    {card.id === 'Hero' && (
+                      <section className="overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--jewel)] text-white shadow-[var(--shadow)]">
+                        <div className="grid gap-6 bg-[var(--hero)] p-6 md:grid-cols-[1fr_320px] lg:p-8">
+                          <div>
+                            <p className="flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-[#f8e6dc]">
+                              <Palette size={16} /> Spring bridal collection is live
+                            </p>
+                            <h2 className="mt-5 max-w-2xl text-h1 font-semibold leading-tight lg:text-5xl">
+                              Boutique operations with fittings, fabrics, and client moments in one view.
+                            </h2>
+                            <div className="mt-6 flex flex-wrap gap-3">
+                              {['42 priority orders', '18 fittings today', '96% delivery score'].map((item) => (
+                                <span className="rounded-xl border border-white/10 bg-white/12 px-4 py-2 text-sm font-semibold backdrop-blur" key={item}>
+                                  {item}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          {user?.role === 'Admin' && (
+                            <div className="rounded-2xl border border-white/15 bg-white/12 p-5 backdrop-blur">
+                              <p className="flex items-center gap-2 text-sm text-[#f8e6dc]">
+                                <TrendingUp size={16} /> Revenue pulse
+                              </p>
+                              <p className="mt-3 text-h1 font-semibold">₹{allSales.reduce((acc, s) => acc + (parseFloat(s.totalAmount) || 0), 0).toLocaleString()}</p>
+                              <div className="mt-5 space-y-3">
+                                {liveRevenuePulse.slice(0, 3).map((item, index) => (
+                                  <div key={item.label}>
+                                    <div className="mb-1 flex justify-between text-xs text-[#f8e6dc]">
+                                      <span>{item.label}</span>
+                                      <span>{item.percentage}%</span>
+                                    </div>
+                                    <div className="h-2 rounded-full bg-white/15">
+                                      <div className="h-2 rounded-full bg-[#f4ded2]" style={{ width: `${item.percentage}%` }} />
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
-                              <div className="h-2 rounded-full bg-white/15">
-                                <div className="h-2 rounded-full bg-[#f4ded2]" style={{ width: `${[78, 54, 38][index]}%` }} />
+                            </div>
+                          )}
+                        </div>
+                      </section>
+                    )}
+ 
+                    {card.id === 'Stats' && (
+                      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        {liveStats.map((stat) => {
+                          const Icon = stat.icon
+                          return (
+                            <article key={stat.label} className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur transition hover:-translate-y-0.5">
+                              <div className="mb-5 flex items-center justify-between">
+                                <span className="grid h-11 w-11 place-items-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
+                                  <Icon size={21} />
+                                </span>
+                                <span className="rounded-full bg-[var(--soft)] px-3 py-1 text-xs font-semibold text-[var(--jewel)]">
+                                  Live
+                                </span>
                               </div>
+                              <p className="text-tiny">{stat.label}</p>
+                              <h3 className="text-h1 mt-3">{stat.value}</h3>
+                              <p className="text-para-sm mt-2 text-[var(--jewel)] font-medium">{stat.note}</p>
+                            </article>
+                          )
+                        })}
+                      </section>
+                    )}
+ 
+                    {card.id === 'Calendar' && (
+                      <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
+                        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+                          <div>
+                            <h2 className="text-h2 flex items-center gap-2">
+                              <Bell size={20} className="text-[var(--accent)]" /> Smart Delivery Tracker
+                            </h2>
+                            <p className="text-para text-[var(--muted)]">Monitor daily production output</p>
+                          </div>
+                          <div className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] p-1">
+                            <button 
+                              onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1))}
+                              className="p-2 hover:bg-[var(--soft)] rounded-lg text-[var(--muted)] hover:text-[var(--accent)]"
+                            >
+                              <ChevronsLeft size={16} />
+                            </button>
+                            <span className="px-4 text-sm font-bold min-w-[140px] text-center">
+                              {calendarDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                            </span>
+                            <button 
+                              onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1))}
+                              className="p-2 hover:bg-[var(--soft)] rounded-lg text-[var(--muted)] hover:text-[var(--accent)]"
+                            >
+                              <ChevronsRight size={16} />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-7 gap-2">
+                          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                            <div key={d} className="text-center text-[10px] font-black uppercase tracking-widest text-[var(--muted)] py-2">{d}</div>
+                          ))}
+                          {generateCalendarDays().map((d, i) => (
+                            <div 
+                              key={i} 
+                              className={`relative aspect-square rounded-2xl border flex flex-col items-center justify-center transition-all ${d.day ? (d.count > 0 ? 'bg-[var(--accent-soft)] border-[var(--accent)] shadow-sm' : 'bg-[var(--surface-strong)] border-[var(--border)] hover:border-[var(--accent)]') : 'bg-transparent border-transparent'}`}
+                            >
+                              {d.day && (
+                                <>
+                                  <span className={`text-xs font-bold ${d.count > 0 ? 'text-[var(--accent)]' : 'text-[var(--text)]'}`}>{d.day}</span>
+                                  {d.count > 0 && (
+                                    <div className="mt-1 flex items-center justify-center h-5 w-5 rounded-full bg-[var(--accent)] text-white text-[10px] font-black shadow-lg animate-pulse">
+                                      {d.count}
+                                    </div>
+                                  )}
+                                  {d.date === getIndianDate() && (
+                                    <div className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 shadow-sm" />
+                                  )}
+                                </>
+                              )}
                             </div>
                           ))}
                         </div>
-                      </div>
+                        <div className="mt-6 flex items-center gap-4 text-xs">
+                          <div className="flex items-center gap-1.5 text-[var(--muted)] font-medium">
+                            <div className="h-3 w-3 rounded-md bg-[var(--surface-strong)] border border-[var(--border)]" /> No deliveries
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[var(--accent)] font-bold">
+                            <div className="h-3 w-3 rounded-md bg-[var(--accent-soft)] border border-[var(--accent)]" /> Priority deliveries
+                          </div>
+                        </div>
+                      </section>
                     )}
-                  </div>
-                </section>
-
-                {!cloudLoaded ? (
-                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {[
-                      { label: 'Revenue', icon: TrendingUp },
-                      { label: 'Orders', icon: ShoppingBag },
-                      { label: 'Clients', icon: UsersRound },
-                      { label: 'Inventory', icon: Package }
-                    ].map((item, i) => (
-                      <div key={i} className="relative overflow-hidden rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm opacity-60">
+ 
+                    {card.id === 'Orders' && (
+                      <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
                         <div className="mb-5 flex items-center justify-between">
-                          <div className="h-11 w-11 animate-pulse rounded-xl bg-[var(--soft)] flex items-center justify-center text-[var(--muted)]">
-                            <item.icon size={20} />
+                          <div>
+                            <h2 className="text-h2">Live boutique orders</h2>
+                            <p className="text-para text-[var(--muted)]">Production queue for this week</p>
                           </div>
-                          <div className="h-6 w-12 animate-pulse rounded-full bg-[var(--soft)]" />
+                          <button
+                            className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-sm font-semibold hover:bg-[var(--soft)] transition"
+                            type="button"
+                            onClick={() => setCurrentPage('view-orders')}
+                          >
+                            View all
+                          </button>
                         </div>
-                        <div className="h-4 w-20 animate-pulse rounded bg-[var(--soft)] mb-3" />
-                        <div className="h-8 w-32 animate-pulse rounded bg-[var(--soft)]" />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {liveStats.map((stat) => {
-                      const Icon = stat.icon
-                      return (
-                        <article key={stat.label} className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur transition hover:-translate-y-0.5">
-                          <div className="mb-5 flex items-center justify-between">
-                            <span className="grid h-11 w-11 place-items-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
-                              <Icon size={21} />
-                            </span>
-                            <span className="rounded-full bg-[var(--soft)] px-3 py-1 text-xs font-semibold text-[var(--jewel)]">
-                              Live
-                            </span>
-                          </div>
-                          <p className="text-tiny">{stat.label}</p>
-                          <h3 className="text-h1 mt-3">{stat.value}</h3>
-                          <p className="text-para-sm mt-2 text-[var(--jewel)] font-medium">{stat.note}</p>
-                        </article>
-                      )
-                    })}
-                  </section>
-                )}
-
-                <section className={`grid gap-6 ${user?.role === 'Admin' ? 'xl:grid-cols-[1.45fr_0.8fr]' : 'grid-cols-1'}`}>
-                  <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
-                    <div className="mb-5 flex items-center justify-between">
-                      <div>
-                        <h2 className="text-h2">Live boutique orders</h2>
-                        <p className="text-para text-[var(--muted)]">Production queue for this week</p>
-                      </div>
-                      <button
-                        className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-sm font-semibold hover:bg-[var(--soft)] transition"
-                        type="button"
-                        onClick={() => setCurrentPage('view-orders')}
-                      >
-                        View all
-                      </button>
-                    </div>
-                    <div className="overflow-hidden rounded-2xl border border-[var(--border)]">
-                      {liveRecentOrders.map((o) => (
-                        <div className="grid gap-3 border-b border-[var(--border)] px-4 py-4 last:border-b-0 md:grid-cols-[1fr_1fr_150px_90px]" key={o.id}>
-                          <span className="font-semibold">{o.clientName}</span>
-                          <span className="text-[var(--muted)]">{o.product}</span>
-                          <span className="w-fit rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">{o.status}</span>
-                          <span className="font-semibold md:text-right">{o.price}</span>
+                        <div className="overflow-hidden rounded-2xl border border-[var(--border)]">
+                          {liveRecentOrders.map((o) => (
+                            <div className="grid gap-3 border-b border-[var(--border)] px-4 py-4 last:border-b-0 md:grid-cols-[1fr_1fr_150px_90px]" key={o.id}>
+                              <span className="font-semibold">{o.clientName}</span>
+                              <span className="text-[var(--muted)]">{o.product}</span>
+                              <span className="w-fit rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">{o.status}</span>
+                              <span className="font-semibold md:text-right">{o.price}</span>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                      {liveRecentOrders.length === 0 && (
-                        <p className="p-8 text-center text-sm text-[var(--muted)]">No active orders found.</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {user?.role === 'Admin' && (
-                    <div className="rounded-[24px] border border-[var(--border)] bg-[var(--jewel)] p-5 text-white shadow-[var(--shadow)]">
-                      <h2 className="text-h2 flex items-center gap-2">
-                        <ShieldCheck size={20} /> Team pulse
-                      </h2>
-                      <p className="text-para-sm mt-1 text-[#cce0da]">Staff activities today</p>
-                      <div className="mt-5 space-y-3">
-                        {liveActivities.map((act) => (
-                          <div className="rounded-md bg-white/10 p-4" key={act.id}>
-                            <p className="text-sm text-[#cce0da]">{new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                            <p className="font-semibold">{act.title}</p>
-                            <p className="text-sm text-[#dfeee9]">{act.actor || 'System'}</p>
-                          </div>
-                        ))}
-                        {liveActivities.length === 0 && (
-                          <p className="p-4 text-center text-sm text-[#cce0da] italic">No recent activity.</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </section>
-
-                <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-                  <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
-                    <div className="mb-5 flex items-center justify-between">
-                      <div>
-                        <h2 className="text-h2">Real-time sales</h2>
-                        <p className="text-para text-[var(--muted)]">Recent transactions</p>
-                      </div>
-                      {user?.role === 'Admin' && (
-                        <button
-                          className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-sm font-semibold hover:bg-[var(--soft)] transition"
-                          type="button"
-                          onClick={() => setCurrentPage('view-sales')}
-                        >
-                          All Sales
-                        </button>
-                      )}
-                    </div>
-                    <div className="overflow-hidden rounded-2xl border border-[var(--border)]">
-                      {liveRecentSales.map((s) => (
-                        <div className="grid gap-3 border-b border-[var(--border)] px-4 py-4 last:border-b-0 md:grid-cols-[100px_1fr_100px]" key={s.id || s.saleId}>
-                          <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-tight">{new Date(s.timestamp).toLocaleDateString()}</span>
-                          <div className="min-w-0">
-                            <p className="font-semibold truncate">{s.client?.name || 'Guest'}</p>
-                            <p className="text-[10px] text-[var(--muted)] truncate">ID: {s.saleId}</p>
-                          </div>
-                          <span className="font-black text-[var(--accent)] text-right">₹{s.total}</span>
+                      </section>
+                    )}
+ 
+                    {card.id === 'Team' && user?.role === 'Admin' && (
+                      <section className="rounded-[24px] border border-[var(--border)] bg-[var(--jewel)] p-5 text-white shadow-[var(--shadow)]">
+                        <h2 className="text-h2 flex items-center gap-2">
+                          <ShieldCheck size={20} /> Team pulse
+                        </h2>
+                        <p className="text-para-sm mt-1 text-[#cce0da]">Staff activities today</p>
+                        <div className="mt-5 space-y-3">
+                          {liveActivities.map((act) => (
+                            <div className="rounded-md bg-white/10 p-4" key={act.id}>
+                              <p className="text-sm text-[#cce0da]">{new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                              <p className="font-semibold">{act.title}</p>
+                              <p className="text-sm text-[#dfeee9]">{act.actor || 'System'}</p>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                      {liveRecentSales.length === 0 && (
-                        <p className="p-8 text-center text-sm text-[var(--muted)]">No sales records found.</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-6">
-                    {user?.role === 'Admin' && (
-                      <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
-                        <div className="mb-6">
+                      </section>
+                    )}
+ 
+                    {card.id === 'Sales' && (
+                      <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
+                        <div className="mb-5 flex items-center justify-between">
+                          <div>
+                            <h2 className="text-h2">Real-time sales</h2>
+                            <p className="text-para text-[var(--muted)]">Recent transactions</p>
+                          </div>
+                          {user?.role === 'Admin' && (
+                            <button
+                              className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-sm font-semibold hover:bg-[var(--soft)] transition"
+                              type="button"
+                              onClick={() => setCurrentPage('view-sales')}
+                            >
+                              All Sales
+                            </button>
+                          )}
+                        </div>
+                        <div className="overflow-hidden rounded-2xl border border-[var(--border)]">
+                          {liveRecentSales.map((s) => (
+                            <div className="grid gap-3 border-b border-[var(--border)] px-4 py-4 last:border-b-0 md:grid-cols-[100px_1fr_100px]" key={s.id || s.saleId}>
+                              <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-tight">{new Date(s.timestamp).toLocaleDateString()}</span>
+                              <div className="min-w-0">
+                                <p className="font-semibold truncate">{s.client?.name || 'Guest'}</p>
+                                <p className="text-[10px] text-[var(--muted)] truncate">ID: {s.saleId}</p>
+                              </div>
+                              <span className="font-black text-[var(--accent)] text-right">₹{s.total}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+ 
+                    {card.id === 'Revenue' && user?.role === 'Admin' && (
+                      <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
+                        <div className="mb-6 flex items-center justify-between">
                           <h2 className="text-h2 flex items-center gap-2">
                             <BarChart3 size={22} className="text-[var(--accent)]" /> Revenue pulse
                           </h2>
-                          <p className="text-h1 mt-2">₹{totalRev.toLocaleString()}</p>
-                          <p className="text-tiny mt-1">Total boutique income</p>
+                          <div className="h-8 w-8 rounded-full bg-[var(--accent-soft)] flex items-center justify-center text-[var(--accent)]">
+                            <TrendingUp size={14} />
+                          </div>
                         </div>
-                        <div className="space-y-6">
+                        <p className="text-h1 mt-2">₹{totalRev.toLocaleString()}</p>
+                        <div className="space-y-6 mt-6">
                           {liveRevenuePulse.map((item) => (
                             <div key={item.label}>
                               <div className="flex items-center justify-between mb-2">
-                                <span className="text-tiny">{item.label}</span>
-                                <span className="text-h2 font-black text-[var(--accent)]">{item.percentage}%</span>
+                                <span className="text-tiny font-bold">{item.label}</span>
+                                <span className="text-sm font-black text-[var(--accent)]">{item.percentage}%</span>
                               </div>
-                              <div className="h-2.5 w-full rounded-full bg-[var(--soft)] overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all duration-1000 ease-out ${item.color}`}
-                                  style={{ width: `${item.percentage}%` }}
-                                />
-                              </div>
-                              <div className="flex justify-between mt-1.5 items-center">
-                                <span className="text-tiny">Market share</span>
-                                <span className="text-para-sm font-bold">₹{item.value.toLocaleString()}</span>
+                              <div className="h-2 w-full rounded-full bg-[var(--soft)] overflow-hidden">
+                                <div className={`h-full rounded-full transition-all duration-1000 ${item.color}`} style={{ width: `${item.percentage}%` }} />
                               </div>
                             </div>
                           ))}
-                          {totalRev === 0 && (
-                            <p className="text-center text-xs text-[var(--muted)] py-4 italic">No categorical sales data available.</p>
-                          )}
                         </div>
-                      </div>
+                      </section>
                     )}
-
-                    <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
-                      <h2 className="text-h2 flex items-center gap-2">
-                        <ShieldCheck size={20} /> Client elegance score
-                      </h2>
-                      <p className="text-para mt-1">Retention, repeat orders, and fulfillment quality</p>
-                      <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                        {(() => {
-                          const totalClientsCount = clients.length || 0;
-                          const totalOrdersCount = orders.length || 0;
-
-                          // 1. Retention: Clients with > 1 transaction
-                          const clientTransactionMap = {};
-                          orders.forEach(o => {
-                            const cid = o.client?.id || o.clientId || o.client;
-                            if (cid) clientTransactionMap[cid] = (clientTransactionMap[cid] || 0) + 1;
-                          });
-                          sales.forEach(s => {
-                            const cid = s.client?.id || s.client;
-                            if (cid) clientTransactionMap[cid] = (clientTransactionMap[cid] || 0) + 1;
-                          });
-                          const repeatClientsCount = Object.values(clientTransactionMap).filter(count => count > 1).length;
-                          const retentionRate = totalClientsCount > 0 ? Math.round((repeatClientsCount / totalClientsCount) * 100) : 0;
-
-                          // 2. Repeat Orders: % of total orders from repeat clients
-                          const repeatOrdersCount = orders.filter(o => {
-                            const cid = o.client?.id || o.clientId || o.client;
-                            return clientTransactionMap[cid] > 1;
-                          }).length;
-                          const repeatOrdersRate = totalOrdersCount > 0 ? Math.round((repeatOrdersCount / totalOrdersCount) * 100) : 0;
-
-                          // 3. Fulfillment Rate: % of orders completed
-                          const completedOrders = orders.filter(o => o.status === 'Completed').length;
-                          const fulfillmentRate = totalOrdersCount > 0 ? Math.round((completedOrders / totalOrdersCount) * 100) : 0;
-
-                          return [
-                            { label: 'Retention', value: `${retentionRate}%` },
-                            { label: 'Repeat orders', value: `${repeatOrdersRate}%` },
-                            { label: 'Fulfillment', value: `${fulfillmentRate}%` }
-                          ].map((item) => (
-                            <div className="rounded-2xl bg-[var(--soft)] p-4" key={item.label}>
-                              <p className="text-h1">{item.value}</p>
-                              <p className="text-tiny mt-1">{item.label}</p>
+ 
+                    {card.id === 'Elegance' && (
+                      <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
+                        <h2 className="text-h2 flex items-center gap-2">
+                          <ShieldCheck size={20} /> Client elegance score
+                        </h2>
+                        <p className="text-para mt-1">Retention, repeat orders, and fulfillment quality</p>
+                        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                          {(() => {
+                            const totalClientsCount = clients.length || 0;
+                            const totalOrdersCount = orders.length || 0;
+                            const clientTransactionMap = {};
+                            orders.forEach(o => {
+                              const cid = o.clientId || o.client;
+                              if (cid) clientTransactionMap[cid] = (clientTransactionMap[cid] || 0) + 1;
+                            });
+                            const repeatClientsCount = Object.values(clientTransactionMap).filter(count => count > 1).length;
+                            const retentionRate = totalClientsCount > 0 ? Math.round((repeatClientsCount / totalClientsCount) * 100) : 0;
+                            const repeatOrdersCount = orders.filter(o => clientTransactionMap[o.clientId || o.client] > 1).length;
+                            const repeatOrdersRate = totalOrdersCount > 0 ? Math.round((repeatOrdersCount / totalOrdersCount) * 100) : 0;
+                            const completedOrders = orders.filter(o => o.status === 'Completed').length;
+                            const fulfillmentRate = totalOrdersCount > 0 ? Math.round((completedOrders / totalOrdersCount) * 100) : 0;
+ 
+                            return [
+                              { label: 'Retention', value: `${retentionRate}%` },
+                              { label: 'Repeat orders', value: `${repeatOrdersRate}%` },
+                              { label: 'Fulfillment', value: `${fulfillmentRate}%` }
+                            ].map((item) => (
+                              <div className="rounded-2xl bg-[var(--soft)] p-4" key={item.label}>
+                                <p className="text-h1">{item.value}</p>
+                                <p className="text-tiny mt-1">{item.label}</p>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      </section>
+                    )}
+                  </div>
+                ))}
+ 
+                {/* Manage Cards Button */}
+                <div className="flex items-center justify-center pt-8">
+                  <div className="relative group">
+                    <button className="flex items-center gap-3 rounded-2xl border-2 border-dashed border-[var(--border)] px-8 py-4 text-sm font-bold text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] hover:bg-[var(--accent-soft)] active:scale-95">
+                      <LayoutDashboard size={20} /> Manage Dashboard Layout
+                    </button>
+                    <div className="absolute bottom-full left-1/2 mb-4 w-64 -translate-x-1/2 rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] p-4 shadow-2xl opacity-0 translate-y-4 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-300 z-[100]">
+                      <p className="mb-4 text-[10px] font-black uppercase tracking-widest text-[var(--accent)] text-center">Customize Your View</p>
+                      <div className="space-y-2">
+                        {dashboardCards.map(card => (
+                          <button
+                            key={card.id}
+                            onClick={() => toggleCardVisibility(card.id, !card.visible)}
+                            className={`flex w-full items-center justify-between rounded-xl p-3 text-left text-xs font-bold transition ${card.visible ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'bg-[var(--soft)] text-[var(--muted)] hover:text-[var(--text)]'}`}
+                          >
+                            <span>{card.label}</span>
+                            <div className={`h-4 w-4 rounded-full border-2 border-current flex items-center justify-center`}>
+                              {card.visible && <div className="h-2 w-2 rounded-full bg-current" />}
                             </div>
-                          ));
-                        })()}
+                          </button>
+                        ))}
                       </div>
+                      <div className="mt-4 text-[9px] text-[var(--muted)] text-center">Tip: Drag cards to reorder them!</div>
                     </div>
                   </div>
-                </section>
-              </>
+                </div>
+              </div>
             )}
             <Suspense fallback={
+pense fallback={
               <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
                 <div className="relative h-16 w-16">
                   <div className="absolute inset-0 rounded-full border-4 border-[var(--accent-soft)]"></div>
