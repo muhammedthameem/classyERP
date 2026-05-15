@@ -172,7 +172,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
           { key: 'upChest', label: 'Up-Chest' }, { key: 'chest', label: 'Chest' }, { key: 'bust', label: 'Bust' },
           { key: 'waist', label: 'Waist' }, { key: 'hip', label: 'Hip' }, { key: 'shoulder', label: 'Shoulder' },
           { key: 'front', label: 'Front' }, { key: 'back', label: 'Back' }, { key: 'neckF', label: 'Neck F' },
-          { key: 'neckB', label: 'Neck B' }, { key: 'fullSleeves', label: 'Full Sleeves' },
+          { key: 'neckB', label: 'Neck B' }, { key: 'halfSleeves', label: 'Half Sleeves' }, { key: 'fullSleeves', label: 'Full Sleeves' },
           { key: 'threeQuarterSleeves', label: '3/4 Sleeves' }, { key: 'elbow', label: 'Elbow' }
         ]
         html += renderTable('Top Measurements', m.topMeasurements, topFields)

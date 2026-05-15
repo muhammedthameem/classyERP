@@ -21,7 +21,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
   const [selectedMeasurementIndex, setSelectedMeasurementIndex] = useState(0)
   const [showMeasurementDropdown, setShowMeasurementDropdown] = useState(false)
 
-  const defaultTop = { length: '', upChestLength: '', upChestRound: '', chestLength: '', chestRound: '', bustLength: '', bustRound: '', waistLength: '', waistRound: '', hipLength: '', hipRound: '', shoulderLength: '', shoulderRound: '', armRoundLength: '', armRoundRound: '', yokeLength: '', yokeRound: '', frontLength: '', frontRound: '', backLength: '', backRound: '', neckFLength: '', neckFRound: '', neckBLength: '', neckBRound: '', fullSleevesLength: '', fullSleevesRound: '', threeQuarterSleevesLength: '', threeQuarterSleevesRound: '', elbowLength: '', elbowRound: '' }
+  const defaultTop = { length: '', upChestLength: '', upChestRound: '', chestLength: '', chestRound: '', bustLength: '', bustRound: '', waistLength: '', waistRound: '', hipLength: '', hipRound: '', shoulderLength: '', shoulderRound: '', armRoundLength: '', armRoundRound: '', yokeLength: '', yokeRound: '', frontLength: '', frontRound: '', backLength: '', backRound: '', neckFLength: '', neckFRound: '', neckBLength: '', neckBRound: '', halfSleevesLength: '', halfSleevesRound: '', fullSleevesLength: '', fullSleevesRound: '', threeQuarterSleevesLength: '', threeQuarterSleevesRound: '', elbowLength: '', elbowRound: '' }
   const defaultBottom = { length: '', waistLength: '', waistRound: '', hipLength: '', hipRound: '', thighsLength: '', thighsRound: '', kneeLength: '', kneeRound: '', calfLength: '', calfRound: '', ankleLength: '', ankleRound: '', crotchLength: '', crotchRound: '' }
 
   const [isAddingMeasurement, setIsAddingMeasurement] = useState(false)
@@ -554,6 +554,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                   { key: 'back', label: 'Back' },
                   { key: 'neckF', label: 'Neck F' },
                   { key: 'neckB', label: 'Neck B' },
+                  { key: 'halfSleeves', label: 'Half Sleeves' },
                   { key: 'fullSleeves', label: 'Full Sleeves' },
                   { key: 'threeQuarterSleeves', label: '3/4 Sleeves' },
                   { key: 'elbow', label: 'Elbow' }
@@ -772,6 +773,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                     { key: 'back', label: 'Back' },
                     { key: 'neckF', label: 'Neck F' },
                     { key: 'neckB', label: 'Neck B' },
+                    { key: 'halfSleeves', label: 'Half Sleeves' },
                     { key: 'fullSleeves', label: 'Full Sleeves' },
                     { key: 'threeQuarterSleeves', label: '3/4 Sleeves' },
                     { key: 'elbow', label: 'Elbow' }
