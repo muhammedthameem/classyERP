@@ -410,6 +410,46 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                   />
                 </label>
               </div>
+
+              <div className="pt-2">
+                <span className="mb-2 block text-sm font-medium text-[var(--text)]">Update Design Reference Photo</span>
+                <div className="flex items-center gap-4">
+                  <div className="h-20 w-20 rounded-xl border-2 border-dashed border-[var(--border)] bg-[var(--surface)] flex items-center justify-center overflow-hidden">
+                    {editOrder.photo ? (
+                      <img src={editOrder.photo} alt="Current" className="h-full w-full object-cover" />
+                    ) : (
+                      <Plus size={24} className="text-[var(--muted)]" />
+                    )}
+                  </div>
+                  <label className="flex-1">
+                    <div className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[var(--accent)] bg-[var(--accent-soft)] px-4 text-xs font-bold text-[var(--accent)] transition hover:brightness-95 active:scale-95">
+                      <Plus size={16} /> {editOrder.photo ? 'Change Design Reference' : 'Upload Design Reference'}
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => setEditOrder({ ...editOrder, photo: ev.target.result });
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+                  {editOrder.photo && (
+                    <button 
+                      type="button" 
+                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+                      onClick={() => setEditOrder({ ...editOrder, photo: null })}
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button type="button" className="rounded-xl px-4 py-2 font-semibold hover:bg-[var(--soft)] transition" onClick={() => setEditOrder(null)}>Cancel</button>

@@ -252,6 +252,17 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
     ...inventory.map(item => item.productType).filter(Boolean)
   ]))
 
+  // Smart Filtering: Get products specific to the selected client
+  const displayProductTypes = (() => {
+    if (!clientName) return allProductTypes;
+    const selectedClientObj = clients.find(c => c.name === clientName);
+    if (selectedClientObj && selectedClientObj.measurements?.length > 0) {
+      const clientProducts = Array.from(new Set(selectedClientObj.measurements.map(m => m.product).filter(Boolean)));
+      if (clientProducts.length > 0) return clientProducts;
+    }
+    return allProductTypes;
+  })();
+
   return (
     <div style={themeStyle} className="relative">
       {/* Settings Modal - Kept Same */}
@@ -556,7 +567,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                                 autoFocus
                               />
                               <div className="max-h-48 overflow-y-auto space-y-1">
-                                {allProductTypes.filter(t => t.toLowerCase().includes(productTypeSearch.toLowerCase())).map(t => (
+                                {displayProductTypes.filter(t => t.toLowerCase().includes(productTypeSearch.toLowerCase())).map(t => (
                                   <div key={t} className="flex items-center gap-1 group">
                                     <button
                                       type="button"
@@ -583,7 +594,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                                   </div>
                                 ))}
 
-                                {productTypeSearch && !allProductTypes.some(t => t.toLowerCase() === productTypeSearch.toLowerCase()) && (
+                                {productTypeSearch && !displayProductTypes.some(t => t.toLowerCase() === productTypeSearch.toLowerCase()) && (
                                   <button
                                     type="button"
                                     className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-[var(--accent)] bg-[var(--accent-soft)] transition hover:brightness-95 flex items-center gap-2 mt-1"
