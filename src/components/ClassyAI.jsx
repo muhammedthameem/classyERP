@@ -148,14 +148,24 @@ const ClassyAI = ({
       return `💸 **Revenue Pulse**: Your total life-time revenue is **₹${total.toLocaleString()}**. Would you like me to open the full Reports page?`;
     }
 
-    // --- 4. FUZZY NAVIGATION & MASTER ACCESS ---
-    const isNav = cmd.includes('go') || cmd.includes('open') || cmd.includes('show') || cmd.includes('take') || cmd.includes('view') || cmd.includes('page') || cmd.includes('look');
-    
-    if (isNav || cmd.length < 12) {
-      if (cmd.includes('inv') || cmd.includes('stock') || cmd.includes('material')) {
+    // --- 4. STOCK & INVENTORY SECURITY (Priority Check) ---
+    if (cmd.includes('inv') || cmd.includes('stock') || cmd.includes('material')) {
+      if (!isAdmin) {
+        addActivity(`Unauthorized: Staff ${user?.name} tried to access stock info via AI.`);
+        return "🚫 **Permission Denied**: Inventory and stock levels are restricted to **Boutique Admins**. Please contact your manager for stock information.";
+      }
+      if (cmd.includes('go') || cmd.includes('open') || cmd.includes('show') || cmd.includes('take') || cmd.includes('view') || cmd.includes('page') || cmd.includes('look')) {
         setCurrentPage('view-inventory');
         return "Opening **Inventory**. Everything is in its place!";
       }
+      // If they just mentioned stock but didn't ask to open the page
+      return "📦 **Inventory Intelligence**: I have access to your boutique's materials and stock levels. What specific stock info do you need, Admin?";
+    }
+
+    // --- 5. FUZZY NAVIGATION & MASTER ACCESS ---
+    const isNav = cmd.includes('go') || cmd.includes('open') || cmd.includes('show') || cmd.includes('take') || cmd.includes('view') || cmd.includes('page') || cmd.includes('look');
+    
+    if (isNav || cmd.length < 12) {
       if (cmd.includes('client') || cmd.includes('cust') || cmd.includes('people')) {
         setCurrentPage('view-clients');
         return "Showing your **Client List**.";

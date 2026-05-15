@@ -590,15 +590,34 @@ function AddOrderPage({
                                   if (e.key === 'Enter') {
                                     e.preventDefault();
                                     const nt = productTypeSearch.trim();
+                                    let updates = { showProductTypeDropdown: false };
+                                    
+                                    // Smart Note Migration for Typed/Searched Products
+                                     const findNotes = (prodName) => {
+                                       const selectedClient = (clients || []).find(c => c.name === clientName);
+                                       if (selectedClient && selectedClient.measurements) {
+                                         const measure = selectedClient.measurements.find(m => m.product === prodName);
+                                         // Check for both 'note' (singular) and 'notes' (plural) for safety
+                                         return measure?.note || measure?.notes || '';
+                                       }
+                                       return '';
+                                     };
+
                                     if (nt && !productTypes.some(t => t.toLowerCase() === nt.toLowerCase())) {
                                       const updatedList = [...productTypes, nt];
                                       setProductTypes(updatedList);
                                       if (saveConfig) saveConfig("productTypes", updatedList);
-                                      updateOrderItem(idx, { product: nt, showProductTypeDropdown: false });
+                                      updates.product = nt;
+                                      updates.notes = findNotes(nt);
+                                      updateOrderItem(idx, updates);
                                       if (showGlobalToast) showGlobalToast('Added', `New product "${nt}" created.`);
                                     } else if (nt) {
                                       const ex = productTypes.find(t => t.toLowerCase().includes(nt.toLowerCase()));
-                                      if (ex) updateOrderItem(idx, { product: ex, showProductTypeDropdown: false });
+                                      if (ex) {
+                                         updates.product = ex;
+                                         updates.notes = findNotes(ex);
+                                         updateOrderItem(idx, updates);
+                                      }
                                     }
                                   }
                                 }}
@@ -611,7 +630,18 @@ function AddOrderPage({
                                       type="button"
                                       className="flex-1 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-[var(--soft)]"
                                       onClick={() => {
-                                        updateOrderItem(idx, { product: t, showProductTypeDropdown: false })
+                                        let updates = { product: t, showProductTypeDropdown: false };
+                                        // Smart Note Migration: Pull notes from client's measurement profile for this product
+                                        const selectedClient = (clients || []).find(c => c.name === clientName);
+                                        if (selectedClient && selectedClient.measurements) {
+                                          const measure = selectedClient.measurements.find(m => m.product === t);
+                                          // Check both note and notes for safety
+                                          const foundNote = measure?.note || measure?.notes || '';
+                                          if (foundNote) {
+                                            updates.notes = foundNote;
+                                          }
+                                        }
+                                        updateOrderItem(idx, updates);
                                       }}
                                     >
                                       {t}
@@ -642,7 +672,15 @@ function AddOrderPage({
                                         const updatedList = [...productTypesList, nt];
                                         setProductTypes(updatedList);
                                         if (saveConfig) saveConfig("productTypes", updatedList);
-                                        updateOrderItem(idx, { product: nt, showProductTypeDropdown: false });
+                                        
+                                        let updates = { product: nt, showProductTypeDropdown: false };
+                                        const selectedClient = (clients || []).find(c => c.name === clientName);
+                                        if (selectedClient && selectedClient.measurements) {
+                                          const measure = selectedClient.measurements.find(m => m.product === nt);
+                                          const foundNote = measure?.note || measure?.notes || '';
+                                          if (foundNote) updates.notes = foundNote;
+                                        }
+                                        updateOrderItem(idx, updates);
                                         if (showGlobalToast) showGlobalToast('Added', `New product "${nt}" created.`);
                                       }
                                     }}

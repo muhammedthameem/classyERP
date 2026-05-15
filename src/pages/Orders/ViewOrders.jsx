@@ -402,6 +402,16 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                 </label>
               </div>
 
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-[var(--text)]">Notes</span>
+                <textarea
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2 outline-none transition focus:border-[var(--accent)] text-[var(--text)] min-h-[100px]"
+                  value={editOrder.notes || ''}
+                  onChange={(e) => setEditOrder({ ...editOrder, notes: e.target.value })}
+                  placeholder="Fitting adjustments, fabric details, or special requests..."
+                />
+              </label>
+
               <div className="pt-2">
                 <span className="mb-2 block text-sm font-medium text-[var(--text)]">Update Design Reference Photo</span>
                 <div className="flex items-center gap-4">
