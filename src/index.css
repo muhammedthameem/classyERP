@@ -42,6 +42,16 @@ span, div, input, button, select, textarea { font-family: var(--font-family); }
   overflow-x: hidden;
 }
 
+/* iOS Safari auto-zoom prevention */
+/* Safari zooms in on inputs if the font-size is less than 16px */
+@media screen and (max-width: 1024px) {
+  input, 
+  select, 
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 /* Global Interactive Cursors */
 button, 
 select, 
