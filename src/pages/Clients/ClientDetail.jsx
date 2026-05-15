@@ -77,6 +77,13 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
         setTopMeasurements(defaultTop)
         setBottomMeasurements(defaultBottom)
         setNote('')
+      } else {
+        // Clear for new measurement
+        setProduct('')
+        setProductSearch('')
+        setTopMeasurements(defaultTop)
+        setBottomMeasurements(defaultBottom)
+        setNote('')
       }
     }
   }, [client, selectedMeasurementIndex, initialMode, isEditingClient, isAddingMeasurement])
@@ -402,7 +409,14 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
             )}
             <button
               className="col-span-2 sm:col-auto rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 flex items-center justify-center gap-2 active:scale-95"
-              onClick={() => setIsAddingMeasurement(true)}
+              onClick={() => {
+                setProduct('')
+                setProductSearch('')
+                setTopMeasurements(defaultTop)
+                setBottomMeasurements(defaultBottom)
+                setNote('')
+                setIsAddingMeasurement(true)
+              }}
             >
               <Plus size={20} />
               Add Measurement
@@ -752,6 +766,8 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                     { key: 'waist', label: 'Waist' },
                     { key: 'hip', label: 'Hip' },
                     { key: 'shoulder', label: 'Shoulder' },
+                    { key: 'armRound', label: 'Arm Round' },
+                    { key: 'yoke', label: 'Yoke' },
                     { key: 'front', label: 'Front' },
                     { key: 'back', label: 'Back' },
                     { key: 'neckF', label: 'Neck F' },
