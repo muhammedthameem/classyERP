@@ -109,11 +109,11 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
   const handleSaveMeasurement = (e) => {
     e.preventDefault()
 
-    const existingClients = JSON.parse(localStorage.getItem('clients') || '[]')
-    const clientIndex = existingClients.findIndex(c => c.id && c.id === client.id)
+    const clientListToSearch = clients || [];
+    const clientIndex = clientListToSearch.findIndex(c => String(c.id) === String(client.id));
 
     if (clientIndex >= 0) {
-      const updatedClient = { ...existingClients[clientIndex] }
+      const updatedClient = { ...clientListToSearch[clientIndex] };
 
       if (!updatedClient.measurements) {
         updatedClient.measurements = [{
