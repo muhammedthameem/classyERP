@@ -24,7 +24,7 @@ function AddOrderPage({
   const [notes, setNotes] = useState('')
   
   // Use Global Limits from Prop
-  const dailyOrderLimit = orderLimits?.global || 6;
+  const dailyOrderLimit = orderLimits?.global || 999;
   const specificDateLimits = orderLimits || {};
 
   const [orderItems, setOrderItems] = useState([
@@ -73,7 +73,7 @@ function AddOrderPage({
   const [settingsDate, setSettingsDate] = useState("")
   const [settingsDateLimit, setSettingsDateLimit] = useState("")
 
-  const [settingsGlobalLimit, setSettingsGlobalLimit] = useState(dailyOrderLimit)
+  const [settingsGlobalLimit, setSettingsGlobalLimit] = useState(orderLimits?.global || "")
   const [localSpecificLimits, setLocalSpecificLimits] = useState(specificDateLimits)
 
   const [typeSearch, setTypeSearch] = useState('')
@@ -312,7 +312,10 @@ function AddOrderPage({
                     className="mt-3 w-full rounded-xl bg-[var(--accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--accent)] transition hover:brightness-95"
                     onClick={() => {
                       if (!settingsDate || !settingsDateLimit) return
-                      setLocalSpecificLimits({ ...localSpecificLimits, [settingsDate]: parseInt(settingsDateLimit, 10) })
+                      const newLimits = { ...localSpecificLimits, [settingsDate]: parseInt(settingsDateLimit, 10) }
+                      setLocalSpecificLimits(newLimits)
+                      setSettingsGlobalLimit('') // Auto-clear global limit when specific override is added
+                      if (showGlobalToast) showGlobalToast('Override Added', `Limit of ${settingsDateLimit} set for ${formatDateDDMMYY(settingsDate)}`);
                       setSettingsDate(''); setSettingsDateLimit('')
                     }}
                   >
@@ -320,14 +323,18 @@ function AddOrderPage({
                   </button>
                   {Object.keys(localSpecificLimits).length > 0 && (
                     <div className="mt-4 space-y-2">
-                      {Object.entries(localSpecificLimits).map(([d, l]) => (
+                      {Object.entries(localSpecificLimits)
+                        .filter(([key]) => key !== 'global')
+                        .map(([d, l]) => (
                         <div key={d} className="flex items-center justify-between rounded-lg bg-[var(--soft)] px-3 py-2 text-xs">
-                          <span>{d}: <strong>{l} orders</strong></span>
+                          <span>{formatDateDDMMYY(d)}: <strong>{l} orders</strong></span>
                           <button onClick={() => {
                             const next = { ...localSpecificLimits };
+                            const dateToRemove = d;
                             delete next[d];
                             setLocalSpecificLimits(next);
-                          }} className="text-red-500">Remove</button>
+                            if (showGlobalToast) showGlobalToast('Override Removed', `Restored default limit for ${formatDateDDMMYY(dateToRemove)}`);
+                          }} className="text-red-500 font-bold hover:underline">Remove</button>
                         </div>
                       ))}
                     </div>
@@ -340,13 +347,15 @@ function AddOrderPage({
                   type="button"
                   className="rounded-xl bg-[var(--accent)] px-6 py-2 text-sm font-semibold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-110 active:scale-95"
                   onClick={() => {
-                    const gLimit = settingsGlobalLimit === "" ? 999 : parseInt(settingsGlobalLimit, 10);
-                    const final = { ...localSpecificLimits, global: gLimit };
+                    const rawVal = String(settingsGlobalLimit || "").trim();
+                    const gLimit = rawVal === "" ? 999 : parseInt(rawVal, 10);
+                    const final = { ...localSpecificLimits, global: isNaN(gLimit) ? 999 : gLimit };
                     setOrderLimits(final);
                     if (saveConfig) saveConfig('orderLimits', final);
                     setShowSettingsModal(false)
                     if (showGlobalToast) {
-                      showGlobalToast('Success', gLimit >= 999 ? 'Global limits removed. Capacity is now unlimited!' : `Global limit updated to ${gLimit} orders daily.`);
+                      const msg = gLimit >= 999 ? 'Global limits removed. Capacity is now unlimited!' : `Global limit updated to ${gLimit} orders daily.`;
+                      showGlobalToast('Settings Saved', msg);
                     }
                   }}
                 >
@@ -765,9 +774,10 @@ function AddOrderPage({
                                 <span className="text-[10px] font-bold uppercase text-[var(--text-soft)] leading-none">Capacity</span>
                                 <span className="text-xs font-semibold text-[var(--text)]">
                                   {(() => {
-                                    const existing = orders.filter(o => o.deliveryDate === item.deliveryDate).length;
-                                    const limit = orderLimits[item.deliveryDate] !== undefined ? orderLimits[item.deliveryDate] : (orderLimits.global || 6);
-                                    const isOverride = orderLimits[item.deliveryDate] !== undefined;
+                                    const limits = orderLimits || {};
+                                    const existing = (orders || []).filter(o => o.deliveryDate === item.deliveryDate).length;
+                                    const limit = limits[item.deliveryDate] !== undefined ? limits[item.deliveryDate] : (limits.global || 999);
+                                    const isOverride = limits[item.deliveryDate] !== undefined;
                                     return (
                                       <span className={existing >= limit ? 'text-red-500' : isOverride ? 'text-[var(--jewel)]' : ''}>
                                         {existing} / {limit} {isOverride && '✨'}
