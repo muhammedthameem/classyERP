@@ -208,7 +208,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
       {/* View Sale Modal */}
       {viewSale && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setViewSale(null)}></div>
+          <div className={`absolute inset-0 bg-black/60 backdrop-blur-sm ${isSendingPdf ? 'cursor-wait' : 'cursor-pointer'}`} onClick={() => !isSendingPdf && setViewSale(null)}></div>
           <div className="relative w-full max-w-2xl rounded-3xl bg-[var(--surface)] p-8 shadow-2xl border border-[var(--border)] animate-in fade-in zoom-in duration-200 overflow-y-auto max-h-[90vh]">
             <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -218,7 +218,11 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                   <p className="text-sm text-[var(--muted)]">{viewSale.saleId} • {new Date(viewSale.timestamp).toLocaleString()}</p>
                 </div>
               </div>
-              <button onClick={() => setViewSale(null)} className="h-10 w-10 grid place-items-center rounded-xl hover:bg-[var(--soft)] transition">
+              <button 
+                disabled={isSendingPdf}
+                onClick={() => setViewSale(null)} 
+                className="h-10 w-10 grid place-items-center rounded-xl hover:bg-[var(--soft)] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
             </div>
@@ -407,6 +411,8 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                         .from('receipts')
                         .getPublicUrl(fileName);
 
+                      const appUrl = `${window.location.origin}/?bill=${viewSale.saleId}`;
+
                       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
                       let msg = `*✨ INVOICE: ${viewSale.saleId} ✨*%0A`;
                       msg += `------------------------------%0A`;
@@ -422,9 +428,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       const grandTotal = parseFloat(viewSale.total || 0).toFixed(2);
                       msg += `%0AGrand Total: *₹${grandTotal}*%0A`;
                       msg += `------------------------------%0A`;
-                      if (publicUrl) {
-                        msg += `📄 *Download Digital Receipt:*%0A${publicUrl}%0A%0A`;
-                      }
+                      msg += `📄 *Download Digital Receipt:*%0A${appUrl}%0A%0A`;
                       msg += `Visit again for more unique designs!%0A`;
                       msg += `*Classy Couture - Be Unique, Be Classy*`;
 
@@ -433,7 +437,8 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       window.open(`https://wa.me/${formattedPhone}?text=${msg}`, '_blank');
                     } catch (err) {
                       console.error('WhatsApp Share Error:', err);
-                      // Fallback: Send message WITHOUT PDF link if upload fails
+                      const appUrl = `${window.location.origin}/?bill=${viewSale.saleId}`;
+                      // Fallback: Send message WITH APP link even if PDF upload fails
                       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
                       let msg = `*✨ INVOICE: ${viewSale.saleId} ✨*%0A`;
                       msg += `------------------------------%0A`;
@@ -447,6 +452,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       const grandTotalFallback = parseFloat(viewSale.total || 0).toFixed(2);
                       msg += `%0AGrand Total: *₹${grandTotalFallback}*%0A`;
                       msg += `------------------------------%0A`;
+                      msg += `📄 *Download Digital Receipt:*%0A${appUrl}%0A%0A`;
                       msg += `Visit again for more unique designs!%0A`;
                       msg += `*Classy Couture - Be Unique, Be Classy*`;
 

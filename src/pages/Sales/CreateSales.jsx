@@ -346,7 +346,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
         console.warn('Supabase Upload Error:', uploadError);
         throw uploadError;
       }
-
+      const appUrl = `${window.location.origin}/?bill=${showReceipt.saleId}`;
       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
       let message = `*✨ INVOICE: ${showReceipt.saleId} ✨*%0A`;
       message += `------------------------------%0A`;
@@ -362,9 +362,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       const grandTotal = parseFloat(showReceipt.total || 0).toFixed(2);
       message += `%0AGrand Total: *₹${grandTotal}*%0A`;
       message += `------------------------------%0A`;
-      if (publicUrl) {
-        message += `📄 *Download Digital Receipt:*%0A${publicUrl}%0A%0A`;
-      }
+      message += `📄 *Download Digital Receipt:*%0A${appUrl}%0A%0A`;
       message += `Visit again for more unique designs!%0A`;
       message += `*Classy Couture - Be Unique, Be Classy*`;
 
@@ -374,10 +372,10 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
     } catch (err) {
       console.error('WhatsApp Share Error:', err);
-      // Fallback: Send message WITHOUT PDF link if upload fails
+      const appUrl = `${window.location.origin}/?bill=${showReceipt.saleId}`;
       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
       let message = `*✨ INVOICE: ${showReceipt.saleId} ✨*%0A`;
-      message += `*------------------------------*%0A`;
+      message += `------------------------------%0A`;
       message += `Hello *${showReceipt.client.name}*,%0A`;
       message += `${greeting}%0A%0A`;
       message += `*ORDER SUMMARY:*%0A`;
@@ -388,6 +386,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       const grandTotalFallback = parseFloat(showReceipt.total || 0).toFixed(2);
       message += `%0AGrand Total: *₹${grandTotalFallback}*%0A`;
       message += `------------------------------%0A`;
+      message += `📄 *Download Digital Receipt:*%0A${appUrl}%0A%0A`;
       message += `Visit again for more unique designs!%0A`;
       message += `*Classy Couture - Be Unique, Be Classy*`;
 
@@ -547,7 +546,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       {/* Receipt Modal */}
       {showReceipt && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setCurrentPage('view-sales')}></div>
+          <div className={`absolute inset-0 bg-black/70 backdrop-blur-md ${isSendingPdf ? 'cursor-wait' : 'cursor-pointer'}`} onClick={() => !isSendingPdf && setCurrentPage('view-sales')}></div>
           <div className="relative w-full max-w-2xl rounded-[32px] bg-[var(--surface)] p-8 shadow-2xl animate-in zoom-in duration-300 overflow-y-auto max-h-[90vh]">
             <div className="mb-8 flex items-center justify-between">
               <div>
@@ -557,7 +556,11 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                 </div>
                 <h2 className="text-3xl font-black">Sales Receipt</h2>
               </div>
-              <button onClick={() => setCurrentPage('view-sales')} className="h-12 w-12 grid place-items-center rounded-2xl hover:bg-[var(--soft)] transition">
+              <button 
+                disabled={isSendingPdf}
+                onClick={() => setCurrentPage('view-sales')} 
+                className="h-12 w-12 grid place-items-center rounded-2xl hover:bg-[var(--soft)] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
             </div>
