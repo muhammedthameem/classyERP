@@ -606,7 +606,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                   <tr className="border-b border-dashed border-gray-300 text-left">
                     <th className="py-1 min-w-[100px]">Item</th>
                     <th className="py-1 text-center px-2">Qty</th>
-                    <th className="py-1 text-right px-2">Disc (%)</th>
+                    <th className="py-1 text-right px-2">Disc (₹)</th>
                     <th className="py-1 text-right px-2">Total</th>
                   </tr>
                 </thead>
@@ -618,8 +618,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                         <p className="text-[8px] opacity-70">Rate: ₹{item.rate}</p>
                       </td>
                       <td className="py-2 text-center px-2">{item.qty}</td>
-                      <td className="py-2 text-right px-2">{item.discount}%</td>
-                      <td className="py-2 text-right px-2 font-bold">₹{((item.qty * item.price) * (1 - (item.discount || 0) / 100)).toFixed(2)}</td>
+                      <td className="py-2 text-right px-2">₹{item.discount}</td>
+                      <td className="py-2 text-right px-2 font-bold">₹{parseFloat(item.rowTotal || (item.qty * item.price) - (item.discount || 0)).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
