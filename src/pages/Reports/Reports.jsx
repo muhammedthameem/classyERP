@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, ShoppingBag, TrendingUp, UsersRound, Download, Clock, BarChart3 } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
-import { stats, orders } from '../../utils/constants'
+import { orders } from '../../utils/constants'
 import ReportStatCard from '../../components/ReportStatCard'
 
 function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inventory }) {
@@ -52,7 +52,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
   const totalSalesPages = Math.ceil(filteredSales.length / itemsPerPage);
   const totalOrdersPages = Math.ceil(filteredOrders.length / itemsPerPage);
 
-  const stats = {
+  const reportStats = {
     totalRevenue: filteredSales.reduce((sum, s) => sum + parseFloat(s.total || 0), 0),
     totalInvestment: filteredInventory.reduce((sum, i) => sum + (parseFloat(i.purchasePrice || 0) * (parseFloat(i.quantity) || 0)), 0),
     salesCount: filteredSales.length,
@@ -78,19 +78,19 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
       <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 40px;">
         <div style="background: #f0fdf4; border: 1px solid #bcf0da; padding: 15px; border-radius: 12px; text-align: center;">
           <p style="margin: 0; font-size: 10px; color: #166534; font-weight: 800; text-transform: uppercase;">Total Revenue</p>
-          <p style="margin: 5px 0 0 0; font-size: 20px; font-weight: 900; color: #14532d;">₹${stats.totalRevenue.toLocaleString()}</p>
+          <p style="margin: 5px 0 0 0; font-size: 20px; font-weight: 900; color: #14532d;">₹${reportStats.totalRevenue.toLocaleString()}</p>
         </div>
         <div style="background: #eff6ff; border: 1px solid #dbeafe; padding: 15px; border-radius: 12px; text-align: center;">
           <p style="margin: 0; font-size: 10px; color: #1e40af; font-weight: 800; text-transform: uppercase;">Sales Count</p>
-          <p style="margin: 5px 0 0 0; font-size: 20px; font-weight: 900; color: #1e3a8a;">${stats.salesCount}</p>
+          <p style="margin: 5px 0 0 0; font-size: 20px; font-weight: 900; color: #1e3a8a;">${reportStats.salesCount}</p>
         </div>
         <div style="background: #fff7ed; border: 1px solid #ffedd5; padding: 15px; border-radius: 12px; text-align: center;">
           <p style="margin: 0; font-size: 10px; color: #9a3412; font-weight: 800; text-transform: uppercase;">Pending Orders</p>
-          <p style="margin: 5px 0 0 0; font-size: 20px; font-weight: 900; color: #7c2d12;">${stats.pendingOrders}</p>
+          <p style="margin: 5px 0 0 0; font-size: 20px; font-weight: 900; color: #7c2d12;">${reportStats.pendingOrders}</p>
         </div>
         <div style="background: #faf5ff; border: 1px solid #f3e8ff; padding: 15px; border-radius: 12px; text-align: center;">
           <p style="margin: 0; font-size: 10px; color: #6b21a8; font-weight: 800; text-transform: uppercase;">Purchase Investment</p>
-          <p style="margin: 5px 0 0 0; font-size: 20px; font-weight: 900; color: #581c87;">₹${stats.totalInvestment.toLocaleString()}</p>
+          <p style="margin: 5px 0 0 0; font-size: 20px; font-weight: 900; color: #581c87;">₹${reportStats.totalInvestment.toLocaleString()}</p>
         </div>
       </div>
 
@@ -256,17 +256,37 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
       </div>
 
       {filter === 'custom' && (
-        <div className="flex flex-wrap items-center gap-4 rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 animate-in slide-in-from-top-2 duration-300 shadow-sm">
-          <div className="space-y-1">
-            <p className="text-[10px] font-bold uppercase text-[var(--muted)] ml-1">Start Date</p>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2 text-sm font-bold outline-none focus:border-[var(--accent)]" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 items-end gap-6 rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 animate-in slide-in-from-top-2 duration-300 shadow-sm">
+          <div className="space-y-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] ml-1">Start Date</p>
+            <div className="relative">
+              <input 
+                type="date" 
+                value={startDate} 
+                onChange={(e) => setStartDate(e.target.value)} 
+                className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 text-sm font-bold outline-none transition focus:border-[var(--accent)]" 
+              />
+            </div>
           </div>
-          <div className="space-y-1">
-            <p className="text-[10px] font-bold uppercase text-[var(--muted)] ml-1">End Date</p>
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2 text-sm font-bold outline-none focus:border-[var(--accent)]" />
+          <div className="space-y-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] ml-1">End Date</p>
+            <div className="relative">
+              <input 
+                type="date" 
+                value={endDate} 
+                onChange={(e) => setEndDate(e.target.value)} 
+                className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 text-sm font-bold outline-none transition focus:border-[var(--accent)]" 
+              />
+            </div>
           </div>
-          <div className="mt-5 flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
-            <CalendarDays size={20} />
+          <div className="flex items-center gap-3 bg-[var(--accent-soft)]/30 p-3 rounded-2xl sm:col-span-2 lg:col-span-1">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-white shadow-lg">
+              <CalendarDays size={20} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-tighter text-[var(--accent)]">Data Range Active</p>
+              <p className="text-xs font-medium text-[var(--text)]">Showing insights between selected dates</p>
+            </div>
           </div>
         </div>
       )}
@@ -275,10 +295,10 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
       <div id="report-content" className="space-y-8 p-1">
         {/* Stats Grid */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <ReportStatCard icon={<TrendingUp className="text-green-500" />} label="Total Revenue" value={`₹${stats.totalRevenue.toLocaleString()}`} color="green" />
-          <ReportStatCard icon={<ShoppingBag className="text-blue-500" />} label="Total Purchase" value={`₹${stats.totalInvestment.toLocaleString()}`} color="red" />
-          <ReportStatCard icon={<Clock className="text-orange-500" />} label="Pending Orders" value={stats.pendingOrders} color="orange" />
-          <ReportStatCard icon={<UsersRound className="text-purple-500" />} label="Total Customers" value={stats.totalClients} color="purple" />
+          <ReportStatCard icon={<TrendingUp className="text-green-500" />} label="Total Revenue" value={`₹${reportStats.totalRevenue.toLocaleString()}`} color="green" />
+          <ReportStatCard icon={<ShoppingBag className="text-blue-500" />} label="Total Purchase" value={`₹${reportStats.totalInvestment.toLocaleString()}`} color="red" />
+          <ReportStatCard icon={<Clock className="text-orange-500" />} label="Pending Orders" value={reportStats.pendingOrders} color="orange" />
+          <ReportStatCard icon={<UsersRound className="text-purple-500" />} label="Total Customers" value={reportStats.totalClients} color="purple" />
         </div>
 
         <div className="grid gap-8 lg:grid-cols-1">
@@ -287,7 +307,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h3 className="text-h3">Purchase Analysis</h3>
-                <p className="text-xs text-[var(--muted)]">Filtered entries: ${filteredInventory.length}</p>
+                <p className="text-xs text-[var(--muted)]">Filtered entries: {filteredInventory.length}</p>
               </div>
               <button onClick={() => downloadCSV('inventory')} className="flex items-center gap-2 rounded-xl bg-[var(--soft)] px-4 py-2 text-xs font-bold text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white">
                 <Download size={14} /> Export CSV
@@ -333,7 +353,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h3 className="text-h3">Sales Analysis</h3>
-                <p className="text-xs text-[var(--muted)]">Filtered results: ${filteredSales.length}</p>
+                <p className="text-xs text-[var(--muted)]">Filtered results: {filteredSales.length}</p>
               </div>
               <button onClick={() => downloadCSV('sales')} className="flex items-center gap-2 rounded-xl bg-[var(--soft)] px-4 py-2 text-xs font-bold text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white">
                 <Download size={14} /> Export CSV
@@ -369,7 +389,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
 
             {totalSalesPages > 1 && (
               <div className="mt-6 flex items-center justify-between border-t border-[var(--border)] pt-4">
-                <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Page ${salesPage} of ${totalSalesPages}</span>
+                <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Page {salesPage} of {totalSalesPages}</span>
                 <div className="flex gap-2">
                   <button
                     disabled={salesPage === 1}
@@ -395,7 +415,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h3 className="text-h3">Order Tracking</h3>
-                <p className="text-xs text-[var(--muted)]">Filtered results: ${filteredOrders.length}</p>
+                <p className="text-xs text-[var(--muted)]">Filtered results: {filteredOrders.length}</p>
               </div>
               <button onClick={() => downloadCSV('orders')} className="flex items-center gap-2 rounded-xl bg-[var(--soft)] px-4 py-2 text-xs font-bold text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white">
                 <Download size={14} /> Export CSV
@@ -414,7 +434,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                 <tbody>
                   {paginatedOrders.map(o => (
                     <tr key={o.id}>
-                      <td className="font-bold">#${o.id}</td>
+                      <td className="font-bold">#{o.id}</td>
                       <td>{o.product}</td>
                       <td>
                         <span className={`rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase ${o.status === 'Completed' ? 'bg-green-100 text-green-700' : o.status === 'Sold' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
@@ -435,7 +455,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
 
             {totalOrdersPages > 1 && (
               <div className="mt-6 flex items-center justify-between border-t border-[var(--border)] pt-4">
-                <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Page ${ordersPage} of ${totalOrdersPages}</span>
+                <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Page {ordersPage} of {totalOrdersPages}</span>
                 <div className="flex gap-2">
                   <button
                     disabled={ordersPage === 1}
