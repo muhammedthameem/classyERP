@@ -26,6 +26,8 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
 
   const [isAddingMeasurement, setIsAddingMeasurement] = useState(false)
   const [isEditingClient, setIsEditingClient] = useState(initialMode === 'edit')
+  const [showTopAccordion, setShowTopAccordion] = useState(true)
+  const [showBottomAccordion, setShowBottomAccordion] = useState(false)
 
   const [editName, setEditName] = useState('')
   const [editMobile, setEditMobile] = useState('')
@@ -499,11 +501,22 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
               </div>
             </section>
 
-            <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur">
-              <h2 className="text-h2 mb-6 flex items-center gap-2">
-                <Package size={20} /> Top Measurements
-              </h2>
-              <div className="measurement-grid">
+            <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur overflow-hidden">
+              <button 
+                type="button"
+                onClick={() => setShowTopAccordion(!showTopAccordion)}
+                className="w-full flex items-center justify-between mb-2 group transition-all"
+              >
+                <h2 className="text-h2 flex items-center gap-2 group-hover:text-[var(--accent)]">
+                  <Package size={20} className="text-[var(--accent)]" /> Top Measurements
+                </h2>
+                <div className={`grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition-transform duration-300 ${showTopAccordion ? 'rotate-180' : ''}`}>
+                  <ChevronDown size={18} />
+                </div>
+              </button>
+              
+              <div className={`transition-all duration-300 ease-in-out ${showTopAccordion ? 'max-h-[1500px] opacity-100 mt-6' : 'max-h-0 opacity-0'}`}>
+                <div className="measurement-grid">
                 <div className="measurement-row bg-[var(--soft)]/30">
                   <span className="measurement-label text-[var(--accent)]">Product Length</span>
                   <div className="measurement-input-group">
@@ -545,14 +558,26 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                     </div>
                   </div>
                 ))}
+                </div>
               </div>
             </section>
 
-            <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur">
-              <h2 className="text-h2 mb-6 flex items-center gap-2">
-                <Package size={20} /> Bottom Measurements
-              </h2>
-              <div className="measurement-grid">
+            <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur overflow-hidden">
+              <button 
+                type="button"
+                onClick={() => setShowBottomAccordion(!showBottomAccordion)}
+                className="w-full flex items-center justify-between mb-2 group transition-all"
+              >
+                <h2 className="text-h2 flex items-center gap-2 group-hover:text-[var(--accent)]">
+                  <Package size={20} className="text-[var(--accent)]" /> Bottom Measurements
+                </h2>
+                <div className={`grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition-transform duration-300 ${showBottomAccordion ? 'rotate-180' : ''}`}>
+                  <ChevronDown size={18} />
+                </div>
+              </button>
+
+              <div className={`transition-all duration-300 ease-in-out ${showBottomAccordion ? 'max-h-[1000px] opacity-100 mt-6' : 'max-h-0 opacity-0'}`}>
+                <div className="measurement-grid">
                 <div className="measurement-row bg-[var(--soft)]/30">
                   <span className="measurement-label text-[var(--accent)]">Product Length</span>
                   <div className="measurement-input-group">
@@ -588,6 +613,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                     </div>
                   </div>
                 ))}
+                </div>
               </div>
             </section>
 
