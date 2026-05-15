@@ -104,11 +104,13 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
     }
 
     const existingClients = [...clients]
-    const existingClientIndex = existingClients.findIndex(c => c.mobile === personalDetails.mobile)
+    const existingClientIndex = existingClients.findIndex(c => 
+      c.mobile === personalDetails.mobile && 
+      c.name?.trim().toLowerCase() === personalDetails.name.trim().toLowerCase()
+    )
 
     if (existingClientIndex >= 0) {
       existingClients[existingClientIndex].measurements.push(measurementData)
-      existingClients[existingClientIndex].name = personalDetails.name
       existingClients[existingClientIndex].address = personalDetails.address
       setClients(existingClients)
       if (saveClient) saveClient(existingClients[existingClientIndex]);

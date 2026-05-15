@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react'
-import { AlertCircle, Bell, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Crown, Gem, LayoutDashboard, LogOut, Menu, Moon, Package, Palette, Search, Settings, ShieldCheck, ShoppingBag, Sparkles, Sun, TrendingUp, UsersRound, BarChart3 } from 'lucide-react'
+import { AlertCircle, Bell, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Crown, Gem, LayoutDashboard, LogOut, Menu, Moon, Package, Palette, Search, Settings, ShieldCheck, ShoppingBag, Sparkles, Sun, TrendingUp, UsersRound, BarChart3, Maximize } from 'lucide-react'
 import { formatDateTimeDDMMYY, boutiqueThemes, appearanceTokens, navItems, stats, orders, products, staffActivities } from '../utils/constants'
 const CreateUserPage = lazy(() => import('../pages/Users/CreateUser'))
 const ViewUsersPage = lazy(() => import('../pages/Users/ViewUsers'))
@@ -82,6 +82,33 @@ function Dashboard({
        showGlobalToast(visible ? 'Card Added' : 'Card Removed', `${dashboardCards.find(c => c.id === id).label} has been ${visible ? 'restored' : 'hidden'}.`);
      }
    };
+ 
+   const cycleCardSize = (id) => {
+     setDashboardCards(prev => prev.map(c => {
+       if (c.id === id) {
+         let currentSpan = c.span;
+         if (!currentSpan) {
+           switch (id) {
+             case 'Hero': currentSpan = 3; break;
+             case 'Stats': currentSpan = 3; break;
+             case 'Calendar': currentSpan = 1; break;
+             case 'Orders': currentSpan = 2; break;
+             case 'Team': currentSpan = 1; break;
+             case 'Sales': currentSpan = 2; break;
+             case 'Revenue': currentSpan = 1; break;
+             case 'Elegance': currentSpan = 3; break;
+             default: currentSpan = 1; break;
+           }
+         }
+         const nextSpan = currentSpan >= 3 ? 1 : currentSpan + 1;
+         return { ...c, span: nextSpan };
+       }
+       return c;
+     }));
+   };
+ 
+   const [showManageMenu, setShowManageMenu] = useState(false);
+
 
   const showGlobalToast = (title, message) => {
     setGlobalToast({ title, message })
@@ -296,6 +323,27 @@ function Dashboard({
      }
      return days;
    };
+
+  const getCardSpan = (card) => {
+    let span = card.span;
+    if (!span) {
+      switch (card.id) {
+        case 'Hero': span = 3; break;
+        case 'Stats': span = 3; break;
+        case 'Calendar': span = 1; break;
+        case 'Orders': span = 2; break;
+        case 'Team': span = 1; break;
+        case 'Sales': span = 2; break;
+        case 'Revenue': span = 1; break;
+        case 'Elegance': span = 3; break;
+        default: span = 1; break;
+      }
+    }
+    if (span === 1) return 'col-span-1';
+    if (span === 2) return 'col-span-1 md:col-span-2';
+    if (span === 3) return 'col-span-1 md:col-span-2 xl:col-span-3';
+    return 'col-span-1';
+  };
 
   return (
     <section className="min-h-screen bg-[var(--app-bg)] text-[var(--text)] transition-colors duration-500" style={themeStyle}>
@@ -678,40 +726,51 @@ function Dashboard({
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
-                           <div>
+              </span>
+              <div>
                 <p className="text-label text-[var(--text)]">{globalToast.title}</p>
                 <p className="text-meta">{globalToast.message}</p>
               </div>
             </div>
           )}
-          <div className="space-y-6 p-5 lg:p-8 pb-28 lg:pb-8">
-            {currentPage === 'overview' && (
-              <div className="space-y-6">
-                {dashboardCards.filter(c => c.visible && (!c.adminOnly || user?.role === 'Admin')).map((card) => (
-                  <div
-                    key={card.id}
-                    draggable
-                    onDragStart={() => setDraggedCardId(card.id)}
-                    onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                    onDrop={() => {
-                      if (draggedCardId && draggedCardId !== card.id) handleCardMove(draggedCardId, card.id);
-                      setDraggedCardId(null);
-                    }}
-                    className={`relative group/card transition-all duration-300 ${draggedCardId === card.id ? 'opacity-30 scale-95' : 'opacity-100 scale-100'}`}
-                  >
-                    {/* Drag Handle & Close Button Overlay */}
-                    <div className="absolute right-4 top-4 z-10 flex items-center gap-2 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                      <div className="cursor-move p-1.5 rounded-lg bg-[var(--surface-strong)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--accent)] shadow-sm" title="Drag to reorder">
-                        <Menu size={16} />
-                      </div>
-                      <button 
-                        onClick={() => toggleCardVisibility(card.id, false)}
-                        className="p-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white shadow-sm transition-all" 
-                        title="Close card"
-                      >
-                        <AlertCircle size={16} />
-                      </button>
-                    </div>
+              <div className="space-y-6 p-5 lg:p-8 pb-28 lg:pb-8">
+             {currentPage === 'overview' && (
+               <div className="grid grid-flow-row-dense gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+                 {dashboardCards.filter(c => c.visible && (!c.adminOnly || user?.role === 'Admin')).map((card) => (
+                   <div
+                     key={card.id}
+                     draggable
+                     onDragStart={() => setDraggedCardId(card.id)}
+                     onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                     onDrop={() => {
+                       if (draggedCardId && draggedCardId !== card.id) handleCardMove(draggedCardId, card.id);
+                       setDraggedCardId(null);
+                     }}
+                     className={`relative group/card transition-all duration-300 ${getCardSpan(card)} ${draggedCardId === card.id ? 'opacity-30 scale-95' : 'opacity-100 scale-100'}`}
+                   >
+                     {/* Drag Handle & Close Button Overlay */}
+                     <div className="absolute right-4 top-4 z-10 flex items-center gap-2 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                       <button 
+                         onClick={() => cycleCardSize(card.id)}
+                         className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-[var(--surface-strong)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--accent)] shadow-sm transition-all" 
+                         title="Resize card"
+                       >
+                         <Maximize size={14} />
+                         <span className="text-[10px] font-bold uppercase tracking-wider">Resize</span>
+                       </button>
+                       <div className="cursor-move flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-[var(--surface-strong)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--accent)] shadow-sm" title="Drag to reorder">
+                         <Menu size={14} />
+                         <span className="text-[10px] font-bold uppercase tracking-wider">Drag</span>
+                       </div>
+                       <button 
+                         onClick={() => toggleCardVisibility(card.id, false)}
+                         className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white shadow-sm transition-all" 
+                         title="Close card"
+                       >
+                         <AlertCircle size={14} />
+                         <span className="text-[10px] font-bold uppercase tracking-wider">Close</span>
+                       </button>
+                     </div>
  
                     {card.id === 'Hero' && (
                       <section className="overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--jewel)] text-white shadow-[var(--shadow)]">
@@ -823,7 +882,7 @@ function Dashboard({
                                       {d.count}
                                     </div>
                                   )}
-                                  {d.date === getIndianDate() && (
+                                  {d.date === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` && (
                                     <div className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 shadow-sm" />
                                   )}
                                 </>
@@ -987,13 +1046,21 @@ function Dashboard({
                 ))}
  
                 {/* Manage Cards Button */}
-                <div className="flex items-center justify-center pt-8">
-                  <div className="relative group">
-                    <button className="flex items-center gap-3 rounded-2xl border-2 border-dashed border-[var(--border)] px-8 py-4 text-sm font-bold text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] hover:bg-[var(--accent-soft)] active:scale-95">
-                      <LayoutDashboard size={20} /> Manage Dashboard Layout
-                    </button>
-                    <div className="absolute bottom-full left-1/2 mb-4 w-64 -translate-x-1/2 rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] p-4 shadow-2xl opacity-0 translate-y-4 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-300 z-[100]">
-                      <p className="mb-4 text-[10px] font-black uppercase tracking-widest text-[var(--accent)] text-center">Customize Your View</p>
+                 <div className="col-span-1 md:col-span-2 xl:col-span-3 flex items-center justify-center pt-8">
+                   <div className="relative">
+                     <button 
+                       onClick={() => setShowManageMenu(!showManageMenu)}
+                       className="flex items-center gap-3 rounded-2xl border-2 border-dashed border-[var(--border)] px-8 py-4 text-sm font-bold text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] hover:bg-[var(--accent-soft)] active:scale-95"
+                     >
+                       <LayoutDashboard size={20} /> Manage Dashboard Layout
+                     </button>
+                     <div className={`absolute bottom-full left-1/2 mb-4 w-64 -translate-x-1/2 rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] p-4 shadow-2xl transition-all duration-300 z-[100] ${showManageMenu ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+                       <div className="flex items-center justify-between mb-4">
+                         <p className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)]">Customize Your View</p>
+                         <button onClick={() => setShowManageMenu(false)} className="text-[var(--muted)] hover:text-[var(--text)]">
+                           <AlertCircle size={14} />
+                         </button>
+                       </div>
                       <div className="space-y-2">
                         {dashboardCards.map(card => (
                           <button
@@ -1015,7 +1082,6 @@ function Dashboard({
               </div>
             )}
             <Suspense fallback={
-pense fallback={
               <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
                 <div className="relative h-16 w-16">
                   <div className="absolute inset-0 rounded-full border-4 border-[var(--accent-soft)]"></div>
