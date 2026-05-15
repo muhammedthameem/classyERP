@@ -277,12 +277,19 @@ function App() {
               if (error) alert("Save Failed: " + error.message);
             }}
             deleteClient={async (id) => {
+              if (!id) return;
               const { error } = await supabase.from('erp_clients').delete().eq('id', id.toString());
-              if (error) alert("Delete Failed: " + error.message);
+              if (error) {
+                 // Fallback for numeric IDs if needed
+                 await supabase.from('erp_clients').delete().eq('id', id);
+              }
             }}
             deleteOrder={async (id) => {
+              if (!id) return;
               const { error } = await supabase.from('erp_orders').delete().eq('id', id.toString());
-              if (error) alert("Delete Failed: " + error.message);
+              if (error) {
+                 await supabase.from('erp_orders').delete().eq('id', id);
+              }
             }}
             saveConfig={async (id, data) => {
               const { error } = await supabase.from('erp_config').upsert([{ id, data }]);
