@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { ChevronDown, ChevronLeft, Package, Search, Settings, ShoppingBag, UsersRound, Pencil, Trash2, Plus } from 'lucide-react'
 import { formatDateDDMMYY, formatDateTimeDDMMYY, products } from '../../utils/constants'
 
-function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClient, initialMode, setClientDetailMode, showGlobalToast, currentUser, clients, setClients, saveClient }) {
+function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClient, initialMode, setClientDetailMode, showGlobalToast, currentUser, clients, setClients, saveClient, productTypes = [], setProductTypes, saveConfig }) {
   const [clientsList, setClientsList] = useState([])
   const [showClientDropdown, setShowClientDropdown] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
@@ -37,11 +37,11 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
   const [product, setProduct] = useState('')
   const [showProductDropdown, setShowProductDropdown] = useState(false)
   const [productSearch, setProductSearch] = useState('')
-  const [commonProducts, setCommonProducts] = useState(() => {
-    const saved = localStorage.getItem('products')
-    if (saved) return JSON.parse(saved)
-    return ['Shirt', 'T-Shirt', 'Blouse', 'Kurta', 'Pants', 'Jeans', 'Trousers', 'Dress', 'Saree', 'Salwar Kameez', 'Lehenga', 'Blazer', 'Suit', 'Jacket', 'Coat', 'Skirt', 'Shorts', 'Sweater', 'Cardigan', 'Anarkali']
-  })
+  const commonProducts = productTypes.length > 0 ? productTypes : [
+    'Shirt', 'T-Shirt', 'Blouse', 'Kurta', 'Pants', 'Jeans', 'Trousers', 'Dress', 'Saree', 
+    'Salwar Kameez', 'Lehenga', 'Blazer', 'Suit', 'Jacket', 'Coat', 'Skirt', 'Shorts', 
+    'Sweater', 'Cardigan', 'Anarkali'
+  ]
   const [topMeasurements, setTopMeasurements] = useState(defaultTop)
   const [bottomMeasurements, setBottomMeasurements] = useState(defaultBottom)
   const [note, setNote] = useState('')
@@ -703,18 +703,31 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                     {commonProducts
                       .filter(p => p.toLowerCase().includes(productSearch.toLowerCase()))
                       .map((p) => (
-                        <button
-                          key={p}
-                          className="w-full px-4 py-2 text-left text-sm text-[var(--text)] transition hover:bg-[var(--soft)]"
-                          onClick={() => {
-                            setProduct(p)
-                            setProductSearch(p)
-                            setShowProductDropdown(false)
-                          }}
-                          type="button"
-                        >
-                          {p}
-                        </button>
+                        <div key={p} className="flex items-center group w-full px-4 py-1 hover:bg-[var(--soft)]">
+                          <button
+                            className="flex-1 py-1.5 text-left text-sm text-[var(--text)] transition"
+                            onClick={() => {
+                              setProduct(p)
+                              setProductSearch(p)
+                              setShowProductDropdown(false)
+                            }}
+                            type="button"
+                          >
+                            {p}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = commonProducts.filter(item => item !== p);
+                              if (setProductTypes) setProductTypes(updated);
+                              if (saveConfig) saveConfig('productTypes', updated);
+                              if (showGlobalToast) showGlobalToast('Removed', `Product "${p}" removed from list.`);
+                            }}
+                            className="p-1.5 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       ))}
                     {productSearch && !commonProducts.some(p => p.toLowerCase() === productSearch.toLowerCase()) && (
                       <button
@@ -723,8 +736,8 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                           const newProduct = productSearch.trim()
                           if (newProduct && !commonProducts.includes(newProduct)) {
                             const updatedProducts = [...commonProducts, newProduct]
-                            setCommonProducts(updatedProducts)
-                            localStorage.setItem('products', JSON.stringify(updatedProducts))
+                            if (setProductTypes) setProductTypes(updatedProducts);
+                            if (saveConfig) saveConfig('productTypes', updatedProducts);
                             setProduct(newProduct)
                             setProductSearch(newProduct)
                             setShowProductDropdown(false)
