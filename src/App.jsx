@@ -182,6 +182,8 @@ function App() {
   const [currentPage, setCurrentPage] = useState(() => localStorage.getItem('erp_current_page') || 'overview');
   const [appearance, setAppearance] = useState('light')
   const [themeName, setThemeName] = useState('champagne')
+  const [selectedClient, setSelectedClient] = useState(null)
+  const [clientDetailMode, setClientDetailMode] = useState('view')
 
   const palette = boutiqueThemes[themeName]
   const tokens = appearanceTokens[appearance]
@@ -244,17 +246,21 @@ function App() {
               themeName={themeName} setThemeName={setThemeName}
               orderLimits={orderLimits} setOrderLimits={setOrderLimits}
               users={users} setUsers={setUsers}
-            designations={designations} setDesignations={setDesignations}
-            clients={clients} setClients={setClients}
-            orders={orders} setOrders={setOrders}
-            inventory={inventory} setInventory={setInventory}
-            sales={sales} setSales={setSales}
-            activities={activities} setActivities={setActivities}
-            orderTypes={orderTypes} setOrderTypes={setOrderTypes}
-            productTypes={productTypes} setProductTypes={setProductTypes}
-            inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits}
-            cloudLoaded={cloudLoaded}
-            syncError={syncError}
+              designations={designations} setDesignations={setDesignations}
+              clients={clients} setClients={setClients}
+              orders={orders} setOrders={setOrders}
+              inventory={inventory} setInventory={setInventory}
+              sales={sales} setSales={setSales}
+              activities={activities} setActivities={setActivities}
+              orderTypes={orderTypes} setOrderTypes={setOrderTypes}
+              productTypes={productTypes} setProductTypes={setProductTypes}
+              inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits}
+              cloudLoaded={cloudLoaded}
+              syncError={syncError}
+              selectedClient={selectedClient}
+              setSelectedClient={setSelectedClient}
+              clientDetailMode={clientDetailMode}
+              setClientDetailMode={setClientDetailMode}
             // Direct Save Functions for Supabase (FLEXIBLE SCHEMA & COMPRESSED)
             saveSale={async (s) => {
               const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
@@ -318,6 +324,20 @@ function App() {
               await supabase.from('erp_orders').upsert([{ id: (o.id || o.orderId).toString(), data: clean(o) }]);
             }}
             setCurrentPage={setCurrentPage}
+            selectedClient={selectedClient}
+            setSelectedClient={setSelectedClient}
+            clientDetailMode={clientDetailMode}
+            setClientDetailMode={setClientDetailMode}
+            deleteClient={async (id) => {
+              if (!id) return;
+              await supabase.from('erp_clients').delete().eq('id', id.toString());
+              await supabase.from('erp_clients').delete().eq('id', id);
+            }}
+            deleteOrder={async (id) => {
+              if (!id) return;
+              await supabase.from('erp_orders').delete().eq('id', id.toString());
+              await supabase.from('erp_orders').delete().eq('id', id);
+            }}
             activities={activities}
             inventory={inventory}
             users={users}

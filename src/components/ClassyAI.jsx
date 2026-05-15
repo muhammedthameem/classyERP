@@ -7,9 +7,11 @@ const ClassyAI = ({
   clients,
   setClients,
   saveClient,
+  deleteClient,
   orders,
   setOrders,
   saveOrder,
+  deleteOrder,
   sales,
   setCurrentPage,
   showGlobalToast,
@@ -19,7 +21,11 @@ const ClassyAI = ({
   users = [],
   orderLimits = {},
   setOrderLimits,
-  saveConfig
+  saveConfig,
+  selectedClient,
+  setSelectedClient,
+  clientDetailMode,
+  setClientDetailMode
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
@@ -93,25 +99,28 @@ const ClassyAI = ({
         return "🚫 **Permission Denied**: For security reasons, only the **Boutique Admin** can delete records. Please contact your manager.";
       }
       
-      const idMatch = cmd.match(/\d+/);
-      if (cmd.includes('order') && idMatch) {
-        const orderId = idMatch[0];
-        const found = orders.find(o => o.id == orderId);
-        if (found) {
-          setOrders(prev => prev.filter(o => o.id != orderId));
-          addActivity(`AI Deleted Order #${orderId}`);
-          return `🗑️ **Order Deleted**: Order #${orderId} has been permanently removed from the system as requested.`;
+      if (cmd.includes('order')) {
+        const orderId = cmd.match(/\d+/)?.[0];
+        if (orderId) {
+          const found = orders.find(o => String(o.id) === String(orderId) || String(o.orderId) === String(orderId));
+          if (found) {
+            if (deleteOrder) deleteOrder(found.id);
+            setOrders(prev => prev.filter(o => String(o.id) !== String(found.id)));
+            addActivity(`AI Deleted Order: #${found.id}`);
+            return `🗑️ **Order Purged**: Order **#${found.id}** has been permanently removed from the cloud.`;
+          }
+          return `I couldn't find order #${orderId}. Please verify the ID!`;
         }
-        return `I couldn't find an order with ID #${orderId}. Please check the ID in the Order list.`;
       }
 
       if (cmd.includes('client')) {
         const name = cmd.replace(/.*delete client |.*remove client /, '').trim();
         const found = clients.find(c => c.name.toLowerCase().includes(name.toLowerCase()));
         if (found) {
-          setClients(prev => prev.filter(c => c.id != found.id));
+          if (deleteClient) deleteClient(found.id);
+          setClients(prev => prev.filter(c => String(c.id) !== String(found.id)));
           addActivity(`AI Deleted Client: ${found.name}`);
-          return `🗑️ **Client Removed**: **${found.name}** and their history have been deleted from your boutique records.`;
+          return `🗑️ **Client Removed**: **${found.name}** and their history have been permanently deleted from your boutique cloud.`;
         }
         return `I couldn't find a client named "${name}". Try giving me their full name!`;
       }
@@ -216,6 +225,41 @@ const ClassyAI = ({
       window._pendingAILimit = limit;
       if (limit === null) return "How many orders should we limit it to? (Example: 'Limit 2')";
       return `I've got the limit count (${limit}), but I need the date. Could you please say just the date (like "May 15")?`;
+    }
+
+    // --- 6. ENTITY NAVIGATION (Edit/View Specifics) ---
+    if (cmd.includes('edit') && (cmd.includes('client') || cmd.includes('cust'))) {
+      const searchName = cmd.replace(/edit|client|cust/g, '').trim();
+      if (searchName.length < 2) return "Who should I edit? (Example: 'Edit client Meera')";
+      
+      const target = clients.find(c => 
+        c.name?.toLowerCase().includes(searchName) || 
+        searchName.includes(c.name?.toLowerCase())
+      );
+      
+      if (target) {
+        setSelectedClient(target);
+        setClientDetailMode('edit');
+        setCurrentPage('client-detail');
+        return `🎯 **Direct Access**: Opening **${target.name}**'s profile in **Edit Mode**...`;
+      }
+      return `I couldn't find a client named "${searchName}". Please check the name and try again!`;
+    }
+
+    if ((cmd.includes('view') || cmd.includes('show') || cmd.includes('open')) && (cmd.includes('client') || cmd.includes('cust'))) {
+       const searchName = cmd.replace(/view|show|open|client|cust/g, '').trim();
+       if (searchName.length >= 2) {
+         const target = clients.find(c => 
+           c.name?.toLowerCase().includes(searchName) || 
+           searchName.includes(c.name?.toLowerCase())
+         );
+         if (target) {
+           setSelectedClient(target);
+           setClientDetailMode('view');
+           setCurrentPage('client-detail');
+           return `🔍 **Profile Located**: Viewing **${target.name}**'s measurements and history.`;
+         }
+       }
     }
 
     // F. CURIOSITY & HELP

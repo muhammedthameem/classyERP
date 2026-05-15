@@ -36,7 +36,8 @@ function Dashboard({
   orderLimits, setOrderLimits,
   cloudLoaded,
   syncError,
-  saveSale, saveOrder, saveClient, saveUser, deleteClient, deleteOrder, saveConfig, saveActivity
+  saveSale, saveOrder, saveClient, saveUser, deleteClient, deleteOrder, saveConfig, saveActivity,
+  selectedClient, setSelectedClient, clientDetailMode, setClientDetailMode
 }) {
   const [showAccountMenu, setShowAccountMenu] = useState(false)
   const [showAccountPanel, setShowAccountPanel] = useState(false)
@@ -181,8 +182,6 @@ function Dashboard({
     })
   }, [currentPage, activeSidebarPage])
 
-  const [selectedClient, setSelectedClient] = useState(null)
-  const [clientDetailMode, setClientDetailMode] = useState('view')
   const [selectedInventoryItem, setSelectedInventoryItem] = useState(null)
   const [inventoryDetailMode, setInventoryDetailMode] = useState('view')
   const sidebarWidth = isSidebarCollapsed ? 'lg:pl-24' : 'lg:pl-72'
