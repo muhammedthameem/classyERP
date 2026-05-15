@@ -20,6 +20,9 @@ import supabase from '../supabase'
 
 function Dashboard({
   onLogout, user,
+  currentPage, setCurrentPage,
+  appearance, setAppearance,
+  themeName, setThemeName,
   users, setUsers,
   designations, setDesignations,
   clients, setClients,
@@ -38,8 +41,6 @@ function Dashboard({
   const [showAccountPanel, setShowAccountPanel] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
-  const [appearance, setAppearance] = useState('light')
-  const [themeName, setThemeName] = useState('champagne')
   const [showThemeDropdown, setShowThemeDropdown] = useState(false)
   const [globalToast, setGlobalToast] = useState(null)
   const [showAllNotifications, setShowAllNotifications] = useState(false)
@@ -138,19 +139,7 @@ function Dashboard({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const [currentPage, setCurrentPage] = useState(() => localStorage.getItem('erp_current_page') || 'overview')
-
-  // LOCAL PERSISTENCE FALLBACKS
-  useEffect(() => { localStorage.setItem('erp_users', JSON.stringify(users)) }, [users])
-  useEffect(() => { localStorage.setItem('erp_designations', JSON.stringify(designations)) }, [designations])
-  useEffect(() => { localStorage.setItem('activities', JSON.stringify(activities)) }, [activities])
-  useEffect(() => { localStorage.setItem('clients', JSON.stringify(clients)) }, [clients])
-  useEffect(() => { localStorage.setItem('orders', JSON.stringify(orders)) }, [orders])
-  useEffect(() => { localStorage.setItem('inventory', JSON.stringify(inventory)) }, [inventory])
-  useEffect(() => { localStorage.setItem('sales', JSON.stringify(sales)) }, [sales])
-  useEffect(() => { localStorage.setItem('orderTypes', JSON.stringify(orderTypes)) }, [orderTypes])
-  useEffect(() => { localStorage.setItem('productTypes', JSON.stringify(productTypes)) }, [productTypes])
-  useEffect(() => { localStorage.setItem('inventoryUnits', JSON.stringify(inventoryUnits)) }, [inventoryUnits])
+   // SHARED FUNCTIONS
 
   // SAVE TO SUPABASE (BULK & CONFIG)
   useEffect(() => {
@@ -197,27 +186,6 @@ function Dashboard({
   const [inventoryDetailMode, setInventoryDetailMode] = useState('view')
   const sidebarWidth = isSidebarCollapsed ? 'lg:pl-24' : 'lg:pl-72'
   const transitionClass = 'transition-all duration-300 ease-in-out'
-  const palette = boutiqueThemes[themeName]
-  const tokens = appearanceTokens[appearance]
-  const themeStyle = {
-    '--app-bg': tokens.appBg,
-    '--page-bg': tokens.pageBg,
-    '--surface': tokens.surface,
-    '--surface-strong': tokens.surfaceStrong,
-    '--text': tokens.text,
-    '--muted': tokens.muted,
-    '--border': tokens.border,
-    '--border-glow': tokens.borderGlow,
-    '--soft': tokens.soft,
-    '--sidebar': tokens.sidebar,
-    '--sidebar-text': tokens.sidebarText,
-    '--shadow': tokens.shadow,
-    '--accent': palette.accent,
-    '--accent-soft': palette.accentSoft,
-    '--jewel': palette.jewel,
-    '--gold': palette.gold,
-    '--hero': palette.hero,
-  }
 
   const loggedInUserInList = users.find(u => u.id === user?.id)
   const currentUserName = loggedInUserInList ? loggedInUserInList.name : (user?.name || 'User')
@@ -334,7 +302,7 @@ function Dashboard({
   };
 
   return (
-    <section className="min-h-screen bg-[var(--app-bg)] text-[var(--text)] transition-colors duration-500" style={themeStyle}>
+    <div className="relative min-h-screen">
       {/* Mobile sidebar overlay */}
       {isMobileSidebarOpen && (
         <div
@@ -1283,7 +1251,7 @@ function Dashboard({
           })}
         </div>
       </div>
-    </section>
+    </div>
   )
 }
 

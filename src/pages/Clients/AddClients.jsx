@@ -95,6 +95,21 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
 
   const handleSubmit = (event) => {
     event.preventDefault()
+
+    // --- FORM VALIDATION ---
+    if (!personalDetails.name.trim()) {
+      if (showGlobalToast) showGlobalToast('Name Required', 'Please enter the client name before saving.');
+      return;
+    }
+    if (!personalDetails.mobile.trim()) {
+      if (showGlobalToast) showGlobalToast('Mobile Required', 'Please enter a mobile number for the client.');
+      return;
+    }
+    if (!product.trim()) {
+      if (showGlobalToast) showGlobalToast('Product Missing', 'Please specify a product for the measurements.');
+      return;
+    }
+
     const measurementData = {
       id: Date.now(),
       product,

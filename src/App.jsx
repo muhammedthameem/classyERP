@@ -3,6 +3,8 @@ import LoginScreen from './components/LoginScreen'
 import Dashboard from './components/Dashboard'
 import DeliveryAlertModal from './components/DeliveryAlertModal'
 import PublicReceipt from './components/PublicReceipt'
+import ClassyAI from './components/ClassyAI'
+import { boutiqueThemes, appearanceTokens } from './utils/constants'
 import supabase from './supabase'
 
 function App() {
@@ -174,6 +176,35 @@ function App() {
   };
 
   const [activeBillId, setActiveBillId] = useState(getInitialBillId);
+  const [currentPage, setCurrentPage] = useState(() => localStorage.getItem('erp_current_page') || 'overview');
+  const [appearance, setAppearance] = useState('light')
+  const [themeName, setThemeName] = useState('champagne')
+
+  const palette = boutiqueThemes[themeName]
+  const tokens = appearanceTokens[appearance]
+  const themeStyle = {
+    '--app-bg': tokens.appBg,
+    '--page-bg': tokens.pageBg,
+    '--surface': tokens.surface,
+    '--surface-strong': tokens.surfaceStrong,
+    '--text': tokens.text,
+    '--muted': tokens.muted,
+    '--border': tokens.border,
+    '--border-glow': tokens.borderGlow,
+    '--soft': tokens.soft,
+    '--sidebar': tokens.sidebar,
+    '--sidebar-text': tokens.sidebarText,
+    '--shadow': tokens.shadow,
+    '--accent': palette.accent,
+    '--accent-soft': palette.accentSoft,
+    '--jewel': palette.jewel,
+    '--gold': palette.gold,
+    '--hero': palette.hero,
+  }
+
+  useEffect(() => {
+    localStorage.setItem('erp_current_page', currentPage);
+  }, [currentPage]);
 
   // Sync state if URL changes (e.g. back/forward buttons)
   useEffect(() => {
@@ -195,15 +226,20 @@ function App() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f2ec] text-stone-900">
-      {!isLoggedIn ? (
-        <LoginScreen onLogin={handleLogin} users={users} />
-      ) : (
-        <>
-          <Dashboard
-            onLogout={handleLogout}
-            user={user}
-            users={users} setUsers={setUsers}
+    <div style={themeStyle}>
+      <main className="min-h-screen bg-[var(--app-bg)] text-[var(--text)] transition-colors duration-300">
+        {!isLoggedIn ? (
+          <LoginScreen onLogin={handleLogin} users={users} />
+        ) : (
+          <>
+            <Dashboard
+              onLogout={handleLogout}
+              user={user}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+              appearance={appearance} setAppearance={setAppearance}
+              themeName={themeName} setThemeName={setThemeName}
+              users={users} setUsers={setUsers}
             designations={designations} setDesignations={setDesignations}
             clients={clients} setClients={setClients}
             orders={orders} setOrders={setOrders}
@@ -254,10 +290,29 @@ function App() {
               if (error) console.error("Activity Save Failed:", error);
             }}
           />
+          <ClassyAI 
+            user={user}
+            clients={clients} setClients={setClients} saveClient={async (c) => {
+              const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+              await supabase.from('erp_clients').upsert([{ id: (c.id || c.clientId || c.phone).toString(), data: clean(c) }]);
+            }}
+            orders={orders} setOrders={setOrders} saveOrder={async (o) => {
+              const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+              await supabase.from('erp_orders').upsert([{ id: (o.id || o.orderId).toString(), data: clean(o) }]);
+            }}
+            setCurrentPage={setCurrentPage}
+            activities={activities}
+            inventory={inventory}
+            saveActivity={async (act) => {
+              const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+              await supabase.from('erp_activities').upsert([{ id: act.id.toString(), data: clean(act) }]);
+            }}
+          />
           <DeliveryAlertModal orders={orders} />
         </>
       )}
-    </main>
+      </main>
+    </div>
   )
 }
 
