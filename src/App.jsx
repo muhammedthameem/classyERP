@@ -138,10 +138,18 @@ function App() {
     localStorage.removeItem('erp_session')
   }
 
-  const billId = new URLSearchParams(window.location.search).get('bill')
+  const [activeBillId, setActiveBillId] = useState(null);
 
-  if (billId) {
-    return <PublicReceipt billId={billId} />
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const bId = params.get('bill');
+    if (bId) {
+      setActiveBillId(bId.trim());
+    }
+  }, []);
+
+  if (activeBillId) {
+    return <PublicReceipt billId={activeBillId} onClear={() => setActiveBillId(null)} />;
   }
 
   return (

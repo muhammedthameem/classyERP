@@ -3,18 +3,24 @@ import supabase from '../supabase';
 import { CheckCircle, Download, Package } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 
-function PublicReceipt({ billId }) {
+function PublicReceipt({ billId, onClear }) {
   const [sale, setSale] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchSale = async () => {
       try {
-        // Search by ID or by saleId inside the data JSON
+        const cleanId = billId ? billId.trim() : '';
+        if (!cleanId) {
+          setLoading(false);
+          return;
+        }
+
+        // Search by ID or by saleId inside the data JSON (Use quotes for strings in .or)
         const { data, error } = await supabase
           .from('erp_sales')
           .select('*')
-          .or(`id.eq.${billId},data->>saleId.eq.${billId}`)
+          .or(`id.eq."${cleanId}",data->>saleId.eq."${cleanId}"`)
           .maybeSingle();
 
         if (data) {
@@ -59,7 +65,15 @@ function PublicReceipt({ billId }) {
         </div>
         <h2 className="text-2xl font-black mb-2">Receipt Not Found</h2>
         <p className="text-stone-500 text-sm mb-8 leading-relaxed">We couldn't find a digital receipt with ID <span className="text-stone-900 font-bold">#{billId}</span>. Please check the link or contact the shop.</p>
-        <a href="/" className="inline-block px-8 py-4 bg-stone-900 text-white rounded-2xl font-bold text-sm shadow-xl hover:brightness-110 transition">Go to Login</a>
+        <button 
+          onClick={() => {
+            if (onClear) onClear();
+            window.history.replaceState({}, '', '/');
+          }}
+          className="inline-block px-8 py-4 bg-stone-900 text-white rounded-2xl font-bold text-sm shadow-xl hover:brightness-110 transition"
+        >
+          Go to Login
+        </button>
       </div>
     </div>
   );
