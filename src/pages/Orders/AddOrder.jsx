@@ -754,7 +754,7 @@ function AddOrderPage({
                           <div className="flex-1">
                             <CustomDatePicker
                               value={item.deliveryDate}
-                              onChange={(val) => updateOrderItem(item.id, 'deliveryDate', val)}
+                              onChange={(val) => updateOrderItem(idx, { deliveryDate: val })}
                               placeholder="Select date"
                             />
                           </div>
