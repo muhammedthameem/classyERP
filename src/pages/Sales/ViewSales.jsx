@@ -385,9 +385,11 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                         jsPDF: { unit: 'mm', format: [80, 200], orientation: 'portrait' }
                       };
 
-                      const pdfBlob = await html2pdf().set(opt).from(visualBill).output('blob');
                       const fileName = `receipts/${viewSale.saleId}_${Date.now()}.pdf`;
                       
+      
+                      const pdfBlob = await html2pdf().set(opt).from(visualBill).toPdf().get('pdf').output('blob');
+
                       const { data, error: uploadError } = await supabase.storage
                         .from('receipts')
                         .upload(fileName, pdfBlob, {
@@ -396,7 +398,10 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                           upsert: false
                         });
 
-                      if (uploadError) throw uploadError;
+                      if (uploadError) {
+                        console.warn('Supabase Upload Error:', uploadError);
+                        throw uploadError;
+                      }
 
                       const { data: { publicUrl } } = supabase.storage
                         .from('receipts')

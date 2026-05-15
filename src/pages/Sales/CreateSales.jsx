@@ -325,9 +325,15 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
         jsPDF: { unit: 'mm', format: [80, 200], orientation: 'portrait' }
       };
 
-      const pdfBlob = await html2pdf().set(opt).from(visualBill).output('blob');
       const fileName = `receipts/${showReceipt.saleId}_${Date.now()}.pdf`;
       
+      // Pre-generate public URL so we have it for the message
+      const { data: { publicUrl } } = supabase.storage
+        .from('receipts')
+        .getPublicUrl(fileName);
+
+      const pdfBlob = await html2pdf().set(opt).from(visualBill).toPdf().get('pdf').output('blob');
+
       const { data, error: uploadError } = await supabase.storage
         .from('receipts')
         .upload(fileName, pdfBlob, {
@@ -336,11 +342,10 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
           upsert: false
         });
 
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('receipts')
-        .getPublicUrl(fileName);
+      if (uploadError) {
+        console.warn('Supabase Upload Error:', uploadError);
+        throw uploadError;
+      }
 
       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
       let message = `*✨ INVOICE: ${showReceipt.saleId} ✨*%0A`;
