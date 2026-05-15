@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { ChevronDown, Search, Settings, ShoppingBag, Pencil, Trash2, Plus, Package, Info, Calendar, UsersRound, CheckCircle } from 'lucide-react'
-import { formatDateDDMMYY, getIndianDate, orders, products } from '../../utils/constants'
+import { formatDateDDMMYY, getIndianDate } from '../../utils/constants'
 import CustomDatePicker from '../../components/CustomDatePicker'
 
 function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, setOrders, clients, inventory, setInventory, orderTypes, setOrderTypes, productTypes, setProductTypes, inventoryUnits, setInventoryUnits, saveOrder, saveConfig }) {
@@ -700,7 +700,7 @@ function AddOrderPage({ themeStyle, setCurrentPage, showGlobalToast, orders, set
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="relative">
                         <span className="mb-2 block text-sm font-medium text-[var(--text)]">Order Date</span>
                         <CustomDatePicker
