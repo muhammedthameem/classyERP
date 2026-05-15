@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ChevronDown, Package, Search, Settings, UsersRound } from 'lucide-react'
+import { ChevronDown, Package, Search, Settings, UsersRound, Trash2 } from 'lucide-react'
 
-function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, setClients, saveClient, currentUser }) {
+function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, setClients, saveClient, currentUser, productTypes = [], setProductTypes, saveConfig }) {
   const [personalDetails, setPersonalDetails] = useState(() => {
     const prefill = localStorage.getItem('prefillClientName')
     if (prefill) {
@@ -16,32 +16,11 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
   const [product, setProduct] = useState('')
   const [showProductDropdown, setShowProductDropdown] = useState(false)
   const [productSearch, setProductSearch] = useState('')
-  const [commonProducts, setCommonProducts] = useState(() => {
-    const saved = localStorage.getItem('products')
-    if (saved) return JSON.parse(saved)
-    return [
-      'Shirt',
-      'T-Shirt',
-      'Blouse',
-      'Kurta',
-      'Pants',
-      'Jeans',
-      'Trousers',
-      'Dress',
-      'Saree',
-      'Salwar Kameez',
-      'Lehenga',
-      'Blazer',
-      'Suit',
-      'Jacket',
-      'Coat',
-      'Skirt',
-      'Shorts',
-      'Sweater',
-      'Cardigan',
-      'Anarkali'
-    ]
-  })
+  const commonProducts = productTypes.length > 0 ? productTypes : [
+    'Shirt', 'T-Shirt', 'Blouse', 'Kurta', 'Pants', 'Jeans', 'Trousers', 'Dress', 'Saree', 
+    'Salwar Kameez', 'Lehenga', 'Blazer', 'Suit', 'Jacket', 'Coat', 'Skirt', 'Shorts', 
+    'Sweater', 'Cardigan', 'Anarkali'
+  ]
   const [topMeasurements, setTopMeasurements] = useState({
     length: '',
     upChestLength: '',
@@ -264,18 +243,31 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
                 {commonProducts
                   .filter(p => p.toLowerCase().includes(productSearch.toLowerCase()))
                   .map((p) => (
-                    <button
-                      key={p}
-                      className="w-full px-4 py-2 text-left text-sm text-[var(--text)] transition hover:bg-[var(--soft)]"
-                      onClick={() => {
-                        setProduct(p)
-                        setProductSearch(p)
-                        setShowProductDropdown(false)
-                      }}
-                      type="button"
-                    >
-                      {p}
-                    </button>
+                    <div key={p} className="flex items-center group w-full px-4 py-1 hover:bg-[var(--soft)]">
+                      <button
+                        className="flex-1 py-1.5 text-left text-sm text-[var(--text)] transition"
+                        onClick={() => {
+                          setProduct(p)
+                          setProductSearch(p)
+                          setShowProductDropdown(false)
+                        }}
+                        type="button"
+                      >
+                        {p}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = commonProducts.filter(item => item !== p);
+                          if (setProductTypes) setProductTypes(updated);
+                          if (saveConfig) saveConfig('productTypes', updated);
+                          if (showGlobalToast) showGlobalToast('Removed', `Product "${p}" removed from list.`);
+                        }}
+                        className="p-1.5 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   ))}
                 {productSearch && !commonProducts.some(p => p.toLowerCase() === productSearch.toLowerCase()) && (
                   <button
@@ -284,8 +276,8 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
                       const newProduct = productSearch.trim()
                       if (newProduct && !commonProducts.includes(newProduct)) {
                         const updatedProducts = [...commonProducts, newProduct]
-                        setCommonProducts(updatedProducts)
-                        localStorage.setItem('products', JSON.stringify(updatedProducts))
+                        if (setProductTypes) setProductTypes(updatedProducts);
+                        if (saveConfig) saveConfig('productTypes', updatedProducts);
                         setProduct(newProduct)
                         setProductSearch(newProduct)
                         setShowProductDropdown(false)

@@ -89,9 +89,39 @@ function AddOrderPage({
     setLocalSpecificLimits(specificDateLimits)
 
     const prefillClient = localStorage.getItem("prefillOrderClientName")
+    const prefillProduct = localStorage.getItem("prefillOrderProduct")
+    
     if (prefillClient) {
       setClientName(prefillClient)
       localStorage.removeItem("prefillOrderClientName")
+      
+      if (prefillProduct) {
+        // Find notes for the prefilled product
+        const selectedClientObj = (clients || []).find(c => c.name === prefillClient);
+        let prefillNotes = '';
+        if (selectedClientObj && selectedClientObj.measurements) {
+          const measure = selectedClientObj.measurements.find(m => m.product === prefillProduct);
+          prefillNotes = measure?.note || measure?.notes || '';
+        }
+
+        setOrderItems([{
+          id: Date.now(),
+          product: prefillProduct,
+          orderType: '',
+          price: '',
+          quantity: '',
+          unit: 'nos',
+          sourceOfMaterial: 'Outside',
+          internalItems: [],
+          notes: prefillNotes,
+          showTypeDropdown: false,
+          showProductTypeDropdown: false,
+          showInventoryDropdown: null,
+          orderDate: getIndianDate(),
+          deliveryDate: ''
+        }])
+        localStorage.removeItem("prefillOrderProduct")
+      }
     }
   }, [clients, orders])
 
