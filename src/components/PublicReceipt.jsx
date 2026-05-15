@@ -6,6 +6,7 @@ import html2pdf from 'html2pdf.js';
 function PublicReceipt({ billId, onClear }) {
   const [sale, setSale] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     const fetchSale = async () => {
@@ -35,17 +36,32 @@ function PublicReceipt({ billId, onClear }) {
     fetchSale();
   }, [billId]);
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     const element = document.getElementById('printable-bill');
-    if (!element) return;
-    const opt = {
-      margin: 0,
-      filename: `Receipt_${sale.saleId}.pdf`,
-      image: { type: 'jpeg', quality: 1 },
-      html2canvas: { scale: 3, useCORS: true },
-      jsPDF: { unit: 'mm', format: [80, 200], orientation: 'portrait' }
-    };
-    html2pdf().set(opt).from(element).save();
+    if (!element || isGenerating) return;
+    
+    try {
+      setIsGenerating(true);
+      const opt = {
+        margin: 0,
+        filename: `Receipt_${sale.saleId}.pdf`,
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: [80, 200], orientation: 'portrait' }
+      };
+      
+      await html2pdf().set(opt).from(element).save();
+    } catch (err) {
+      console.error("PDF Generation Error:", err);
+      alert("Failed to generate PDF. Please try again or take a screenshot.");
+    } finally {
+      setIsGenerating(false);
+      // Clean up any potential html2pdf overlays
+      setTimeout(() => {
+        const overlays = document.querySelectorAll('.html2pdf__overlay');
+        overlays.forEach(o => o.remove());
+      }, 500);
+    }
   };
 
   if (loading) return (
@@ -65,7 +81,7 @@ function PublicReceipt({ billId, onClear }) {
         </div>
         <h2 className="text-2xl font-black mb-2">Receipt Not Found</h2>
         <p className="text-stone-500 text-sm mb-8 leading-relaxed">We couldn't find a digital receipt with ID <span className="text-stone-900 font-bold">#{billId}</span>. Please check the link or contact the shop.</p>
-        <button 
+        <button
           onClick={() => {
             if (onClear) onClear();
             window.history.replaceState({}, '', '/');
@@ -117,11 +133,11 @@ function PublicReceipt({ billId, onClear }) {
           </thead>
           <tbody className="divide-y divide-dashed divide-gray-200">
             {(sale.items || []).map((item, idx) => {
-              const rowTotal = item.rowTotal !== undefined 
-                ? item.rowTotal 
+              const rowTotal = item.rowTotal !== undefined
+                ? item.rowTotal
                 : (item.qty * item.price) * (1 - (item.discount || 0) / 100);
-              const discDisplay = item.rowTotal !== undefined 
-                ? `₹${parseFloat(item.discount || 0).toFixed(0)}` 
+              const discDisplay = item.rowTotal !== undefined
+                ? `₹${parseFloat(item.discount || 0).toFixed(0)}`
                 : `${item.discount || 0}%`;
 
               return (
@@ -147,17 +163,26 @@ function PublicReceipt({ billId, onClear }) {
         </div>
 
         <div className="text-center mt-6 text-[9px] text-gray-500 italic border-t border-dashed border-gray-200 pt-6">
-          <p className="font-bold text-black mb-1">Authentic Quality Since 2024</p>
           <p>This is a computer generated receipt.</p>
           <p>No signature required.</p>
         </div>
       </div>
 
-      <button 
+      <button
         onClick={handleDownload}
-        className="flex items-center gap-3 px-10 py-5 bg-stone-900 text-white rounded-3xl font-bold shadow-2xl hover:scale-105 active:scale-95 transition-all"
+        disabled={isGenerating}
+        className={`flex items-center gap-3 px-10 py-5 text-white rounded-3xl font-bold shadow-2xl transition-all ${isGenerating ? 'bg-stone-400 cursor-not-allowed' : 'bg-stone-900 hover:scale-105 active:scale-95'}`}
       >
-        <Download size={20} /> Download PDF Receipt
+        {isGenerating ? (
+          <>
+            <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            Generating PDF...
+          </>
+        ) : (
+          <>
+            <Download size={20} /> Download PDF Receipt
+          </>
+        )}
       </button>
 
       <p className="mt-8 text-[10px] font-bold text-stone-400 uppercase tracking-widest">
