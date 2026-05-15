@@ -265,6 +265,7 @@ function Dashboard({
   }, [orders]);
 
   const [calendarDate, setCalendarDate] = useState(new Date());
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
   const generateCalendarDays = () => {
     const days = [];
     const start = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 1);
@@ -856,9 +857,16 @@ function Dashboard({
                               <div key={d} className="text-center text-[10px] font-black uppercase tracking-widest text-[var(--muted)] py-2">{d}</div>
                             ))}
                             {generateCalendarDays().map((d, i) => (
-                              <div
+                              <button
                                 key={i}
-                                className={`relative aspect-square rounded-2xl border flex flex-col items-center justify-center transition-all ${d.day ? (d.count > 0 ? 'bg-[var(--accent-soft)] border-[var(--accent)] shadow-sm' : 'bg-[var(--surface-strong)] border-[var(--border)] hover:border-[var(--accent)]') : 'bg-transparent border-transparent'}`}
+                                type="button"
+                                onClick={() => {
+                                  if (d.day && d.count > 0) {
+                                    setSelectedCalendarDate(d.date);
+                                  }
+                                }}
+                                disabled={!d.day || d.count === 0}
+                                className={`relative aspect-square rounded-2xl border flex flex-col items-center justify-center transition-all ${d.day ? (d.count > 0 ? 'bg-[var(--accent-soft)] border-[var(--accent)] shadow-sm cursor-pointer hover:brightness-95' : 'bg-[var(--surface-strong)] border-[var(--border)] cursor-default') : 'bg-transparent border-transparent'}`}
                               >
                                 {d.day && (
                                   <>
@@ -873,9 +881,55 @@ function Dashboard({
                                     )}
                                   </>
                                 )}
-                              </div>
+                              </button>
                             ))}
                           </div>
+                          
+                          {selectedCalendarDate && (
+                            <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                              <div className="w-full max-w-sm rounded-3xl border border-[var(--border)] bg-[var(--surface-strong)] p-5 shadow-2xl">
+                                <div className="flex justify-between items-center mb-4 border-b border-[var(--border)] pb-3">
+                                  <h3 className="font-semibold text-[var(--accent)] flex items-center gap-2">
+                                    <Bell size={16} /> Deliveries on {new Date(selectedCalendarDate).toLocaleDateString()}
+                                  </h3>
+                                  <button onClick={() => setSelectedCalendarDate(null)} className="text-[var(--muted)] hover:text-[var(--text)]">
+                                    <AlertCircle size={18} className="rotate-45" />
+                                  </button>
+                                </div>
+                                <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
+                                  {orders.filter(o => o.deliveryDate === selectedCalendarDate).map((o, idx) => (
+                                    <button 
+                                      key={o.id || idx}
+                                      className="w-full text-left bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 hover:border-[var(--accent)] transition flex items-center justify-between group"
+                                      onClick={() => {
+                                        setHighlightOrderId(o.id)
+                                        setCurrentPage('view-orders')
+                                        setSelectedCalendarDate(null)
+                                      }}
+                                    >
+                                      <div>
+                                        <p className="font-bold text-[var(--text)] group-hover:text-[var(--accent)]">{o.clientName}</p>
+                                        <p className="text-xs text-[var(--muted)]">{o.product}</p>
+                                      </div>
+                                      <div className="text-right">
+                                        <p className="text-xs font-semibold bg-[var(--accent-soft)] text-[var(--accent)] px-2 py-1 rounded-lg">{o.status}</p>
+                                        <p className="text-[10px] text-[var(--muted)] mt-1">#{o.id}</p>
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="mt-4 pt-3 flex justify-end">
+                                  <button 
+                                    onClick={() => setSelectedCalendarDate(null)}
+                                    className="bg-[var(--surface)] border border-[var(--border)] px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[var(--soft)]"
+                                  >
+                                    Close
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
                           <div className="mt-6 flex items-center gap-4 text-xs">
                             <div className="flex items-center gap-1.5 text-[var(--muted)] font-medium">
                               <div className="h-3 w-3 rounded-md bg-[var(--surface-strong)] border border-[var(--border)]" /> No deliveries
