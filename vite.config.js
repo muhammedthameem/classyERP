@@ -10,23 +10,28 @@ export default defineConfig({
 
     VitePWA({
       registerType: 'autoUpdate',
-
+      includeAssets: ['favicon.svg', 'logo192.png', 'logo512.png'],
       manifest: {
-        name: 'Classy ERP',
+        name: 'Classy Boutique ERP',
         short_name: 'ClassyERP',
-        description: 'Boutique ERP App',
-        theme_color: '#000000',
-
+        description: 'Premium Boutique Management System',
+        theme_color: '#2a211d',
+        background_color: '#f7f2ec',
+        display: 'standalone',
+        start_url: '/',
+        orientation: 'portrait',
         icons: [
           {
-            src: '/logo-black.png',
+            src: 'logo192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           },
           {
-            src: '/logo-black.png',
+            src: 'logo512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           }
         ]
       }

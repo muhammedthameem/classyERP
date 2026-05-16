@@ -8,6 +8,41 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [deferredPrompt, setDeferredPrompt] = useState(null)
+  const [isAppInstalled, setIsAppInstalled] = useState(false)
+
+  useEffect(() => {
+    // Check if already in standalone mode
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+      setIsAppInstalled(true)
+    }
+
+    const handler = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    
+    const appInstalledHandler = () => {
+      setIsAppInstalled(true);
+      setDeferredPrompt(null);
+    };
+    window.addEventListener('appinstalled', appInstalledHandler);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('appinstalled', appInstalledHandler);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('erp_remember_email')
@@ -247,6 +282,28 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
                 </button>
               )}
             </form>
+
+            {deferredPrompt && !isAppInstalled && (
+              <div className="mt-8 border-t border-dashed border-[#e0d2c4] pt-6 text-center">
+                <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-stone-400">Recommended for Android</p>
+                <button
+                  type="button"
+                  onClick={handleInstallClick}
+                  className="flex w-full items-center justify-center gap-2 rounded-md bg-[#f7f2ec] px-5 py-3 text-sm font-bold text-[#9b4d3a] border border-[#9b4d3a]/20 transition hover:bg-[#efe4d9]"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Install as Mobile App
+                </button>
+                <p className="mt-2 text-[10px] text-stone-400 italic">Adds a shortcut to your home screen for instant access.</p>
+              </div>
+            )}
+
+            {isAppInstalled && (
+              <div className="mt-6 flex items-center justify-center gap-2 rounded-lg bg-green-50 p-2 text-[10px] font-bold text-green-600 border border-green-100">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Running in App Mode
+              </div>
+            )}
           </div>
         </div>
       </div>
