@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 
 /**
- * IOSInstallPrompt Component
+ * IOSInstallPrompt Component - Premium Glassmorphism Edition
  * 
- * Since iOS Safari does not support the 'beforeinstallprompt' API, 
- * this component provides a guided UI to help users add the app to their home screen.
+ * Automatically detects iOS Safari and guides users to install the PWA.
+ * Features:
+ * - Automatic detection of iOS Safari
+ * - Persistence to avoid over-prompting
+ * - High-end glassmorphism UI
  */
 const IOSInstallPrompt = () => {
   const [showPrompt, setShowPrompt] = useState(false);
@@ -12,106 +15,145 @@ const IOSInstallPrompt = () => {
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
-    // Detect if the device is an iPhone/iPad/iPod
-    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    // 1. Detect if the device is an iPhone/iPad/iPod
+    // Updated detection to be more robust
+    const isIOSDevice = [
+      'iPad Simulator',
+      'iPhone Simulator',
+      'iPod Simulator',
+      'iPad',
+      'iPhone',
+      'iPod'
+    ].includes(navigator.platform)
+    // iPad on iOS 13 detection
+    || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
     
-    // Detect if the app is already running in standalone mode (installed)
+    // 2. Detect if the app is already running in standalone mode (installed)
     const isStandaloneMode = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 
     setIsIOS(isIOSDevice);
     setIsStandalone(isStandaloneMode);
 
-    // Optional: Auto-show logic could go here
-    // For now, we'll let the user trigger it via a button or custom logic
-  }, []);
-
-  const handleOpen = () => {
-    if (isStandalone) {
-      alert("App is already installed and running from your home screen!");
-      return;
+    // 3. Auto-show logic
+    if (isIOSDevice && !isStandaloneMode) {
+      const lastPrompted = localStorage.getItem('ios-pwa-prompt-last-shown');
+      const now = Date.now();
+      
+      // Show if never prompted or if it was more than 7 days ago
+      if (!lastPrompted || (now - parseInt(lastPrompted)) > 7 * 24 * 60 * 60 * 1000) {
+        // Add a slight delay for better UX
+        const timer = setTimeout(() => {
+          setShowPrompt(true);
+        }, 3000);
+        return () => clearTimeout(timer);
+      }
     }
-    setShowPrompt(true);
-  };
+  }, []);
 
   const handleClose = () => {
     setShowPrompt(false);
+    // Persist the dismissal
+    localStorage.setItem('ios-pwa-prompt-last-shown', Date.now().toString());
   };
 
-  if (isStandalone) return null;
+  if (!isIOS || isStandalone) return null;
 
   return (
     <>
-      {/* Example Button to trigger the prompt - You can place this anywhere in your UI */}
-      <button 
-        onClick={handleOpen}
-        className="flex items-center gap-2 px-4 py-2 bg-[#2a211d] text-white rounded-xl font-semibold shadow-lg hover:bg-[#3d312b] transition-all active:scale-95"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        Install App
-      </button>
-
-      {/* The Actual Guidance UI */}
+      {/* Premium Glassmorphism UI */}
       {showPrompt && (
-        <div className="fixed inset-0 z-[9999] flex flex-col justify-end items-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[10000] flex flex-col justify-end items-center p-4 bg-black/20 backdrop-blur-md animate-in fade-in duration-500">
           <div 
-            className="relative w-full max-w-md bg-[#f7f2ec] rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-10 duration-500 ease-out"
+            className="relative w-full max-w-sm mb-4 overflow-hidden rounded-[2.5rem] shadow-2xl animate-in slide-in-from-bottom-20 duration-700 ease-out"
             style={{ 
-              border: '1px solid rgba(42, 33, 29, 0.1)',
-              background: 'linear-gradient(135deg, #f7f2ec 0%, #fff 100%)'
+              background: 'rgba(255, 255, 255, 0.7)',
+              backdropFilter: 'blur(20px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
             }}
           >
+            {/* Top Gloss Effect */}
+            <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent pointer-events-none" />
+
             {/* Close Button */}
             <button 
               onClick={handleClose}
-              className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/5 transition-colors"
+              className="absolute top-6 right-6 z-10 p-2 rounded-full bg-black/5 hover:bg-black/10 transition-colors active:scale-90"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2a211d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2a211d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
             </button>
 
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 bg-[#2a211d] rounded-2xl flex items-center justify-center shadow-inner mb-2">
-                <img src="/logo192.png" alt="App Logo" className="w-12 h-12 object-contain" />
+            <div className="relative z-0 flex flex-col items-center text-center p-8 pt-10">
+              {/* App Icon Container */}
+              <div className="relative mb-6">
+                <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-xl p-1 border border-white/50">
+                   <div className="w-full h-full bg-[#2a211d] rounded-xl flex items-center justify-center overflow-hidden">
+                      <img src="/logo192.png" alt="App Logo" className="w-14 h-14 object-contain" />
+                   </div>
+                </div>
+                {/* Status Dot */}
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-4 border-white rounded-full shadow-sm"></div>
               </div>
 
-              <h3 className="text-xl font-bold text-[#2a211d]">Install Classy ERP</h3>
-              <p className="text-[#5d5450] text-sm leading-relaxed">
-                Add this app to your home screen for a full-screen experience and quick access.
+              <h3 className="text-2xl font-black text-[#2a211d] tracking-tight mb-2">Install Classy ERP</h3>
+              <p className="text-[#5d5450] text-sm font-medium leading-relaxed px-4 mb-8">
+                Install this app on your iPhone for a faster, full-screen experience and offline access.
               </p>
 
-              <div className="w-full space-y-4 pt-2">
-                <div className="flex items-center gap-4 text-left p-3 bg-white/50 rounded-2xl border border-black/5">
-                  <div className="bg-white p-2 rounded-lg shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#007AFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <div className="w-full space-y-3">
+                <div className="flex items-center gap-4 text-left p-4 bg-white/40 rounded-[1.5rem] border border-white/50 shadow-sm">
+                  <div className="bg-white/80 p-2.5 rounded-xl shadow-sm backdrop-blur-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#007AFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
                     </svg>
                   </div>
-                  <p className="text-sm font-medium text-[#2a211d]">
-                    1. Tap the <span className="text-[#007AFF] font-bold">Share</span> button below
-                  </p>
+                  <div>
+                    <p className="text-xs uppercase tracking-widest font-bold text-[#2a211d]/40 mb-0.5">Step 1</p>
+                    <p className="text-[0.95rem] font-bold text-[#2a211d]">
+                      Tap the <span className="text-[#007AFF]">Share</span> button
+                    </p>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-left p-3 bg-white/50 rounded-2xl border border-black/5">
-                  <div className="bg-white p-2 rounded-lg shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2a211d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <div className="flex items-center gap-4 text-left p-4 bg-white/40 rounded-[1.5rem] border border-white/50 shadow-sm">
+                  <div className="bg-white/80 p-2.5 rounded-xl shadow-sm backdrop-blur-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2a211d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="4" ry="4"></rect>
                       <line x1="12" y1="8" x2="12" y2="16"></line>
                       <line x1="8" y1="12" x2="16" y2="12"></line>
                     </svg>
                   </div>
-                  <p className="text-sm font-medium text-[#2a211d]">
-                    2. Select <span className="font-bold">"Add to Home Screen"</span>
-                  </p>
+                  <div>
+                    <p className="text-xs uppercase tracking-widest font-bold text-[#2a211d]/40 mb-0.5">Step 2</p>
+                    <p className="text-[0.95rem] font-bold text-[#2a211d]">
+                      Select <span className="font-extrabold">"Add to Home Screen"</span>
+                    </p>
+                  </div>
                 </div>
+              </div>
+              
+              <div className="mt-8 mb-2">
+                <button 
+                  onClick={handleClose}
+                  className="px-8 py-3 bg-[#2a211d] text-white rounded-full font-bold shadow-xl shadow-[#2a211d]/20 active:scale-95 transition-transform"
+                >
+                  Maybe Later
+                </button>
               </div>
             </div>
 
-            {/* Pointer Arrow (pointing to where the share button usually is) */}
-            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-8 h-8 rotate-45 bg-[#f7f2ec] border-r border-b border-black/10 shadow-lg"></div>
+            {/* iOS Bottom Navigation Indicator Simulation */}
+            <div className="flex justify-center pb-2 opacity-20">
+              <div className="w-32 h-1.5 bg-black rounded-full"></div>
+            </div>
+          </div>
+          
+          {/* Animated Pointer Arrow */}
+          <div className="relative animate-bounce mb-8">
+            <div className="w-8 h-8 rotate-45 bg-white/70 backdrop-blur-lg border-r-2 border-b-2 border-white/50 shadow-2xl"></div>
           </div>
         </div>
       )}
@@ -120,3 +162,4 @@ const IOSInstallPrompt = () => {
 };
 
 export default IOSInstallPrompt;
+

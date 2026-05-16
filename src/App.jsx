@@ -376,9 +376,9 @@ function App() {
               />
             )}
             <DeliveryAlertModal orders={orders} />
-            <IOSInstallPrompt />
           </>
         )}
+        <IOSInstallPrompt />
       </main>
     </div>
   )
