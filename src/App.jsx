@@ -7,8 +7,10 @@ import ClassyAI from './components/ClassyAI'
 import { boutiqueThemes, appearanceTokens } from './utils/constants'
 import supabase from './supabase'
 import IOSInstallPrompt from './components/IOSInstallPrompt';
+import Preloader from './components/Preloader';
 
 function App() {
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   // SHARED STATES
   const [users, setUsers] = useState(() => { try { return JSON.parse(localStorage.getItem('erp_users') || '[]') } catch (e) { return [] } })
   const [designations, setDesignations] = useState(() => { try { return JSON.parse(localStorage.getItem('erp_designations') || '[]') } catch (e) { return [] } })
@@ -101,13 +103,20 @@ function App() {
 
   // 1. RECOVER SUPABASE SESSION
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setIsLoggedIn(true);
-        // Fetch profile from erp_users to get Name/Role
-        supabase.from('erp_users').select('*').eq('id', session.user.email).single().then(({ data }) => {
-          if (data) {
-            const profile = data.data || data;
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          // Fetch profile from erp_users to get Name/Role
+          const { data: profileData } = await supabase
+            .from('erp_users')
+            .select('*')
+            .eq('id', session.user.email)
+            .single();
+
+          if (profileData) {
+            const profile = profileData.data || profileData;
             setUser({
               id: profile.id || profile.email,
               email: profile.email,
@@ -115,11 +124,26 @@ function App() {
               role: profile.designation || 'Staff'
             });
           } else {
-            setUser({ id: session.user.id, email: session.user.email, name: session.user.email.split('@')[0], role: 'Admin' });
+            setUser({ 
+              id: session.user.id, 
+              email: session.user.email, 
+              name: session.user.email.split('@')[0], 
+              role: 'Admin' 
+            });
           }
-        });
+          setIsLoggedIn(true);
+        }
+      } catch (err) {
+        console.error("Auth Init Error:", err);
+      } finally {
+        // Ensure preloader stays for at least 1.5 seconds for branding
+        setTimeout(() => {
+          setIsAuthLoading(false);
+        }, 1500);
       }
-    });
+    };
+
+    initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
@@ -243,6 +267,10 @@ function App() {
 
   if (activeBillId) {
     return <PublicReceipt billId={activeBillId} onClear={clearBill} />;
+  }
+
+  if (isAuthLoading) {
+    return <Preloader />;
   }
 
   return (

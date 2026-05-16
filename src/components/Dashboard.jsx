@@ -771,24 +771,39 @@ function Dashboard({
 
                       {card.id === 'Stats' && (
                         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                          {liveStats.map((stat) => {
-                            const Icon = stat.icon
-                            return (
-                              <article key={stat.label} className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur transition hover:-translate-y-0.5">
+                          {!cloudLoaded ? (
+                            // Skeleton Stats
+                            [1, 2, 3, 4].map((i) => (
+                              <div key={i} className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
                                 <div className="mb-5 flex items-center justify-between">
-                                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
-                                    <Icon size={21} />
-                                  </span>
-                                  <span className="rounded-full bg-[var(--soft)] px-3 py-1 text-xs font-semibold text-[var(--jewel)]">
-                                    Live
-                                  </span>
+                                  <div className="skeleton w-11 h-11 rounded-xl" />
+                                  <div className="skeleton w-12 h-5 rounded-full" />
                                 </div>
-                                <p className="text-tiny">{stat.label}</p>
-                                <h3 className="text-h1 mt-3">{stat.value}</h3>
-                                <p className="text-para-sm mt-2 text-[var(--jewel)] font-medium">{stat.note}</p>
-                              </article>
-                            )
-                          })}
+                                <div className="skeleton skeleton-text w-1/2" />
+                                <div className="skeleton skeleton-text w-3/4 h-8 mt-3" />
+                                <div className="skeleton skeleton-text w-1/3 mt-2" />
+                              </div>
+                            ))
+                          ) : (
+                            liveStats.map((stat) => {
+                              const Icon = stat.icon
+                              return (
+                                <article key={stat.label} className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur transition hover:-translate-y-0.5">
+                                  <div className="mb-5 flex items-center justify-between">
+                                    <span className="grid h-11 w-11 place-items-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
+                                      <Icon size={21} />
+                                    </span>
+                                    <span className="rounded-full bg-[var(--soft)] px-3 py-1 text-xs font-semibold text-[var(--jewel)]">
+                                      Live
+                                    </span>
+                                  </div>
+                                  <p className="text-tiny">{stat.label}</p>
+                                  <h3 className="text-h1 mt-3">{stat.value}</h3>
+                                  <p className="text-para-sm mt-2 text-[var(--jewel)] font-medium">{stat.note}</p>
+                                </article>
+                              )
+                            })
+                          )}
                         </section>
                       )}
 
