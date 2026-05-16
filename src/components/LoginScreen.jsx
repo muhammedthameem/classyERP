@@ -128,21 +128,21 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
   }
 
   return (
-    <section className="grid min-h-screen lg:grid-cols-[1.1fr_0.9fr]">
-      <div className="relative hidden overflow-hidden bg-[#2a211d] text-white lg:block">
+    <section className="grid min-h-screen lg:grid-cols-[1.1fr_0.9fr] bg-[var(--app-bg)] transition-colors duration-300">
+      <div className="relative hidden overflow-hidden bg-[var(--sidebar)] text-white lg:block">
         <img
-          className="absolute inset-0 h-full w-full object-cover opacity-70 mix-blend-screen"
+          className="absolute inset-0 h-full w-full object-cover opacity-60 mix-blend-soft-light"
           src="https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1300&q=80"
           alt="Designer boutique styling studio"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(39,28,24,0.96),rgba(39,28,24,0.28),rgba(24,54,48,0.82))]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/90 via-[var(--sidebar)]/80 to-[var(--accent)]/70" />
         <div className="relative flex h-full flex-col justify-between p-12">
           <div className="flex items-center gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-md bg-white p-1 shadow-sm">
+            <div className="grid h-12 w-12 place-items-center rounded-xl bg-white p-1 shadow-sm">
               <img src="/logo-black.png" alt="CB" className="h-full w-full object-contain" />
             </div>
             <div>
-              <p className="text-sm uppercase tracking-[0.28em] text-[#e6c9b8]">
+              <p className="text-sm uppercase tracking-[0.28em] text-white/80">
                 Classy Couture
               </p>
               <h1 className="text-2xl font-semibold">Boutique ERP System</h1>
@@ -150,7 +150,7 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
           </div>
 
           <div className="max-w-2xl">
-            <p className="mb-4 w-fit rounded-full border border-white/25 px-4 py-2 text-sm text-[#f3dfcf] backdrop-blur">
+            <p className="mb-4 w-fit rounded-full border border-white/25 px-4 py-2 text-sm text-white/90 backdrop-blur">
               Boutique operations, client fittings, orders, and inventory
             </p>
             <h2 className="text-6xl font-semibold leading-tight">
@@ -160,9 +160,9 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
 
           <div className="grid grid-cols-3 gap-4 text-sm">
             {['Bridal', 'Luxury Pret', 'Alterations'].map((item) => (
-              <div key={item} className="rounded-lg border border-white/15 bg-white/10 p-4 backdrop-blur">
+              <div key={item} className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur shadow-lg">
                 <span className="block text-2xl font-semibold">24</span>
-                <span className="text-[#ead8ca]">{item} workflows</span>
+                <span className="text-white/70">{item} workflows</span>
               </div>
             ))}
           </div>
@@ -172,21 +172,21 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
       <div className="flex items-center justify-center px-6 py-10 sm:px-10">
         <div className="w-full max-w-md">
           <div className="mb-8 lg:hidden">
-            <div className="mb-4 grid h-12 w-12 place-items-center rounded-md bg-white p-1 shadow-sm">
+            <div className="mb-4 grid h-12 w-12 place-items-center rounded-xl bg-white p-1 shadow-sm">
               <img src="/logo-black.png" alt="CB" className="h-full w-full object-contain" />
             </div>
-            <p className="text-sm uppercase tracking-[0.28em] text-[#9b4d3a]">
+            <p className="text-sm uppercase tracking-[0.28em] text-[var(--accent)] font-bold">
               Classy Couture
             </p>
           </div>
 
-          <div className="rounded-lg border border-[#e0d2c4] bg-white p-8 shadow-[0_24px_80px_rgba(67,47,35,0.12)]">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#9b4d3a]">
+          <div className="rounded-[32px] border border-[var(--border)] bg-[var(--surface-strong)] p-10 shadow-[var(--shadow)] backdrop-blur-xl">
+            <p className="text-sm font-black uppercase tracking-[0.24em] text-[var(--accent)]">
               Welcome back
             </p>
-            <h2 className="mt-3 text-3xl font-semibold">Sign in to your studio</h2>
-            <p className="mt-2 text-sm text-stone-500">
-              Manage designer orders, measurements, clients, appointments, and stock.
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-[var(--text)]">Sign in to your studio</h2>
+            <p className="mt-2 text-sm text-[var(--muted)] font-medium">
+              Manage designer orders, measurements, clients, and stock.
             </p>
 
             <form
@@ -194,9 +194,9 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
               onSubmit={mode === 'login' ? submitLogin : submitForgotPassword}
             >
               <label className="block">
-                <span className="text-sm font-medium text-stone-700">Email address</span>
+                <span className="text-sm font-bold text-[var(--text)] ml-1">Email address</span>
                 <input
-                  className="mt-2 w-full rounded-md border border-[#dfd2c7] bg-[#fbf8f5] px-4 py-3 outline-none transition focus:border-[#9b4d3a] focus:ring-4 focus:ring-[#9b4d3a]/10"
+                  className="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3.5 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent-soft)]/20 text-[var(--text)] placeholder:text-[var(--muted)]/50 font-medium"
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
@@ -208,10 +208,10 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
               {mode === 'login' && (
                 <>
                   <label className="block">
-                    <span className="text-sm font-medium text-stone-700">Password</span>
+                    <span className="text-sm font-bold text-[var(--text)] ml-1">Password</span>
                     <div className="relative mt-2">
                       <input
-                        className="w-full rounded-md border border-[#dfd2c7] bg-[#fbf8f5] px-4 py-3 pr-12 outline-none transition focus:border-[#9b4d3a] focus:ring-4 focus:ring-[#9b4d3a]/10"
+                        className="w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3.5 pr-12 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent-soft)]/20 text-[var(--text)] placeholder:text-[var(--muted)]/50 font-medium"
                         type={showPassword ? 'text' : 'password'}
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
@@ -220,7 +220,7 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
                       />
                       <button
                         type="button"
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-[#9b4d3a] transition-colors"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--accent)] transition-colors p-1"
                         onClick={() => setShowPassword(!showPassword)}
                       >
                         {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -228,9 +228,9 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
                     </div>
                   </label>
                   <div className="flex items-center justify-between text-sm">
-                    <label className="flex items-center gap-2 text-stone-600">
+                    <label className="flex items-center gap-2 text-[var(--muted)] font-semibold cursor-pointer select-none">
                       <input
-                        className="h-4 w-4 accent-[#9b4d3a]"
+                        className="h-4 w-4 rounded-md accent-[var(--accent)] cursor-pointer"
                         type="checkbox"
                         checked={rememberMe}
                         onChange={(e) => setRememberMe(e.target.checked)}
@@ -238,7 +238,7 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
                       Remember me
                     </label>
                     <button
-                      className="font-semibold text-[#9b4d3a]"
+                      className="font-bold text-[var(--accent)] hover:underline underline-offset-4"
                       onClick={() => {
                         setMode('forgot')
                         setMessage('')
@@ -252,13 +252,13 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
               )}
 
               {message && (
-                <p className="rounded-md bg-[#f7f2ec] px-4 py-3 text-sm font-medium text-[#8a3f31]">
+                <p className="rounded-2xl bg-[var(--accent-soft)]/30 border border-[var(--accent-soft)] px-4 py-3.5 text-sm font-bold text-[var(--accent)]">
                   {message}
                 </p>
               )}
 
               <button
-                className="w-full rounded-md bg-[#9b4d3a] px-5 py-3 font-semibold text-white shadow-lg shadow-[#9b4d3a]/25 transition hover:bg-[#823f30]"
+                className="w-full rounded-2xl bg-[var(--accent)] px-5 py-4 font-black text-white shadow-xl shadow-[var(--accent)]/30 transition hover:brightness-95 active:scale-[0.98]"
                 type="submit"
                 disabled={isLoading}
               >
@@ -271,7 +271,7 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
 
               {mode === 'forgot' && (
                 <button
-                  className="w-full rounded-md border border-[#d8c8bc] px-5 py-3 font-semibold text-stone-700"
+                  className="w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4 font-bold text-[var(--text)] transition hover:bg-[var(--soft)]"
                   onClick={() => {
                     setMode('login')
                     setMessage('')
@@ -284,24 +284,24 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
             </form>
 
             {deferredPrompt && !isAppInstalled && (
-              <div className="mt-8 border-t border-dashed border-[#e0d2c4] pt-6 text-center">
-                <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-stone-400">Recommended for Android</p>
+              <div className="mt-8 border-t border-dashed border-[var(--border)] pt-8 text-center">
+                <p className="mb-4 text-[11px] font-black uppercase tracking-widest text-[var(--muted)]">Recommended for Android</p>
                 <button
                   type="button"
                   onClick={handleInstallClick}
-                  className="flex w-full items-center justify-center gap-2 rounded-md bg-[#f7f2ec] px-5 py-3 text-sm font-bold text-[#9b4d3a] border border-[#9b4d3a]/20 transition hover:bg-[#efe4d9]"
+                  className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[var(--soft)] px-5 py-4 text-sm font-black text-[var(--accent)] border border-[var(--accent)]/10 transition hover:bg-[var(--accent-soft)]/50"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   Install as Mobile App
                 </button>
-                <p className="mt-2 text-[10px] text-stone-400 italic">Adds a shortcut to your home screen for instant access.</p>
+                <p className="mt-3 text-[11px] text-[var(--muted)] italic font-medium px-4">Adds a shortcut to your home screen for instant access.</p>
               </div>
             )}
 
             {isAppInstalled && (
-              <div className="mt-6 flex items-center justify-center gap-2 rounded-lg bg-green-50 p-2 text-[10px] font-bold text-green-600 border border-green-100">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                Running in App Mode
+              <div className="mt-8 flex items-center justify-center gap-2 rounded-2xl bg-green-500/10 p-3 text-[11px] font-black text-green-600 border border-green-500/20">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                RUNNING IN APP MODE
               </div>
             )}
           </div>

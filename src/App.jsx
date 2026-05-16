@@ -204,8 +204,16 @@ function App() {
 
   const [activeBillId, setActiveBillId] = useState(getInitialBillId);
   const [currentPage, setCurrentPage] = useState(() => localStorage.getItem('erp_current_page') || 'overview');
-  const [appearance, setAppearance] = useState('light')
-  const [themeName, setThemeName] = useState('champagne')
+  const [appearance, setAppearance] = useState(() => localStorage.getItem('erp_appearance') || 'light')
+  const [themeName, setThemeName] = useState(() => localStorage.getItem('erp_theme_name') || 'champagne')
+
+  useEffect(() => {
+    localStorage.setItem('erp_appearance', appearance);
+  }, [appearance]);
+
+  useEffect(() => {
+    localStorage.setItem('erp_theme_name', themeName);
+  }, [themeName]);
   const [selectedClient, setSelectedClient] = useState(() => {
     try {
       const saved = localStorage.getItem('erp_selected_client');
