@@ -354,6 +354,11 @@ function App() {
             }}
             activities={activities}
             inventory={inventory}
+            setInventory={setInventory}
+            saveInventory={async (inv) => {
+              const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+              await supabase.from('erp_inventory').upsert([{ id: inv.id.toString(), data: clean(inv) }]);
+            }}
             users={users}
             sales={sales}
             orderLimits={orderLimits}

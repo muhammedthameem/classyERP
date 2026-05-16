@@ -51,25 +51,25 @@ function Dashboard({
 
   const [dashboardCards, setDashboardCards] = useState(() => {
     try {
-      const saved = localStorage.getItem('erp_dashboard_cards');
+      const saved = localStorage.getItem('erp_dashboard_cards_v2');
       if (saved) return JSON.parse(saved);
     } catch (e) {
       console.error("Dashboard Layout Load Error:", e);
     }
     return [
-      { id: 'Hero', label: 'Welcome Banner', visible: true },
-      { id: 'Stats', label: 'Quick Stats', visible: true },
-      { id: 'Calendar', label: 'Delivery Tracker', visible: true },
-      { id: 'Orders', label: 'Production Queue', visible: true },
-      { id: 'Team', label: 'Staff Activity', visible: true, adminOnly: true },
-      { id: 'Sales', label: 'Recent Transactions', visible: true },
-      { id: 'Revenue', label: 'Income Analytics', visible: true, adminOnly: true },
-      { id: 'Elegance', label: 'Client Performance', visible: true }
+      { id: 'Hero', label: 'Welcome Banner', visible: true, span: 2 },
+      { id: 'Stats', label: 'Quick Stats', visible: true, span: 2 },
+      { id: 'Orders', label: 'Production Queue', visible: true, span: 1 },
+      { id: 'Sales', label: 'Recent Transactions', visible: true, span: 1 },
+      { id: 'Team', label: 'Staff Activity', visible: true, adminOnly: true, span: 1 },
+      { id: 'Revenue', label: 'Income Analytics', visible: true, adminOnly: true, span: 1 },
+      { id: 'Calendar', label: 'Delivery Tracker', visible: true, span: 1 },
+      { id: 'Elegance', label: 'Client Performance', visible: true, span: 1 }
     ];
   });
 
   useEffect(() => {
-    localStorage.setItem('erp_dashboard_cards', JSON.stringify(dashboardCards));
+    localStorage.setItem('erp_dashboard_cards_v2', JSON.stringify(dashboardCards));
   }, [dashboardCards]);
 
   const [draggedCardId, setDraggedCardId] = useState(null);
@@ -102,7 +102,14 @@ function Dashboard({
 
   const [showManageMenu, setShowManageMenu] = useState(false);
 
-
+  const [screenSize, setScreenSize] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const isDesktop = screenSize >= 1024;
+  
+  useEffect(() => {
+    const handleResize = () => setScreenSize(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const showGlobalToast = (title, message) => {
     setGlobalToast({ title, message })
     setTimeout(() => setGlobalToast(null), 4000)
@@ -284,23 +291,21 @@ function Dashboard({
   };
 
   const getCardSpan = (card) => {
+    const cols = screenSize >= 1024 ? 2 : 1;
+    
+    if (cols === 1) return 'span-full';
+    
+    // In a 2-column grid, span 2 is full-width, span 1 is 50%
     let span = card.span;
     if (!span) {
       switch (card.id) {
-        case 'Hero': span = 3; break;
-        case 'Stats': span = 3; break;
-        case 'Calendar': span = 1; break;
-        case 'Orders': span = 2; break;
-        case 'Team': span = 1; break;
-        case 'Sales': span = 2; break;
-        case 'Revenue': span = 1; break;
-        case 'Elegance': span = 3; break;
+        case 'Hero': span = 2; break;
+        case 'Stats': span = 2; break;
+        case 'Elegance': span = 2; break;
         default: span = 1; break;
       }
     }
-    if (span === 3) return 'span-full';
-    if (span === 2) return 'span-2';
-    return 'span-1';
+    return span === 2 ? 'span-full' : 'span-1';
   };
 
   return (
@@ -686,7 +691,7 @@ function Dashboard({
                   {dashboardCards.filter(c => c.visible && (!c.adminOnly || user?.role === 'Admin')).map((card, idx) => (
                     <div
                       key={card.id}
-                      draggable
+                      draggable={isDesktop}
                       onDragStart={() => setDraggedCardId(card.id)}
                       onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                       onDrop={() => {
@@ -697,7 +702,7 @@ function Dashboard({
                       style={{ animationDelay: `${idx * 0.05}s` }}
                     >
                       {/* Drag Handle & Close Button Overlay */}
-                      <div className="absolute right-4 top-4 z-10 flex items-center gap-2 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                      <div className="absolute right-4 top-4 z-10 hidden md:flex items-center gap-2 opacity-0 group-hover/card:opacity-100 transition-opacity">
                         <button
                           onClick={() => cycleCardSize(card.id)}
                           className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-[var(--surface-strong)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--accent)] shadow-sm transition-all"

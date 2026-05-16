@@ -18,6 +18,8 @@ const ClassyAI = ({
   activities,
   saveActivity,
   inventory = [],
+  setInventory,
+  saveInventory,
   users = [],
   orderLimits = {},
   setOrderLimits,
@@ -33,6 +35,9 @@ const ClassyAI = ({
     { role: 'assistant', content: `Hello ${user?.name || 'there'}! I'm Classy AI. How can I help you manage your boutique today?` }
   ]);
   const [isTyping, setIsTyping] = useState(false);
+  const storedAgent = localStorage.getItem('erp_ai_agent');
+  const [agentMode, setAgentMode] = useState(storedAgent === 'intelligent' ? 'classy' : (storedAgent || 'classy'));
+  const [apiKey, setApiKey] = useState(localStorage.getItem('erp_gemini_api_key') || '');
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -58,6 +63,112 @@ const ClassyAI = ({
     const cmd = text.toLowerCase();
     setIsTyping(true);
     await new Promise(r => setTimeout(r, 500)); // Faster response
+
+    // Handle API Key setting
+    if (text.toUpperCase().startsWith('KEY:')) {
+      const key = text.substring(4).trim();
+      setApiKey(key);
+      localStorage.setItem('erp_gemini_api_key', key);
+      return "✅ Gemini API Key saved successfully! You can now chat with Gemini 2.5 Flash.";
+    }
+
+    if (agentMode === 'gemini') {
+      if (!apiKey) {
+        return "⚠️ Please enter your Gemini API Key to use Gemini.\n\nType exactly:\n**KEY: your_api_key**";
+      }
+      try {
+        const systemPrompt = `You are Classy AI, the dedicated intelligent manager for Classy ERP.
+You have FULL ACCESS to the boutique database below. Use this data to answer questions accurately.
+
+BOUTIQUE DATABASE:
+- CLIENTS: ${JSON.stringify(clients?.map(c => ({ id: c.id, name: c.name, phone: c.phone, address: c.address, email: c.email })) || [])}
+- ORDERS: ${JSON.stringify(orders?.map(o => ({ id: o.id, deliveryDate: o.deliveryDate, orderDate: o.orderDate, total: o.totalAmount || o.total, status: o.status, client: o.clientName || o.client })) || [])}
+- INVENTORY: ${JSON.stringify(inventory?.map(i => ({ id: i.id, name: i.name, stock: i.quantity || i.stock })) || [])}
+
+AVAILABLE ACTIONS (MANDATORY: Wrap JSON in <ACTION> tags):
+- {"type": "NAVIGATE", "payload": {"page": "dashboard" | "view-clients" | "view-orders" | "view-inventory" | "reports" | "add-client" | "add-order"}}
+- {"type": "CREATE_CLIENT", "payload": {"name": "...", "phone": "...", "address": "...", "measurements": {}}}
+- {"type": "DELETE_CLIENT", "payload": {"id": "..."}}
+- {"type": "DELETE_ORDER", "payload": {"id": "..."}}
+- {"type": "UPDATE_STOCK", "payload": {"id": "...", "quantity": 10}}
+
+RULES:
+1. NEVER output raw JSON to the user. ALWAYS wrap it in <ACTION>...</ACTION>.
+2. If asked about counts or specific dates (e.g. "how many orders on June 22"), filter the DATABASE provided above and give the exact answer in plain English. DO NOT navigate to the reports page unless explicitly asked.
+3. If the user wants to "open" or "view" something, use the NAVIGATE action.
+4. If they want to create/delete, use the corresponding action.
+5. Always be helpful, professional, and concise.`;
+
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: [{ parts: [{ text: text }] }] 
+          })
+        });
+        const data = await res.json();
+        if (data.error) {
+          if (data.error.message.includes('API key not valid')) {
+            return `Gemini API Error: API key not valid. The key we are trying to use is: \n\n"${apiKey}"\n\nPlease check if it's correct and case-sensitive!`;
+          }
+          return "Gemini API Error: " + data.error.message;
+        }
+        
+        let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response from Gemini.";
+        
+        // --- IMPROVED ACTION PARSER ---
+        // Check for tags first, then fallback to raw JSON if it looks like an action
+        let actionStr = null;
+        const actionMatch = responseText.match(/<ACTION>([\s\S]*?)<\/ACTION>/);
+        
+        if (actionMatch) {
+          actionStr = actionMatch[1].trim();
+          responseText = responseText.replace(/<ACTION>[\s\S]*?<\/ACTION>/g, '').trim();
+        } else if (responseText.trim().startsWith('{') && responseText.trim().endsWith('}')) {
+          // Fallback: If Gemini just returned raw JSON without tags
+          actionStr = responseText.trim();
+          responseText = ""; // Clear it so user doesn't see raw JSON
+        }
+
+        if (actionStr) {
+          try {
+            const action = JSON.parse(actionStr);
+            
+            if (action.type === 'NAVIGATE') {
+              setCurrentPage(action.payload.page);
+              responseText += responseText ? `\n\n✨ _Navigating..._` : `✨ _Opening ${action.payload.page}..._`;
+            } else if (action.type === 'CREATE_CLIENT') {
+              const newClient = { id: Date.now().toString(), ...action.payload, createdAt: new Date().toISOString() };
+              setClients(prev => [...prev, newClient]);
+              if (saveClient) saveClient(newClient);
+              responseText += `\n\n✅ _Client **${action.payload.name}** registered._`;
+            } else if (action.type === 'DELETE_CLIENT') {
+              setClients(prev => prev.filter(c => String(c.id) !== String(action.payload.id)));
+              if (deleteClient) deleteClient(action.payload.id);
+              responseText += `\n\n🗑️ _Client removed._`;
+            } else if (action.type === 'DELETE_ORDER') {
+              setOrders(prev => prev.filter(o => String(o.id) !== String(action.payload.id)));
+              if (deleteOrder) deleteOrder(action.payload.id);
+              responseText += `\n\n🗑️ _Order deleted._`;
+            } else if (action.type === 'UPDATE_STOCK') {
+              setInventory(prev => prev.map(item => String(item.id) === String(action.payload.id) ? { ...item, quantity: action.payload.quantity } : item));
+              const item = inventory.find(i => String(i.id) === String(action.payload.id));
+              if (item && saveInventory) saveInventory({ ...item, quantity: action.payload.quantity });
+              responseText += `\n\n📦 _Stock updated._`;
+            }
+          } catch (e) {
+            console.error("Gemini Action Parse Error:", e);
+          }
+        }
+        
+        return responseText || "I've processed your request!";
+      } catch (err) {
+        return "Error connecting to Gemini: " + err.message;
+      }
+    }
+
+
 
     // --- 0. CONTEXT & MEMORY (HIGHEST PRIORITY) ---
     const isAffirmative = cmd.startsWith('yes') || cmd.startsWith('sure') || cmd.startsWith('ok') || cmd.startsWith('go') || cmd.startsWith('do it');
@@ -290,7 +401,7 @@ const ClassyAI = ({
       setInput('');
       setIsTyping(true);
 
-      const response = await processCommand(currentInput.toLowerCase());
+      const response = await processCommand(currentInput);
       if (response) {
         setMessages(prev => [...prev, { role: 'assistant', content: response }]);
       }
@@ -303,7 +414,7 @@ const ClassyAI = ({
   };
 
   return (
-    <div className="fixed bottom-8 right-8 z-[2500]">
+    <div className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-[2500]">
       {/* AI Bubble - Premium Luxury Design */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -342,9 +453,22 @@ const ClassyAI = ({
                   </div>
                 </div>
               </div>
-              <button onClick={() => setIsOpen(false)} className="rounded-xl bg-black/10 p-2 hover:bg-black/20 transition">
-                <X size={18} />
-              </button>
+              <div className="flex items-center gap-2">
+                <select
+                  value={agentMode}
+                  onChange={(e) => {
+                    setAgentMode(e.target.value);
+                    localStorage.setItem('erp_ai_agent', e.target.value);
+                  }}
+                  className="bg-black/20 text-white text-[10px] rounded-lg px-2 py-1 outline-none font-bold uppercase tracking-wider border border-white/10"
+                >
+                  <option value="classy" className="text-black">Classy AI (Basic)</option>
+                  <option value="gemini" className="text-black">Gemini 1.5 (Needs Key)</option>
+                </select>
+                <button onClick={() => setIsOpen(false)} className="rounded-xl bg-black/10 p-2 hover:bg-black/20 transition">
+                  <X size={18} />
+                </button>
+              </div>
             </div>
           </div>
 
