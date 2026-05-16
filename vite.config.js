@@ -10,7 +10,7 @@ export default defineConfig({
 
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'logo192.png', 'logo512.png'],
+      includeAssets: ['logo-black.png', 'logo192.png', 'logo512.png'],
       manifest: {
         name: 'Classy Boutique ERP',
         short_name: 'ClassyERP',
