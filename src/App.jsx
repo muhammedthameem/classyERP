@@ -254,6 +254,7 @@ function App() {
             <Dashboard
               onLogout={handleLogout}
               user={user}
+              themeStyle={themeStyle}
               currentPage={currentPage}
               setCurrentPage={setCurrentPage}
               appearance={appearance} setAppearance={setAppearance}

@@ -35,7 +35,9 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
         return
       }
 
-      if (currentPassword !== userData.data.password) {
+      const profile = userData.data || userData;
+
+      if (currentPassword !== profile.password) {
         setMessage('Current password is incorrect.')
         setStatus('error')
         setIsLoading(false)
@@ -52,7 +54,7 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
       const { error: authError } = await supabase.auth.updateUser({ password: newPassword });
       if (authError) throw authError;
 
-      const updatedProfile = { ...userData.data, password: newPassword };
+      const updatedProfile = { ...profile, password: newPassword };
       await supabase.from('erp_users').upsert([{ id: email, data: updatedProfile }]);
 
       setMessage('Password updated! Logging out...')
