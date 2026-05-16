@@ -5,12 +5,14 @@ import { formatDateDDMMYY } from '../../utils/constants'
 
 import supabase from '../../supabase'
 
-function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setClientDetailMode, showGlobalToast, currentUser, highlightClientId, setHighlightClientId, clients, setClients, deleteClient }) {
+function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setClientDetailMode, showGlobalToast, currentUser, highlightClientId, setHighlightClientId, clients, setClients, deleteClient, cloudLoaded }) {
   const rowRefs = useRef({})
   const [searchQuery, setSearchQuery] = useState('')
   const [clientToDelete, setClientToDelete] = useState(null)
   const [currentPageNum, setCurrentPageNum] = useState(1)
   const itemsPerPage = 10
+
+  const isDataLoading = !cloudLoaded || !currentUser || !clients;
 
   const filteredClients = (clients || []).filter(client =>
     (client.name?.toString() || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -42,16 +44,6 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
     }
   }, [highlightClientId, sortedClients, itemsPerPage, setHighlightClientId]);
 
-  if (!currentUser || !clients) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[var(--accent-soft)] border-t-[var(--accent)] mx-auto"></div>
-          <p className="text-sm font-semibold text-[var(--muted)]">Syncing Boutique Records...</p>
-        </div>
-      </div>
-    )
-  }
 
   const paginatedClients = sortedClients.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage)
 
@@ -297,7 +289,25 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
               </tr>
             </thead>
             <tbody>
-              {paginatedClients.length > 0 ? (
+              {isDataLoading ? (
+                // Skeleton Table Rows
+                [1, 2, 3, 4, 5].map((i) => (
+                  <tr key={i}>
+                    <td><div className="skeleton h-5 w-32 rounded" /></td>
+                    <td><div className="skeleton h-5 w-24 rounded" /></td>
+                    <td><div className="skeleton h-5 w-40 rounded" /></td>
+                    <td><div className="skeleton h-5 w-48 rounded" /></td>
+                    <td><div className="skeleton h-5 w-20 rounded" /></td>
+                    <td className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <div className="skeleton h-10 w-10 rounded-xl" />
+                        <div className="skeleton h-10 w-10 rounded-xl" />
+                        <div className="skeleton h-10 w-10 rounded-xl" />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : paginatedClients.length > 0 ? (
                 paginatedClients.map((client) => (
                   <tr
                     key={client.id || client.mobile}

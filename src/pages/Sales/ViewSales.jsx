@@ -5,12 +5,14 @@ import { orders } from '../../utils/constants'
 
 import supabase from '../../supabase'
 
-function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightSaleId, setHighlightSaleId, sales, setSales, inventory, setInventory, orders, setOrders }) {
+function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightSaleId, setHighlightSaleId, sales, setSales, inventory, setInventory, orders, setOrders, cloudLoaded }) {
   const rowRefs = useRef({});
   const [searchQuery, setSearchQuery] = useState('');
   const [viewSale, setViewSale] = useState(null);
   const [saleToDelete, setSaleToDelete] = useState(null);
   const [isSendingPdf, setIsSendingPdf] = useState(false);
+
+  const isDataLoading = !cloudLoaded || !sales;
 
 
   const handleDeleteConfirm = async () => {
@@ -134,7 +136,26 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
               </tr>
             </thead>
             <tbody>
-              {paginatedSales.map(sale => (
+              {isDataLoading ? (
+                // Skeleton Table Rows
+                [1, 2, 3, 4, 5].map((i) => (
+                  <tr key={i}>
+                    <td>
+                      <div className="skeleton h-5 w-24 rounded mb-1" />
+                      <div className="skeleton h-3 w-32 rounded" />
+                    </td>
+                    <td><div className="skeleton h-5 w-32 rounded" /></td>
+                    <td><div className="skeleton h-5 w-48 rounded" /></td>
+                    <td className="text-right"><div className="skeleton h-7 w-24 rounded ml-auto" /></td>
+                    <td>
+                      <div className="flex justify-center gap-2">
+                        <div className="skeleton h-8 w-8 rounded-lg" />
+                        <div className="skeleton h-8 w-8 rounded-lg" />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : paginatedSales.map(sale => (
                 <tr
                   key={sale.id}
                   ref={el => rowRefs.current[sale.saleId] = el}
@@ -173,7 +194,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                   </td>
                 </tr>
               ))}
-              {filteredSales.length === 0 && (
+              {filteredSales.length === 0 && !isDataLoading && (
                 <tr>
                   <td colSpan="5" className="text-center text-[var(--muted)] font-medium">No sales records found</td>
                 </tr>

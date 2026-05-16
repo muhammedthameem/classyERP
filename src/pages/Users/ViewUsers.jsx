@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Search, Eye, Pencil, Trash2 } from 'lucide-react'
 import supabase from '../../supabase'
 
-function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designations, setDesignations, showGlobalToast, currentUser }) {
+function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designations, setDesignations, showGlobalToast, currentUser, cloudLoaded }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [viewUser, setViewUser] = useState(null)
   const [editUser, setEditUser] = useState(null)
@@ -12,6 +12,8 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
   const [designationSearch, setDesignationSearch] = useState('')
 
   const [userToDelete, setUserToDelete] = useState(null)
+
+  const isDataLoading = !cloudLoaded || !users;
 
   const handleConfirmDelete = async () => {
     if (!userToDelete) return
@@ -382,7 +384,24 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
-              {filteredUsers.length > 0 ? (
+              {isDataLoading ? (
+                // Skeleton Table Rows
+                [1, 2, 3].map((i) => (
+                  <tr key={i}>
+                    <td><div className="skeleton h-5 w-32 rounded" /></td>
+                    <td><div className="skeleton h-5 w-48 rounded" /></td>
+                    <td><div className="skeleton h-5 w-32 rounded" /></td>
+                    <td><div className="skeleton h-6 w-24 rounded-lg" /></td>
+                    <td className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <div className="skeleton h-8 w-8 rounded-lg" />
+                        <div className="skeleton h-8 w-8 rounded-lg" />
+                        <div className="skeleton h-8 w-8 rounded-lg" />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : filteredUsers.length > 0 ? (
                 filteredUsers.map((user) => {
                   const isCurrentUser = currentUser && user.email === currentUser.email;
                   return (

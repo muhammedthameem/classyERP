@@ -2,10 +2,12 @@ import React, { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight, Package, Search, Eye, Pencil, Trash2, Plus } from 'lucide-react'
 import supabase from '../../supabase'
 
-function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelectedInventoryItem, setInventoryDetailMode, showGlobalToast, highlightInventoryId, setHighlightInventoryId, inventory, setInventory }) {
+function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelectedInventoryItem, setInventoryDetailMode, showGlobalToast, highlightInventoryId, setHighlightInventoryId, inventory, setInventory, cloudLoaded }) {
   const rowRefs = useRef({});
   const [searchQuery, setSearchQuery] = useState('');
   const [itemToDelete, setItemToDelete] = useState(null);
+
+  const isDataLoading = !cloudLoaded || !inventory;
 
   const filteredInventory = [...inventory]
     .sort((a, b) => (b.id || 0) - (a.id || 0))
@@ -132,7 +134,32 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
               </tr>
             </thead>
             <tbody>
-              {paginatedInventory.length > 0 ? (
+              {isDataLoading ? (
+                // Skeleton Table Rows
+                [1, 2, 3, 4, 5].map((i) => (
+                  <tr key={i}>
+                    <td>
+                      <div className="skeleton h-5 w-32 rounded mb-1" />
+                      <div className="skeleton h-3 w-20 rounded" />
+                    </td>
+                    <td><div className="skeleton h-5 w-24 rounded" /></td>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <div className="skeleton h-2 w-2 rounded-full" />
+                        <div className="skeleton h-5 w-16 rounded" />
+                      </div>
+                    </td>
+                    <td><div className="skeleton h-5 w-24 rounded" /></td>
+                    <td><div className="skeleton h-5 w-28 rounded" /></td>
+                    <td className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <div className="skeleton h-8 w-8 rounded-lg" />
+                        <div className="skeleton h-8 w-8 rounded-lg" />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : paginatedInventory.length > 0 ? (
                 paginatedInventory.map((item) => (
                   <tr 
                     key={item.id}

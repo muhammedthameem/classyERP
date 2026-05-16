@@ -3,7 +3,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, CircleDollarSign,
 import { formatDateDDMMYY, getIndianDate, orders } from '../../utils/constants'
 import supabase from '../../supabase'
 
-function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory, saveOrder, deleteOrder }) {
+function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory, saveOrder, deleteOrder, cloudLoaded }) {
   const rowRefs = useRef({});
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPageNum, setCurrentPageNum] = useState(1)
@@ -16,11 +16,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
   const [dateFilter, setDateFilter] = useState('All') // All, Today, Tomorrow, Week, Custom
   const [customDate, setCustomDate] = useState(getIndianDate())
 
-  // Safety guard for cloud sync
-  if (!orders) return <div className="p-20 text-center flex flex-col items-center gap-4">
-    <div className="w-12 h-12 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin"></div>
-    <p className="text-[var(--muted)] font-medium">Syncing Boutique Records...</p>
-  </div>;
+  const isDataLoading = !cloudLoaded || !orders;
 
   const saveOrders = (newOrders) => {
     setOrders(newOrders)
@@ -638,7 +634,37 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
               </tr>
             </thead>
             <tbody>
-              {paginatedOrders.map((order) => {
+              {isDataLoading ? (
+                // Skeleton Table Rows
+                [1, 2, 3, 4, 5].map((i) => (
+                  <tr key={i}>
+                    <td><div className="skeleton h-5 w-16 rounded" /></td>
+                    <td><div className="skeleton h-5 w-32 rounded" /></td>
+                    <td><div className="skeleton h-10 w-10 rounded-lg" /></td>
+                    <td>
+                      <div className="skeleton h-5 w-32 rounded mb-1" />
+                      <div className="skeleton h-4 w-24 rounded" />
+                    </td>
+                    <td>
+                      <div className="skeleton h-4 w-24 rounded mb-1" />
+                      <div className="skeleton h-4 w-24 rounded" />
+                    </td>
+                    <td><div className="skeleton h-9 w-28 rounded-xl" /></td>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <div className="skeleton h-2 w-16 rounded-full" />
+                        <div className="skeleton h-4 w-8 rounded" />
+                      </div>
+                    </td>
+                    <td className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <div className="skeleton h-8 w-8 rounded-lg" />
+                        <div className="skeleton h-8 w-8 rounded-lg" />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : paginatedOrders.map((order) => {
                 const progress = getProgress(order)
                 return (
                   <tr
@@ -735,7 +761,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                   </tr>
                 )
               })}
-              {paginatedOrders.length === 0 && (
+              {paginatedOrders.length === 0 && !isDataLoading && (
                 <tr>
                   <td colSpan="8" className="text-center text-[var(--muted)]">No orders found.</td>
                 </tr>

@@ -4,10 +4,12 @@ import html2pdf from 'html2pdf.js'
 import { orders } from '../../utils/constants'
 import ReportStatCard from '../../components/ReportStatCard'
 
-function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inventory }) {
+function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inventory, cloudLoaded }) {
   const [filter, setFilter] = useState('all'); // all, today, month, custom
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+
+  const isDataLoading = !cloudLoaded || !sales || !orders || !clients || !inventory;
 
   // Pagination State
   const [salesPage, setSalesPage] = useState(1);
@@ -295,10 +297,18 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
       <div id="report-content" className="space-y-8 p-1">
         {/* Stats Grid */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <ReportStatCard icon={<TrendingUp className="text-green-500" />} label="Total Revenue" value={`₹${reportStats.totalRevenue.toLocaleString()}`} color="green" />
-          <ReportStatCard icon={<ShoppingBag className="text-blue-500" />} label="Total Purchase" value={`₹${reportStats.totalInvestment.toLocaleString()}`} color="red" />
-          <ReportStatCard icon={<Clock className="text-orange-500" />} label="Pending Orders" value={reportStats.pendingOrders} color="orange" />
-          <ReportStatCard icon={<UsersRound className="text-purple-500" />} label="Total Customers" value={reportStats.totalClients} color="purple" />
+          {isDataLoading ? (
+            [1, 2, 3, 4].map(i => (
+              <div key={i} className="skeleton h-32 rounded-[24px]" />
+            ))
+          ) : (
+            <>
+              <ReportStatCard icon={<TrendingUp className="text-green-500" />} label="Total Revenue" value={`₹${reportStats.totalRevenue.toLocaleString()}`} color="green" />
+              <ReportStatCard icon={<ShoppingBag className="text-blue-500" />} label="Total Purchase" value={`₹${reportStats.totalInvestment.toLocaleString()}`} color="red" />
+              <ReportStatCard icon={<Clock className="text-orange-500" />} label="Pending Orders" value={reportStats.pendingOrders} color="orange" />
+              <ReportStatCard icon={<UsersRound className="text-purple-500" />} label="Total Customers" value={reportStats.totalClients} color="purple" />
+            </>
+          )}
         </div>
 
         <div className="grid gap-8 lg:grid-cols-1">
@@ -326,7 +336,18 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredInventory.map(i => (
+                  {isDataLoading ? (
+                    [1, 2, 3].map(i => (
+                      <tr key={i}>
+                        <td><div className="skeleton h-4 w-20 rounded" /></td>
+                        <td><div className="skeleton h-5 w-32 rounded" /></td>
+                        <td><div className="skeleton h-5 w-24 rounded" /></td>
+                        <td className="text-right"><div className="skeleton h-5 w-16 rounded ml-auto" /></td>
+                        <td className="text-right"><div className="skeleton h-5 w-16 rounded ml-auto" /></td>
+                        <td className="text-right"><div className="skeleton h-6 w-20 rounded ml-auto" /></td>
+                      </tr>
+                    ))
+                  ) : filteredInventory.map(i => (
                     <tr key={i.id}>
                       <td>{new Date(i.createdAt).toLocaleDateString()}</td>
                       <td className="font-bold">{i.productName}</td>
@@ -336,7 +357,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                       <td className="text-right font-black text-red-500">₹{(parseFloat(i.purchasePrice || 0) * (parseFloat(i.quantity) || 0)).toLocaleString()}</td>
                     </tr>
                   ))}
-                  {filteredInventory.length === 0 && (
+                  {filteredInventory.length === 0 && !isDataLoading && (
                     <tr>
                       <td colSpan="6" className="text-center text-[var(--muted)]">No purchase records found</td>
                     </tr>
@@ -370,7 +391,16 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedSales.map(s => (
+                  {isDataLoading ? (
+                    [1, 2, 3].map(i => (
+                      <tr key={i}>
+                        <td><div className="skeleton h-4 w-20 rounded" /></td>
+                        <td><div className="skeleton h-5 w-24 rounded" /></td>
+                        <td><div className="skeleton h-5 w-32 rounded" /></td>
+                        <td className="text-right"><div className="skeleton h-6 w-20 rounded ml-auto" /></td>
+                      </tr>
+                    ))
+                  ) : paginatedSales.map(s => (
                     <tr key={s.id}>
                       <td>{new Date(s.timestamp).toLocaleDateString()}</td>
                       <td className="font-mono font-bold text-[var(--muted)]">{s.saleId}</td>
@@ -378,7 +408,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                       <td className="text-right font-black text-[var(--accent)]">₹{parseFloat(s.total).toFixed(2)}</td>
                     </tr>
                   ))}
-                  {paginatedSales.length === 0 && (
+                  {paginatedSales.length === 0 && !isDataLoading && (
                     <tr>
                       <td colSpan="4" className="text-center text-[var(--muted)]">No sales found for this period</td>
                     </tr>
@@ -432,7 +462,16 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedOrders.map(o => (
+                  {isDataLoading ? (
+                    [1, 2, 3].map(i => (
+                      <tr key={i}>
+                        <td><div className="skeleton h-5 w-16 rounded" /></td>
+                        <td><div className="skeleton h-5 w-32 rounded" /></td>
+                        <td><div className="skeleton h-5 w-20 rounded-full" /></td>
+                        <td className="text-right"><div className="skeleton h-5 w-16 rounded ml-auto" /></td>
+                      </tr>
+                    ))
+                  ) : paginatedOrders.map(o => (
                     <tr key={o.id}>
                       <td className="font-bold">#{o.id}</td>
                       <td>{o.product}</td>
@@ -444,7 +483,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                       <td className="text-right font-bold">{o.price}</td>
                     </tr>
                   ))}
-                  {paginatedOrders.length === 0 && (
+                  {paginatedOrders.length === 0 && !isDataLoading && (
                     <tr>
                       <td colSpan="4" className="text-center text-[var(--muted)]">No orders found for this period</td>
                     </tr>

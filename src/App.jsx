@@ -7,7 +7,6 @@ import ClassyAI from './components/ClassyAI'
 import { boutiqueThemes, appearanceTokens } from './utils/constants'
 import supabase from './supabase'
 import IOSInstallPrompt from './components/IOSInstallPrompt';
-import Preloader from './components/Preloader';
 
 function App() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -269,10 +268,6 @@ function App() {
     return <PublicReceipt billId={activeBillId} onClear={clearBill} />;
   }
 
-  if (isAuthLoading) {
-    return <Preloader />;
-  }
-
   return (
     <div style={themeStyle}>
       <main className="min-h-screen bg-[var(--app-bg)] text-[var(--text)] transition-colors duration-300">
@@ -281,6 +276,7 @@ function App() {
         ) : (
           <>
             <Dashboard
+              isAuthLoading={isAuthLoading}
               onLogout={handleLogout}
               user={user}
               themeStyle={themeStyle}
