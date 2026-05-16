@@ -322,56 +322,58 @@ function App() {
               if (error) console.error("Activity Save Failed:", error);
             }}
           />
-          {/* Classy AI Digital Manager */}
-          <ClassyAI 
-            user={user}
-            isAdmin={user?.role === 'Admin' || user?.role === 'Owner'}
-            clients={clients} 
-            setClients={setClients} 
-            saveClient={async (c) => {
-              const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
-              await supabase.from('erp_clients').upsert([{ id: (c.id || c.clientId || c.phone).toString(), data: clean(c) }]);
-            }}
-            orders={orders} 
-            setOrders={setOrders} 
-            saveOrder={async (o) => {
-              const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
-              await supabase.from('erp_orders').upsert([{ id: (o.id || o.orderId).toString(), data: clean(o) }]);
-            }}
-            setCurrentPage={setCurrentPage}
-            selectedClient={selectedClient}
-            setSelectedClient={setSelectedClient}
-            clientDetailMode={clientDetailMode}
-            setClientDetailMode={setClientDetailMode}
-            deleteClient={async (id) => {
-              if (!id) return;
-              await supabase.from('erp_clients').delete().eq('id', id.toString());
-              await supabase.from('erp_clients').delete().eq('id', id);
-            }}
-            deleteOrder={async (id) => {
-              if (!id) return;
-              await supabase.from('erp_orders').delete().eq('id', id.toString());
-              await supabase.from('erp_orders').delete().eq('id', id);
-            }}
-            activities={activities}
-            inventory={inventory}
-            setInventory={setInventory}
-            saveInventory={async (inv) => {
-              const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
-              await supabase.from('erp_inventory').upsert([{ id: inv.id.toString(), data: clean(inv) }]);
-            }}
-            users={users}
-            sales={sales}
-            orderLimits={orderLimits}
-            setOrderLimits={setOrderLimits}
-            saveConfig={async (id, data) => {
-              await supabase.from('erp_config').upsert([{ id, data }]);
-            }}
-            saveActivity={async (act) => {
-              const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
-              await supabase.from('erp_activities').upsert([{ id: act.id.toString(), data: clean(act) }]);
-            }}
-          />
+          {/* Classy AI Digital Manager - Only for Admin/Owner */}
+          {(user?.role === 'Admin' || user?.role === 'Owner') && (
+            <ClassyAI 
+              user={user}
+              isAdmin={user?.role === 'Admin' || user?.role === 'Owner'}
+              clients={clients} 
+              setClients={setClients} 
+              saveClient={async (c) => {
+                const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+                await supabase.from('erp_clients').upsert([{ id: (c.id || c.clientId || c.phone).toString(), data: clean(c) }]);
+              }}
+              orders={orders} 
+              setOrders={setOrders} 
+              saveOrder={async (o) => {
+                const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+                await supabase.from('erp_orders').upsert([{ id: (o.id || o.orderId).toString(), data: clean(o) }]);
+              }}
+              setCurrentPage={setCurrentPage}
+              selectedClient={selectedClient}
+              setSelectedClient={setSelectedClient}
+              clientDetailMode={clientDetailMode}
+              setClientDetailMode={setClientDetailMode}
+              deleteClient={async (id) => {
+                if (!id) return;
+                await supabase.from('erp_clients').delete().eq('id', id.toString());
+                await supabase.from('erp_clients').delete().eq('id', id);
+              }}
+              deleteOrder={async (id) => {
+                if (!id) return;
+                await supabase.from('erp_orders').delete().eq('id', id.toString());
+                await supabase.from('erp_orders').delete().eq('id', id);
+              }}
+              activities={activities}
+              inventory={inventory}
+              setInventory={setInventory}
+              saveInventory={async (inv) => {
+                const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+                await supabase.from('erp_inventory').upsert([{ id: inv.id.toString(), data: clean(inv) }]);
+              }}
+              users={users}
+              sales={sales}
+              orderLimits={orderLimits}
+              setOrderLimits={setOrderLimits}
+              saveConfig={async (id, data) => {
+                await supabase.from('erp_config').upsert([{ id, data }]);
+              }}
+              saveActivity={async (act) => {
+                const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+                await supabase.from('erp_activities').upsert([{ id: act.id.toString(), data: clean(act) }]);
+              }}
+            />
+          )}
           <DeliveryAlertModal orders={orders} />
         </>
       )}
