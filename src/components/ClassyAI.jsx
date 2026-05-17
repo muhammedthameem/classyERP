@@ -102,9 +102,9 @@ RULES:
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             systemInstruction: { parts: [{ text: systemPrompt }] },
-            contents: [{ parts: [{ text: text }] }] 
+            contents: [{ parts: [{ text: text }] }]
           })
         });
         const data = await res.json();
@@ -114,14 +114,14 @@ RULES:
           }
           return "Gemini API Error: " + data.error.message;
         }
-        
+
         let responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response from Gemini.";
-        
+
         // --- IMPROVED ACTION PARSER ---
         // Check for tags first, then fallback to raw JSON if it looks like an action
         let actionStr = null;
         const actionMatch = responseText.match(/<ACTION>([\s\S]*?)<\/ACTION>/);
-        
+
         if (actionMatch) {
           actionStr = actionMatch[1].trim();
           responseText = responseText.replace(/<ACTION>[\s\S]*?<\/ACTION>/g, '').trim();
@@ -134,7 +134,7 @@ RULES:
         if (actionStr) {
           try {
             const action = JSON.parse(actionStr);
-            
+
             if (action.type === 'NAVIGATE') {
               setCurrentPage(action.payload.page);
               responseText += responseText ? `\n\n✨ _Navigating..._` : `✨ _Opening ${action.payload.page}..._`;
@@ -161,7 +161,7 @@ RULES:
             console.error("Gemini Action Parse Error:", e);
           }
         }
-        
+
         return responseText || "I've processed your request!";
       } catch (err) {
         return "Error connecting to Gemini: " + err.message;
@@ -174,16 +174,16 @@ RULES:
     const isAffirmative = cmd.startsWith('yes') || cmd.startsWith('sure') || cmd.startsWith('ok') || cmd.startsWith('go') || cmd.startsWith('do it');
     const dateMatch = cmd.match(/\d+/);
     const hasMonth = (cmd.includes('jan') || cmd.includes('feb') || cmd.includes('mar') || cmd.includes('apr') || cmd.includes('may') || cmd.includes('jun') || cmd.includes('jul') || cmd.includes('aug') || cmd.includes('sep') || cmd.includes('oct') || cmd.includes('nov') || cmd.includes('dec'));
-    
+
     // If we are waiting for a date to set a limit
     if ((isAffirmative || (dateMatch && hasMonth) || cmd.length < 10) && window._pendingAIAction === 'SET_LIMIT') {
       const limit = window._pendingAILimit || 2;
       const year = new Date().getFullYear();
-      
+
       const monthNames = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
       const monthShort = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
       let fM = -1, fD = -1;
-      
+
       cmd.split(/[ \/\-,]/).forEach(w => {
         const mI = monthNames.indexOf(w.trim());
         const sI = monthShort.indexOf(w.trim());
@@ -209,7 +209,7 @@ RULES:
         addActivity(`Unauthorized: Staff ${user?.name} tried to delete a record via AI.`);
         return "🚫 **Permission Denied**: For security reasons, only the **Boutique Admin** can delete records. Please contact your manager.";
       }
-      
+
       if (cmd.includes('order')) {
         const orderId = cmd.match(/\d+/)?.[0];
         if (orderId) {
@@ -275,7 +275,7 @@ RULES:
 
     // --- 5. FUZZY NAVIGATION & MASTER ACCESS ---
     const isNav = cmd.includes('go') || cmd.includes('open') || cmd.includes('show') || cmd.includes('take') || cmd.includes('view') || cmd.includes('page') || cmd.includes('look');
-    
+
     if (isNav || cmd.length < 12) {
       if (cmd.includes('client') || cmd.includes('cust') || cmd.includes('people')) {
         setCurrentPage('view-clients');
@@ -298,14 +298,14 @@ RULES:
     // --- 5. OPERATIONAL CONTROL (Settings & Limits) ---
     if (cmd.includes('limit') && (cmd.includes('set') || cmd.includes('change'))) {
       if (!isAdmin) return "🔒 **Admin Access Required**: Production limits are owner-only.";
-      
+
       const numMatch = cmd.match(/\d+/);
       const limit = numMatch ? parseInt(numMatch[0]) : null;
-      
+
       const monthNames = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
       const monthShort = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
       let fMonth = -1, fDay = -1;
-      
+
       // Smart Parse: Ignore the limit number when looking for the day
       const words = cmd.split(/[ \/\-]/);
       words.forEach((w, idx) => {
@@ -313,14 +313,14 @@ RULES:
         const sI = monthShort.indexOf(w);
         if (mI !== -1) fMonth = mI;
         if (sI !== -1) fMonth = sI;
-        
+
         const v = parseInt(w);
         if (!isNaN(v)) {
           // If this number isn't the limit, or if it's clearly a day (1-31) and we found a month
-          if (v !== limit || (idx > 0 && (words[idx-1].includes('may') || words[idx-1].includes('jun') || words[idx-1].includes('jul')))) {
-             if (v <= 31 && fDay === -1 && v !== limit) fDay = v;
-             // Special case: if "may 15" and limit is 2, 15 is definitely the day
-             if (v > limit && v <= 31) fDay = v;
+          if (v !== limit || (idx > 0 && (words[idx - 1].includes('may') || words[idx - 1].includes('jun') || words[idx - 1].includes('jul')))) {
+            if (v <= 31 && fDay === -1 && v !== limit) fDay = v;
+            // Special case: if "may 15" and limit is 2, 15 is definitely the day
+            if (v > limit && v <= 31) fDay = v;
           }
         }
       });
@@ -341,7 +341,7 @@ RULES:
         window._pendingAIAction = null;
         return `✅ **Operational Update**: I've correctly set the limit to **${limit} orders** for **${monthNames[fMonth].toUpperCase()} ${fDay}**. I ignored the "2" when looking for the date this time!`;
       }
-      
+
       window._pendingAIAction = 'SET_LIMIT';
       window._pendingAILimit = limit;
       if (limit === null) return "How many orders should we limit it to? (Example: 'Limit 2')";
@@ -352,12 +352,12 @@ RULES:
     if (cmd.includes('edit') && (cmd.includes('client') || cmd.includes('cust'))) {
       const searchName = cmd.replace(/edit|client|cust/g, '').trim();
       if (searchName.length < 2) return "Who should I edit? (Example: 'Edit client Meera')";
-      
-      const target = clients.find(c => 
-        c.name?.toLowerCase().includes(searchName) || 
+
+      const target = clients.find(c =>
+        c.name?.toLowerCase().includes(searchName) ||
         searchName.includes(c.name?.toLowerCase())
       );
-      
+
       if (target) {
         setSelectedClient(target);
         setClientDetailMode('edit');
@@ -368,19 +368,19 @@ RULES:
     }
 
     if ((cmd.includes('view') || cmd.includes('show') || cmd.includes('open')) && (cmd.includes('client') || cmd.includes('cust'))) {
-       const searchName = cmd.replace(/view|show|open|client|cust/g, '').trim();
-       if (searchName.length >= 2) {
-         const target = clients.find(c => 
-           c.name?.toLowerCase().includes(searchName) || 
-           searchName.includes(c.name?.toLowerCase())
-         );
-         if (target) {
-           setSelectedClient(target);
-           setClientDetailMode('view');
-           setCurrentPage('client-detail');
-           return `🔍 **Profile Located**: Viewing **${target.name}**'s measurements and history.`;
-         }
-       }
+      const searchName = cmd.replace(/view|show|open|client|cust/g, '').trim();
+      if (searchName.length >= 2) {
+        const target = clients.find(c =>
+          c.name?.toLowerCase().includes(searchName) ||
+          searchName.includes(c.name?.toLowerCase())
+        );
+        if (target) {
+          setSelectedClient(target);
+          setClientDetailMode('view');
+          setCurrentPage('client-detail');
+          return `🔍 **Profile Located**: Viewing **${target.name}**'s measurements and history.`;
+        }
+      }
     }
 
     // F. CURIOSITY & HELP
@@ -396,7 +396,7 @@ RULES:
     try {
       const currentInput = input.trim();
       if (!currentInput) return;
-      
+
       setMessages(prev => [...prev, { role: 'user', content: currentInput }]);
       setInput('');
       setIsTyping(true);
@@ -432,41 +432,44 @@ RULES:
 
       {/* Chat Window - Premium Silk Finish */}
       {isOpen && (
-        <div className="absolute bottom-24 right-0 w-[400px] max-w-[90vw] overflow-hidden rounded-[32px] border border-stone-200 bg-white shadow-[0_40px_120px_rgba(0,0,0,0.35)] transition-all animate-in slide-in-from-bottom-10 duration-500 flex flex-col ring-1 ring-black/10">
+        <div className="absolute bottom-17 right-0 w-[400px] max-w-[90vw] h-[500px] max-h-[75vh] sm:h-[600px] sm:max-h-[600px] overflow-hidden rounded-[32px] border border-[var(--border)] bg-[var(--surface-strong)] text-[var(--text)] shadow-[0_40px_120px_rgba(0,0,0,0.35)] transition-all animate-in slide-in-from-bottom-10 duration-500 flex flex-col ring-1 ring-[var(--border)]/35 backdrop-blur-xl">
           {/* Header - Jewel Theme Color */}
-          <div className="relative overflow-hidden bg-[var(--jewel)] p-7 text-white shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+          <div className="relative overflow-hidden bg-[var(--jewel)] py-3 px-4 sm:py-5 sm:px-7 text-white shadow-[0_4px_20px_rgba(0,0,0,0.15)] shrink-0">
             <div className="absolute top-0 right-0 -mr-4 -mt-4 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
             <div className="absolute bottom-0 left-0 -ml-4 -mb-4 h-16 w-16 rounded-full bg-black/10 blur-xl" />
-            <div className="relative flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-black/20 backdrop-blur-md shadow-inner">
-                  <Sparkles size={24} className="text-white" />
+            <div className="relative flex items-center justify-between gap-2">
+              {/* Left Side: Avatar, Title, Badge */}
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-black/20 backdrop-blur-md shadow-inner shrink-0">
+                  <Sparkles size={18} className="text-white sm:size-[22px]" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold tracking-tight drop-shadow-md">Classy AI</h3>
-                  <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-black py-1 px-2 bg-black/20 rounded-lg mt-0.5">
-                    <span className="relative flex h-2 w-2">
+                <div className="min-w-0 leading-tight">
+                  <h3 className="text-sm sm:text-base font-bold tracking-tight drop-shadow-md truncate">Classy AI</h3>
+                  <div className="hidden xs:inline-flex items-center gap-1 text-[8px] uppercase tracking-[0.15em] font-black py-0.5 px-1.5 bg-black/20 rounded mt-0.5">
+                    <span className="relative flex h-1 w-1">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                      <span className="relative inline-flex rounded-full h-1 w-1 bg-white"></span>
                     </span>
-                    Digital Manager
+                    Manager
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+
+              {/* Right Side: Select Dropdown & Close Button */}
+              <div className="flex items-center gap-2 shrink-0">
                 <select
                   value={agentMode}
                   onChange={(e) => {
                     setAgentMode(e.target.value);
                     localStorage.setItem('erp_ai_agent', e.target.value);
                   }}
-                  className="bg-black/20 text-white text-[10px] rounded-lg px-2 py-1 outline-none font-bold uppercase tracking-wider border border-white/10"
+                  className="bg-black/20 text-white text-[9px] sm:text-[10px] rounded-lg px-2 py-1 outline-none font-bold uppercase tracking-wider border border-white/10 cursor-pointer"
                 >
-                  <option value="classy" className="text-black">Classy AI (Basic)</option>
-                  <option value="gemini" className="text-black">Gemini 1.5 (Needs Key)</option>
+                  <option value="classy" className="bg-[var(--surface-strong)] text-[var(--text)]">Basic</option>
+                  <option value="gemini" className="bg-[var(--surface-strong)] text-[var(--text)]">Gemini 1.5</option>
                 </select>
-                <button onClick={() => setIsOpen(false)} className="rounded-xl bg-black/10 p-2 hover:bg-black/20 transition">
-                  <X size={18} />
+                <button onClick={() => setIsOpen(false)} className="rounded-lg bg-black/10 p-1.5 hover:bg-black/20 text-white transition cursor-pointer">
+                  <X size={16} />
                 </button>
               </div>
             </div>
@@ -475,26 +478,26 @@ RULES:
           {/* Messages - Clean Boutique Style */}
           <div
             ref={scrollRef}
-            className="flex-1 space-y-6 overflow-y-auto p-8 min-h-[350px] max-h-[200px] custom-scrollbar"
+            className="flex-1 space-y-6 overflow-y-auto p-4 sm:p-8 min-h-0 custom-scrollbar bg-[var(--surface)]"
           >
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`relative max-w-[85%] px-5 py-4 text-sm shadow-sm transition-all ${m.role === 'user'
-                    ? 'bg-[var(--accent)] text-white rounded-[24px] rounded-tr-none'
-                    : 'bg-white/80 border border-stone-100 text-[var(--text)] rounded-[24px] rounded-tl-none'
+                <div className={`relative max-w-[85%] px-4 py-3 text-sm shadow-sm transition-all ${m.role === 'user'
+                  ? 'bg-[var(--accent)] text-white rounded-[24px] rounded-tr-none'
+                  : 'bg-[var(--surface-strong)] border border-[var(--border)] text-[var(--text)] rounded-[24px] rounded-tl-none'
                   }`}>
                   {m.content.split('\n').map((line, li) => (
                     <p key={li} className={li > 0 ? 'mt-2' : ''}>{li === 0 && m.role === 'assistant' ? <strong>{line}</strong> : line}</p>
                   ))}
                   {m.role === 'assistant' && (
-                    <div className="absolute -left-2 top-0 h-4 w-4 bg-white/80 border-l border-t border-stone-100 transform -skew-x-[45deg]" />
+                    <div className="absolute -left-2 top-0 h-4 w-4 bg-[var(--surface-strong)] border-l border-t border-[var(--border)] transform -skew-x-[45deg]" />
                   )}
                 </div>
               </div>
             ))}
             {isTyping && (
               <div className="flex justify-start">
-                <div className="bg-white/50 rounded-[24px] rounded-tl-none px-6 py-4 border border-stone-100 backdrop-blur-md shadow-sm">
+                <div className="bg-[var(--surface-strong)] rounded-[24px] rounded-tl-none px-5 py-3 border border-[var(--border)] backdrop-blur-md shadow-sm">
                   <div className="flex gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-[var(--accent)] animate-bounce" />
                     <div className="h-2 w-2 rounded-full bg-[var(--accent)] animate-bounce [animation-delay:0.2s]" />
@@ -506,8 +509,8 @@ RULES:
           </div>
 
           {/* Input Area - Integrated & Elegant */}
-          <div className="border-t border-black/5 bg-stone-50/50 p-6 backdrop-blur-xl">
-            <div className="mb-4 flex flex-wrap gap-2.5">
+          <div className="border-t border-[var(--border)] bg-[var(--surface-strong)] p-4 sm:p-6 backdrop-blur-xl shrink-0">
+            <div className="mb-3 flex flex-wrap gap-2">
               {[
                 { icon: UserPlus, label: 'New Client', text: 'Add client ' },
                 { icon: Search, label: 'Analytics', text: 'Who is our top client?' },
@@ -516,9 +519,9 @@ RULES:
                 <button
                   key={btn.label}
                   onClick={() => setInput(btn.text)}
-                  className="flex items-center gap-2 rounded-xl bg-white border border-stone-200 px-4 py-2 text-[11px] font-bold text-stone-600 transition-all hover:border-[var(--accent)] hover:text-[var(--accent)] hover:shadow-lg active:scale-95"
+                  className="flex items-center gap-1.5 rounded-lg bg-[var(--surface)] border border-[var(--border)] px-3 py-1.5 text-[10px] font-bold text-[var(--text)] transition-all hover:border-[var(--accent)] hover:text-[var(--accent)] hover:shadow-lg active:scale-95 cursor-pointer"
                 >
-                  <btn.icon size={13} /> {btn.label}
+                  <btn.icon size={12} className="text-[var(--accent)]" /> {btn.label}
                 </button>
               ))}
             </div>
@@ -529,13 +532,13 @@ RULES:
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 placeholder="How can I help you today?"
-                className="w-full rounded-2xl border border-stone-200 bg-white py-4 pl-6 pr-14 text-sm shadow-sm transition-all focus:border-[var(--accent)] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[var(--accent-soft)]"
+                className="w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] py-3 pl-5 pr-12 text-sm shadow-sm transition-all focus:border-[var(--accent)] focus:bg-[var(--surface-strong)] focus:outline-none focus:ring-4 focus:ring-[var(--accent-soft)] placeholder:text-[var(--muted)]/60"
               />
               <button
                 onClick={handleSend}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-xl bg-[var(--jewel)] p-2.5 text-white shadow-xl transition-all hover:scale-105 active:scale-90"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl bg-[var(--jewel)] p-2 text-white shadow-xl transition-all hover:scale-105 active:scale-90 cursor-pointer"
               >
-                <Send size={18} />
+                <Send size={16} />
               </button>
             </div>
           </div>

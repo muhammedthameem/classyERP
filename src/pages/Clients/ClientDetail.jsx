@@ -889,9 +889,9 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
               </label>
             </section>
 
-            <div className="flex justify-end gap-3">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 w-full mt-6">
               <button
-                className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-6 py-3 font-semibold transition hover:bg-[var(--soft)]"
+                className="w-full sm:w-auto rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-6 py-3 font-semibold transition hover:bg-[var(--soft)] cursor-pointer text-center justify-center flex items-center"
                 type="button"
                 onClick={() => {
                   if (isEditingClient) {
@@ -905,7 +905,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                 Cancel
               </button>
               <button
-                className="rounded-xl bg-[var(--accent)] px-6 py-3 font-semibold text-white shadow-lg shadow-[var(--accent)]/25 transition hover:brightness-95"
+                className="w-full sm:w-auto rounded-xl bg-[var(--accent)] px-6 py-3 font-semibold text-white shadow-lg shadow-[var(--accent)]/25 transition hover:brightness-95 cursor-pointer text-center justify-center flex items-center"
                 type="submit"
               >
                 {isEditingClient ? 'Update Measurement' : 'Save Measurement'}

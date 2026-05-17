@@ -106,7 +106,7 @@ function Dashboard({
 
   const [screenSize, setScreenSize] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   const isDesktop = screenSize >= 1024;
-  
+
   useEffect(() => {
     const handleResize = () => setScreenSize(window.innerWidth);
     window.addEventListener('resize', handleResize);
@@ -294,9 +294,9 @@ function Dashboard({
 
   const getCardSpan = (card) => {
     const cols = screenSize >= 1024 ? 2 : 1;
-    
+
     if (cols === 1) return 'span-full';
-    
+
     // In a 2-column grid, span 2 is full-width, span 1 is 50%
     let span = card.span;
     if (!span) {
@@ -580,7 +580,7 @@ function Dashboard({
                   {activities.length > 0 && <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[var(--accent)] shadow" />}
                 </button>
                 {showAlertsDropdown && (
-                  <div className="absolute right-0 mt-3 w-80 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl shadow-black/10">
+                  <div className="fixed inset-x-4 top-20 z-50 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-80 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl shadow-black/10">
                     <div className="bg-[var(--soft)] px-4 py-3 flex justify-between items-center">
                       <div>
                         <p className="text-label">Activity Notifications</p>
@@ -919,7 +919,7 @@ function Dashboard({
                               </button>
                             ))}
                           </div>
-                          
+
                           {selectedCalendarDate && (
                             <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                               <div className="w-full max-w-sm rounded-3xl border border-[var(--border)] bg-[var(--surface-strong)] p-5 shadow-2xl">
@@ -933,7 +933,7 @@ function Dashboard({
                                 </div>
                                 <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
                                   {orders.filter(o => o.deliveryDate === selectedCalendarDate).map((o, idx) => (
-                                    <button 
+                                    <button
                                       key={o.id || idx}
                                       className="w-full text-left bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 hover:border-[var(--accent)] transition flex items-center justify-between group"
                                       onClick={() => {
@@ -954,7 +954,7 @@ function Dashboard({
                                   ))}
                                 </div>
                                 <div className="mt-4 pt-3 flex justify-end">
-                                  <button 
+                                  <button
                                     onClick={() => setSelectedCalendarDate(null)}
                                     className="bg-[var(--surface)] border border-[var(--border)] px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[var(--soft)]"
                                   >

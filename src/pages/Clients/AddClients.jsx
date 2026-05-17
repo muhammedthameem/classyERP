@@ -454,9 +454,9 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
           </label>
         </section>
 
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 w-full mt-8">
           <button
-            className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-6 py-3 font-semibold transition hover:bg-[var(--soft)]"
+            className="w-full sm:w-auto rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-6 py-3 font-semibold transition hover:bg-[var(--soft)] cursor-pointer text-center justify-center flex items-center"
             type="button"
             onClick={() => {
               setPersonalDetails({ name: '', address: '', mobile: '' })
@@ -466,14 +466,14 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
             Cancel
           </button>
           <button
-            className="rounded-xl border-2 border-[var(--accent)] bg-transparent text-[var(--accent)] px-6 py-3 font-semibold shadow-lg shadow-[var(--accent)]/10 transition hover:bg-[var(--accent-soft)]"
+            className="w-full sm:w-auto rounded-xl border-2 border-[var(--accent)] bg-transparent text-[var(--accent)] px-6 py-3 font-semibold shadow-lg shadow-[var(--accent)]/10 transition hover:bg-[var(--accent-soft)] cursor-pointer text-center justify-center flex items-center"
             type="submit"
             onClick={() => setIsConverting(true)}
           >
             Convert to Order
           </button>
           <button
-            className="rounded-xl bg-[var(--accent)] px-6 py-3 font-semibold text-white shadow-lg shadow-[var(--accent)]/25 transition hover:brightness-95"
+            className="w-full sm:w-auto rounded-xl bg-[var(--accent)] px-6 py-3 font-semibold text-white shadow-lg shadow-[var(--accent)]/25 transition hover:brightness-95 cursor-pointer text-center justify-center flex items-center"
             type="submit"
             onClick={() => setIsConverting(false)}
           >
