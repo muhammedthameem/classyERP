@@ -34,10 +34,14 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
   };
 
   const filteredProducts = (inventory || []).filter(p =>
-    !cart.some(ci => ci.id === p.id && ci.type === 'inventory') &&
     ((p?.productName?.toLowerCase() || '').includes(productSearch.toLowerCase()) ||
       (p?.productId?.toLowerCase() || '').includes(productSearch.toLowerCase()))
-  );
+  ).map(p => {
+    // Subtract whatever qty is already in the cart so the remaining stock is shown
+    const cartItem = cart.find(ci => ci.id === p.id && ci.type === 'inventory');
+    const remainingQty = cartItem ? p.quantity - cartItem.qty : p.quantity;
+    return { ...p, quantity: remainingQty };
+  }).filter(p => p.quantity > 0); // hide if nothing left
 
   const readyOrders = (orders || []).filter(o =>
     o.status === 'Completed' &&
@@ -206,6 +210,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     });
 
     setInventory(updatedInventory);
+    // Persist updated inventory quantities to localStorage
+    localStorage.setItem('inventory', JSON.stringify(updatedInventory));
     setOrders(updatedOrders);
 
     // Sync sold orders to cloud
