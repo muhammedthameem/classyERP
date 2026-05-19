@@ -241,7 +241,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                 <p className="text-sm font-medium text-[var(--muted)] mb-1">Product Details</p>
                 <p className="font-semibold text-[var(--text)]">{viewOrder.product}</p>
                 <p className="text-sm text-[var(--muted)] mt-0.5">{viewOrder.orderType} • {viewOrder.price}</p>
-                {viewOrder.size && <p className="text-xs text-[var(--muted)] mt-1">Size: <span className="font-medium text-[var(--text)]">{viewOrder.size}</span></p>}
+                {viewOrder.size && <p className="text-xs text-[var(--muted)] mt-1">Qty: <span className="font-medium text-[var(--text)]">{viewOrder.size}</span></p>}
               </div>
 
               <div>
@@ -437,8 +437,8 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                     />
                   </label>
                   {editOrder.photo && (
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
                       onClick={() => setEditOrder({ ...editOrder, photo: null })}
                     >

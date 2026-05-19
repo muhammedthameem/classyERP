@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Fingerprint, Loader } from 'lucide-react'
 import supabase from '../supabase'
 
 function LoginScreen({ onLogin, users: cloudUsers }) {
@@ -55,6 +55,57 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
   }, [])
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isWebAuthnSupported, setIsWebAuthnSupported] = useState(true)
+  const [isBiometricLoading, setIsBiometricLoading] = useState(false)
+
+  useEffect(() => {
+    if (!window.PublicKeyCredential) {
+      setIsWebAuthnSupported(false)
+    }
+  }, [])
+
+  const handleBiometricLogin = async () => {
+    setMessage('')
+    setIsBiometricLoading(true)
+    try {
+      // 1. Sign in with Passkey using Supabase
+      const { data, error } = await supabase.auth.passkey.signIn()
+      if (error) throw error
+
+      if (data?.user) {
+        // 2. Fetch User Profile from our ERP table
+        const { data: userData, error: userError } = await supabase
+          .from('erp_users')
+          .select('*')
+          .eq('id', data.user.email.toLowerCase())
+          .single();
+
+        if (userData) {
+          onLogin({
+            id: userData.data.id,
+            email: userData.data.email,
+            name: userData.data.name,
+            role: userData.data.designation || 'Staff'
+          })
+        } else {
+          onLogin({
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.email.split('@')[0],
+            role: 'Admin'
+          })
+        }
+      }
+    } catch (error) {
+      console.error("Biometric Login Error:", error.message);
+      // Suppress general dialog cancel errors from alerting the user
+      if (error.name !== 'NotAllowedError' && error.message !== 'The operation was aborted.') {
+        setMessage(error.message || 'Biometric authentication failed.');
+      }
+    } finally {
+      setIsBiometricLoading(false)
+    }
+  }
 
   const submitLogin = async (event) => {
     event.preventDefault()
@@ -260,7 +311,7 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
               <button
                 className="w-full rounded-2xl bg-[var(--accent)] px-5 py-4 font-black text-white shadow-xl shadow-[var(--accent)]/30 transition hover:brightness-95 active:scale-[0.98]"
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || isBiometricLoading}
               >
                 {isLoading
                   ? 'Please wait...'
@@ -268,6 +319,35 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
                     ? 'Login to Dashboard'
                     : 'Send Reset Request'}
               </button>
+
+              {mode === 'login' && isWebAuthnSupported && (
+                <>
+                  <div className="relative flex py-2 items-center">
+                    <div className="flex-grow border-t border-[var(--border)]"></div>
+                    <span className="flex-shrink mx-4 text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest">Or</span>
+                    <div className="flex-grow border-t border-[var(--border)]"></div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleBiometricLogin}
+                    disabled={isBiometricLoading || isLoading}
+                    className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[var(--soft)] border border-[var(--accent)]/15 px-5 py-4 text-sm font-black text-[var(--accent)] hover:bg-[var(--accent-soft)]/20 transition cursor-pointer disabled:opacity-50"
+                  >
+                    {isBiometricLoading ? (
+                      <>
+                        <Loader className="animate-spin" size={18} />
+                        Verifying biometrics...
+                      </>
+                    ) : (
+                      <>
+                        <Fingerprint size={18} />
+                        Sign in with Face ID / Fingerprint
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
 
               {mode === 'forgot' && (
                 <button

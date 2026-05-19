@@ -2,7 +2,14 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
     "https://mwrhlwlimxihhwlafnob.supabase.co",
-    "sb_publishable_-_ib7F-bIZPznzpZe3hIrw_TlTelawl"
+    "sb_publishable_-_ib7F-bIZPznzpZe3hIrw_TlTelawl",
+    {
+        auth: {
+            experimental: {
+                passkey: true
+            }
+        }
+    }
 );
 
 export default supabase;
