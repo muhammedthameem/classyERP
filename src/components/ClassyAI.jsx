@@ -414,7 +414,7 @@ RULES:
   };
 
   return (
-    <div className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-[2500]">
+    <div className="fixed bottom-24 right-4 md:bottom-20 md:right-8 z-[2500]">
       {/* AI Bubble - Premium Luxury Design */}
       <button
         onClick={() => setIsOpen(!isOpen)}
