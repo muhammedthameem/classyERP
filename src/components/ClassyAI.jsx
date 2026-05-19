@@ -30,6 +30,114 @@ const ClassyAI = ({
   setClientDetailMode
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+
+  // Drag and Drop state
+  const [position, setPosition] = useState(() => {
+    try {
+      const saved = localStorage.getItem('erp_ai_position');
+      return saved ? JSON.parse(saved) : { x: 0, y: 0 };
+    } catch (e) {
+      return { x: 0, y: 0 };
+    }
+  });
+
+  const [alignRight, setAlignRight] = useState(true);
+  const containerRef = useRef(null);
+  const dragStart = useRef({ x: 0, y: 0 });
+  const startPos = useRef({ x: 0, y: 0 });
+  const hasDragged = useRef(false);
+
+  const startDrag = (clientX, clientY) => {
+    dragStart.current = { x: clientX, y: clientY };
+    startPos.current = { ...position };
+    hasDragged.current = false;
+  };
+
+  const performDrag = (clientX, clientY) => {
+    const dx = clientX - dragStart.current.x;
+    const dy = clientY - dragStart.current.y;
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      hasDragged.current = true;
+      let newX = startPos.current.x + dx;
+      let newY = startPos.current.y + dy;
+
+      if (containerRef.current) {
+        const initialRect = containerRef.current.getBoundingClientRect();
+        const rawLeft = initialRect.left - position.x;
+        const rawTop = initialRect.top - position.y;
+
+        const nextLeft = rawLeft + newX;
+        const nextTop = rawTop + newY;
+        const width = initialRect.width;
+        const height = initialRect.height;
+
+        const minLeft = 10;
+        const maxLeft = window.innerWidth - width - 10;
+        const minTop = 10;
+        const maxTop = window.innerHeight - height - 10;
+
+        if (nextLeft < minLeft) newX = minLeft - rawLeft;
+        if (nextLeft > maxLeft) newX = maxLeft - rawLeft;
+        if (nextTop < minTop) newY = minTop - rawTop;
+        if (nextTop > maxTop) newY = maxTop - rawTop;
+      }
+
+      setPosition({ x: newX, y: newY });
+    }
+  };
+
+  const endDrag = () => {
+    if (hasDragged.current) {
+      localStorage.setItem('erp_ai_position', JSON.stringify(position));
+    }
+  };
+
+  const handleMouseDown = (e) => {
+    if (e.button !== 0) return;
+    startDrag(e.clientX, e.clientY);
+
+    const handleMouseMove = (moveEvent) => {
+      performDrag(moveEvent.clientX, moveEvent.clientY);
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      endDrag();
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    startDrag(touch.clientX, touch.clientY);
+
+    const handleTouchMove = (moveEvent) => {
+      if (moveEvent.touches.length !== 1) return;
+      const moveTouch = moveEvent.touches[0];
+      performDrag(moveTouch.clientX, moveTouch.clientY);
+    };
+
+    const handleTouchEnd = () => {
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      endDrag();
+    };
+
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+  };
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const isLeftHalf = rect.left < window.innerWidth / 2;
+    setAlignRight(!isLeftHalf);
+  }, [position, isOpen]);
+
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([
     { role: 'assistant', content: `Hello ${user?.name || 'there'}! I'm Classy AI. How can I help you manage your boutique today?` }
@@ -414,11 +522,27 @@ RULES:
   };
 
   return (
-    <div className="fixed bottom-24 right-4 md:bottom-20 md:right-8 z-[2500]">
+    <div
+      ref={containerRef}
+      style={{
+        transform: `translate(${position.x}px, ${position.y}px)`,
+        touchAction: 'none'
+      }}
+      className="fixed bottom-24 right-4 md:bottom-20 md:right-8 z-[2500]"
+    >
       {/* AI Bubble - Premium Luxury Design */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`group relative flex h-16 w-16 items-center justify-center rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] transition-all duration-500 hover:scale-110 active:scale-95 ${isOpen ? 'bg-stone-900 rotate-90' : 'bg-[var(--jewel)]'}`}
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+        onClick={(e) => {
+          if (hasDragged.current) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+          setIsOpen(!isOpen);
+        }}
+        className={`group relative flex h-16 w-16 items-center justify-center rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] transition-all duration-500 hover:scale-110 active:scale-95 cursor-grab active:cursor-grabbing ${isOpen ? 'bg-stone-900 rotate-90' : 'bg-[var(--jewel)]'}`}
       >
         {isOpen ? (
           <X className="text-white" />
@@ -432,7 +556,7 @@ RULES:
 
       {/* Chat Window - Premium Silk Finish */}
       {isOpen && (
-        <div className="absolute bottom-17 right-0 w-[400px] max-w-[90vw] h-[500px] max-h-[75vh] sm:h-[600px] sm:max-h-[600px] overflow-hidden rounded-[32px] border border-[var(--border)] bg-[var(--surface-strong)] text-[var(--text)] shadow-[0_40px_120px_rgba(0,0,0,0.35)] transition-all animate-in slide-in-from-bottom-10 duration-500 flex flex-col ring-1 ring-[var(--border)]/35 backdrop-blur-xl">
+        <div className={`absolute bottom-17 ${alignRight ? 'right-0' : 'left-0'} w-[400px] max-w-[90vw] h-[500px] max-h-[75vh] sm:h-[600px] sm:max-h-[600px] overflow-hidden rounded-[32px] border border-[var(--border)] bg-[var(--surface-strong)] text-[var(--text)] shadow-[0_40px_120px_rgba(0,0,0,0.35)] transition-all animate-in slide-in-from-bottom-10 duration-500 flex flex-col ring-1 ring-[var(--border)]/35 backdrop-blur-xl`}>
           {/* Header - Jewel Theme Color */}
           <div className="relative overflow-hidden bg-[var(--jewel)] py-3 px-4 sm:py-5 sm:px-7 text-white shadow-[0_4px_20px_rgba(0,0,0,0.15)] shrink-0">
             <div className="absolute top-0 right-0 -mr-4 -mt-4 h-24 w-24 rounded-full bg-white/10 blur-2xl" />

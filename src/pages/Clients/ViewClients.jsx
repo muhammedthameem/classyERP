@@ -395,7 +395,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
         {totalPages > 1 && (
           <div className="mt-4 flex items-center justify-between border-t border-[var(--border)] pt-4">
             <span className="text-sm text-[var(--muted)]">Showing {(currentPageNum - 1) * itemsPerPage + 1} to {Math.min(currentPageNum * itemsPerPage, filteredClients.length)} of {filteredClients.length}</span>
-            <div className="flex gap-2 pr-12 md:pr-16">
+            <div className="flex gap-2">
               <button
                 disabled={currentPageNum === 1}
                 onClick={() => setCurrentPageNum(prev => prev - 1)}

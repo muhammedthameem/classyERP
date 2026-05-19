@@ -785,7 +785,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
         {totalPages > 1 && (
           <div className="mt-4 flex items-center justify-between border-t border-[var(--border)] pt-4">
             <span className="text-sm text-[var(--muted)]">Showing {(currentPageNum - 1) * itemsPerPage + 1} to {Math.min(currentPageNum * itemsPerPage, filteredOrders.length)} of {filteredOrders.length}</span>
-            <div className="flex gap-2 pr-12 md:pr-16">
+            <div className="flex gap-2">
               <button
                 disabled={currentPageNum === 1}
                 onClick={() => setCurrentPageNum(prev => prev - 1)}
