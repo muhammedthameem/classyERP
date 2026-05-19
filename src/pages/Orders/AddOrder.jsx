@@ -964,7 +964,7 @@ function AddOrderPage({
                       </div>
                       <div>
                         <div className="mb-2">
-                          <span className="text-sm font-medium text-[var(--text)]">Stitching Cost</span>
+                          <span className="text-sm font-medium text-[var(--text)]">Stitching Cost (Estimate)</span>
                         </div>
                         <div className="relative">
                           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-[var(--muted)]">₹</span>
@@ -1310,7 +1310,7 @@ function AddOrderPage({
             <div className="h-10 w-px bg-[var(--border)] hidden sm:block" />
 
             <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Total Stitching</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Total Stitching (Estimate)</p>
               <p className="text-xl font-bold text-[var(--text)]">
                 ₹{orderItems.reduce((s, i) => s + (parseFloat(i.price) || 0), 0).toFixed(2)}
               </p>

@@ -354,7 +354,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-sm font-medium text-[var(--text)]">Price</span>
+                  <span className="mb-1 block text-sm font-medium text-[var(--text)]">Stitching Cost (Estimate)</span>
                   <input
                     type="text"
                     className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2 outline-none transition focus:border-[var(--accent)] text-[var(--text)]"
