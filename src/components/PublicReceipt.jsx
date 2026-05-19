@@ -144,7 +144,7 @@ function PublicReceipt({ billId, onClear }) {
                 <tr key={idx}>
                   <td className="py-3 pr-2">
                     <p className="font-bold">{item.productName}</p>
-                    <p className="text-[8px] opacity-60">Rate: ₹{item.rate}</p>
+                    <p className="text-[8px] opacity-60">Rate: ₹{item.rate}{item.clientName ? ` • Client: ${item.clientName}` : ''}</p>
                   </td>
                   <td className="py-3 text-center">{item.qty}</td>
                   <td className="py-3 text-right text-[9px]">{discDisplay}</td>

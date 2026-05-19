@@ -293,7 +293,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       <tr key={idx}>
                         <td className="py-2 pr-1">
                           <p className="font-bold">{item.productName}</p>
-                          <p className="text-[8px] opacity-70">Rate: ₹{item.rate}</p>
+                          <p className="text-[8px] opacity-70">Rate: ₹{item.rate}{item.clientName ? ` • Client: ${item.clientName}` : ''}</p>
                         </td>
                         <td className="py-2 text-center px-2">{item.qty}</td>
                         <td className="py-2 text-right px-2">
@@ -346,7 +346,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       <tr>
                         <td style="padding: 4px 0; border-bottom: 1px dashed #eee;">
                           <div style="font-weight: bold; font-size: 11px;">${item.productName}</div>
-                          <div style="font-size: 9px; color: #666;">Rate: ₹${item.rate}</div>
+                          <div style="font-size: 9px; color: #666;">Rate: ₹${item.rate}${item.clientName ? ` &bull; Client: ${item.clientName}` : ''}</div>
                         </td>
                         <td style="text-align: center; font-size: 11px; padding: 4px 8px;">${item.qty}</td>
                         <td style="text-align: right; font-size: 11px; padding: 4px 8px;">${discDisplay}</td>
@@ -471,7 +471,8 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       msg += `*ORDER SUMMARY:*%0A`;
                       viewSale.items.forEach(item => {
                         const itemPrice = parseFloat(item.price || 0).toFixed(2);
-                        msg += `* ${item.productName} (x${item.qty}) - ₹${itemPrice}%0A`;
+                        const clientSuffix = item.clientName ? ` (Client: ${item.clientName})` : '';
+                        msg += `* ${item.productName}${clientSuffix} (x${item.qty}) - ₹${itemPrice}%0A`;
                       });
 
                       const grandTotal = parseFloat(viewSale.total || 0).toFixed(2);
@@ -498,10 +499,11 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       msg += `------------------------------%0A`;
                       msg += `Hello *${viewSale.client?.name || 'Guest'}*,%0A`;
                       msg += `${greeting}%0A%0A`;
-                      msg += `*ORDER SUMMARY:*%0A`;
+                       msg += `*ORDER SUMMARY:*%0A`;
                       viewSale.items.forEach(item => {
                         const itemPrice = parseFloat(item.price || 0).toFixed(2);
-                        msg += `* ${item.productName} (x${item.qty}) - ₹${itemPrice}%0A`;
+                        const clientSuffix = item.clientName ? ` (Client: ${item.clientName})` : '';
+                        msg += `* ${item.productName}${clientSuffix} (x${item.qty}) - ₹${itemPrice}%0A`;
                       });
                       const grandTotalFallback = parseFloat(viewSale.total || 0).toFixed(2);
                       msg += `%0AGrand Total: *₹${grandTotalFallback}*%0A`;

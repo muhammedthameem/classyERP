@@ -18,6 +18,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
   const [isSendingPdf, setIsSendingPdf] = useState(false);
   const [viewItem, setViewItem] = useState(null);
   const [imagePopup, setImagePopup] = useState(null);
+  const [pendingClientSwitch, setPendingClientSwitch] = useState(null);
 
 
   useEffect(() => {
@@ -33,12 +34,14 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
   };
 
   const filteredProducts = (inventory || []).filter(p =>
-    (p?.productName?.toLowerCase() || '').includes(productSearch.toLowerCase()) ||
-    (p?.productId?.toLowerCase() || '').includes(productSearch.toLowerCase())
+    !cart.some(ci => ci.id === p.id && ci.type === 'inventory') &&
+    ((p?.productName?.toLowerCase() || '').includes(productSearch.toLowerCase()) ||
+      (p?.productId?.toLowerCase() || '').includes(productSearch.toLowerCase()))
   );
 
   const readyOrders = (orders || []).filter(o =>
     o.status === 'Completed' &&
+    !cart.some(ci => ci.orderId === o.id && ci.type === 'order') &&
     ((o.clientName?.toLowerCase() || '').includes(productSearch.toLowerCase()) ||
       (o.id?.toString() || '').includes(productSearch))
   );
@@ -60,14 +63,17 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       createdAt: new Date().toISOString()
     };
 
-    const updatedClients = [...clients, newClient];
-    localStorage.setItem('clients', JSON.stringify(updatedClients));
-    setClients(updatedClients);
-    setCart([]); // Clear cart for new guest
-    setSelectedClient(newClient);
-    setClientSearch(newClient.name);
-    setIsSearchingClient(false);
-    if (showGlobalToast) showGlobalToast('Guest Added', `${newClient.name} linked to sale.`);
+    if (selectedClient && selectedClient.id !== newClient.id && cart.length > 0) {
+      setPendingClientSwitch(newClient);
+    } else {
+      const updatedClients = [...clients, newClient];
+      localStorage.setItem('clients', JSON.stringify(updatedClients));
+      setClients(updatedClients);
+      setSelectedClient(newClient);
+      setClientSearch(newClient.name);
+      setIsSearchingClient(false);
+      if (showGlobalToast) showGlobalToast('Guest Added', `${newClient.name} linked to sale.`);
+    }
   };
   const addToCart = (item, type) => {
     if (type === 'order') {
@@ -77,15 +83,6 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
           title: 'Order Already in Cart',
           message: `Order #${item.id} for ${item.clientName} is already added to your current selection.`,
           type: 'warning'
-        });
-        return;
-      }
-
-      if (selectedClient && item.clientName !== selectedClient.name) {
-        setCartAlert({
-          title: 'Client Mismatch',
-          message: `This order belongs to ${item.clientName}. You cannot add it to a sale linked to ${selectedClient.name}. Please clear the current sale first.`,
-          type: 'error'
         });
         return;
       }
@@ -101,12 +98,17 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
         rate: price,
         discount: 0,
         finalPrice: price,
-        type: 'order'
+        type: 'order',
+        clientName: item.clientName
       }]);
 
       if (!selectedClient) {
         const client = clients.find(c => c.name === item.clientName);
         if (client) setSelectedClient(client);
+      } else if (item.clientName !== selectedClient.name) {
+        if (showGlobalToast) {
+          showGlobalToast('Order Added', `Added order for ${item.clientName} to this sale.`);
+        }
       }
     } else {
       const existing = cart.find(i => i.id === item.id);
@@ -147,7 +149,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
 
   const calculateSubtotal = () => {
     const total = cart.reduce((sum, item) => {
-      const itemTotal = parseFloat(item.finalPrice) * item.qty;
+      const itemTotal = (parseFloat(item.finalPrice) || 0) * item.qty;
       const discountAmount = parseFloat(item.discount) || 0;
       const finalLineTotal = Math.max(0, itemTotal - discountAmount);
       return sum + finalLineTotal;
@@ -156,11 +158,11 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
   };
 
   const updateDiscount = (id, newDiscount) => {
-    setCart(cart.map(item => item.id === id ? { ...item, discount: parseFloat(newDiscount) || 0 } : item));
+    setCart(cart.map(item => item.id === id ? { ...item, discount: newDiscount === '' ? '' : (parseFloat(newDiscount) || 0) } : item));
   };
 
   const updatePrice = (id, newPrice) => {
-    setCart(cart.map(item => item.id === id ? { ...item, finalPrice: parseFloat(newPrice) || 0 } : item));
+    setCart(cart.map(item => item.id === id ? { ...item, finalPrice: newPrice === '' ? '' : (parseFloat(newPrice) || 0) } : item));
   };
 
   const handleCheckout = () => {
@@ -214,25 +216,64 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       }
     });
 
+    // 1. Gather all clients involved in the sale (from selectedClient and order items in cart)
+    const involvedClients = [];
+    if (selectedClient) {
+      involvedClients.push(selectedClient);
+    }
+    cart.forEach(item => {
+      if (item.type === 'order' && item.clientName) {
+        const found = clients.find(c => c.name === item.clientName);
+        if (found && !involvedClients.some(c => c.id === found.id)) {
+          involvedClients.push(found);
+        }
+      }
+    });
+
+    // 2. Combine the names of unique clients
+    const uniqueClientNames = [];
+    involvedClients.forEach(c => {
+      if (c.name && !uniqueClientNames.includes(c.name)) {
+        uniqueClientNames.push(c.name);
+      }
+    });
+    const combinedName = uniqueClientNames.length > 0 ? uniqueClientNames.join(', ') : (selectedClient ? selectedClient.name : 'Guest');
+
+    // 3. Find phone numbers across all involved clients
+    const clientsWithPhone = involvedClients.filter(c => c.phone && c.phone.trim() !== '');
+    let targetPhone = '';
+
+    if (selectedClient && selectedClient.phone && selectedClient.phone.trim() !== '') {
+      targetPhone = selectedClient.phone;
+    } else if (clientsWithPhone.length > 0) {
+      targetPhone = clientsWithPhone[0].phone;
+    }
+
     const newSale = {
       id: Date.now(),
       saleId: `SALE-${Math.floor(1000 + Math.random() * 9000)}`,
-      client: selectedClient ? { id: selectedClient.id, name: selectedClient.name, phone: selectedClient.phone } : { name: 'Guest', phone: '' },
+      client: {
+        id: selectedClient ? selectedClient.id : 'multi',
+        name: combinedName,
+        phone: targetPhone
+      },
       items: cart.map(item => {
-        const itemTotal = parseFloat(item.finalPrice) * item.qty;
+        const itemPrice = parseFloat(item.finalPrice) || 0;
+        const itemTotal = itemPrice * item.qty;
         const discountAmount = parseFloat(item.discount) || 0;
         const finalLineTotal = Math.max(0, itemTotal - discountAmount);
-        
+
         return {
           id: item.productId || item.id,
           productName: item.productName,
           qty: item.qty,
           unit: item.unit || 'nos',
-          rate: item.rate,
+          rate: parseFloat(item.rate) || 0,
           discount: discountAmount,
-          price: item.finalPrice,
+          price: itemPrice,
           rowTotal: finalLineTotal, // STORE PRE-CALCULATED TOTAL
-          type: item.type
+          type: item.type,
+          clientName: item.clientName || null
         };
       }),
       total: calculateSubtotal(),
@@ -245,7 +286,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     setShowReceipt(newSale);
 
     if (showGlobalToast) showGlobalToast('Sale Processed', `Sale ${newSale.saleId} for ₹${parseFloat(newSale.total).toFixed(2)} (${newSale.client.name})`);
-    
+
     setCart([]);
     setSelectedClient(null);
     setClientSearch('');
@@ -265,7 +306,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       <tr>
         <td style="padding: 4px 0; border-bottom: 1px dashed #eee;">
           <div style="font-weight: bold; font-size: 11px;">${item.productName}</div>
-          <div style="font-size: 9px; color: #666;">Rate: ₹${item.rate}</div>
+          <div style="font-size: 9px; color: #666;">Rate: ₹${item.rate}${item.clientName ? ` &bull; Client: ${item.clientName}` : ''}</div>
         </td>
         <td style="text-align: center; font-size: 11px;">${item.qty}</td>
         <td style="text-align: right; font-size: 11px;">₹${parseFloat(item.discount || 0).toFixed(0)}</td>
@@ -334,7 +375,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
 
   const handleWhatsApp = async () => {
     if (!showReceipt) return;
-    
+
     try {
       setIsSendingPdf(true);
       if (showGlobalToast) showGlobalToast('Generating', 'Uploading receipt PDF to secure server...');
@@ -354,7 +395,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       };
 
       const fileName = `receipts/${showReceipt.saleId}.pdf`;
-      
+
       const pdfBlob = await html2pdf().set(opt).from(visualBill).toPdf().get('pdf').output('blob');
 
       const { error: uploadError } = await supabase.storage
@@ -385,7 +426,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       message += `*ORDER SUMMARY:*%0A`;
       showReceipt.items.forEach(item => {
         const itemPrice = parseFloat(item.price || 0).toFixed(2);
-        message += `* ${item.productName} (x${item.qty}) - ₹${itemPrice}%0A`;
+        const clientSuffix = item.clientName ? ` (Client: ${item.clientName})` : '';
+        message += `* ${item.productName}${clientSuffix} (x${item.qty}) - ₹${itemPrice}%0A`;
       });
 
       const grandTotal = parseFloat(showReceipt.total || 0).toFixed(2);
@@ -415,7 +457,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       message += `*ORDER SUMMARY:*%0A`;
       showReceipt.items.forEach(item => {
         const itemPrice = parseFloat(item.price || 0).toFixed(2);
-        message += `* ${item.productName} (x${item.qty}) - ₹${itemPrice}%0A`;
+        const clientSuffix = item.clientName ? ` (Client: ${item.clientName})` : '';
+        message += `* ${item.productName}${clientSuffix} (x${item.qty}) - ₹${itemPrice}%0A`;
       });
       const grandTotalFallback = parseFloat(showReceipt.total || 0).toFixed(2);
       message += `%0AGrand Total: *₹${grandTotalFallback}*%0A`;
@@ -470,7 +513,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       <tr>
         <td style="padding: 4px 0; border-bottom: 1px dashed #eee;">
           <div style="font-weight: bold; font-size: 11px;">${item.productName}</div>
-          <div style="font-size: 9px; color: #666;">Rate: ₹${item.rate}</div>
+          <div style="font-size: 9px; color: #666;">Rate: ₹${item.rate}${item.clientName ? ` &bull; Client: ${item.clientName}` : ''}</div>
         </td>
         <td style="text-align: center; font-size: 11px;">${item.qty}</td>
         <td style="text-align: right; font-size: 11px;">₹${parseFloat(item.discount || 0).toFixed(0)}</td>
@@ -544,18 +587,18 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       {viewItem && (() => {
         const isOrder = viewItem.type === 'order';
         const orderDetail = isOrder ? (orders || []).find(o => o.id === viewItem.orderId) : null;
-        
+
         return (
           <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setViewItem(null)}></div>
             <div className="relative w-full max-w-lg rounded-[32px] bg-[var(--surface)] p-8 shadow-2xl border border-[var(--border)] animate-in zoom-in duration-300 overflow-y-auto max-h-[90vh]">
-              <button 
-                onClick={() => setViewItem(null)} 
+              <button
+                onClick={() => setViewItem(null)}
                 className="absolute top-6 right-6 h-10 w-10 grid place-items-center rounded-xl hover:bg-[var(--soft)] text-[var(--muted)] hover:text-[var(--text)] transition"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
-              
+
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-12 w-12 rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)] flex items-center justify-center">
                   <Package size={24} />
@@ -633,9 +676,9 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                       <div className="grid grid-cols-2 gap-4">
                         {orderDetail.photo ? (
                           <div className="relative group overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)]">
-                            <img 
-                              src={orderDetail.photo} 
-                              alt="Design Ref" 
+                            <img
+                              src={orderDetail.photo}
+                              alt="Design Ref"
                               className="h-32 w-full object-cover cursor-pointer hover:scale-105 transition duration-300"
                               onClick={() => setImagePopup(orderDetail.photo)}
                             />
@@ -648,9 +691,9 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                         )}
                         {orderDetail.materialPhoto ? (
                           <div className="relative group overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)]">
-                            <img 
-                              src={orderDetail.materialPhoto} 
-                              alt="Material Fabric" 
+                            <img
+                              src={orderDetail.materialPhoto}
+                              alt="Material Fabric"
                               className="h-32 w-full object-cover cursor-pointer hover:scale-105 transition duration-300"
                               onClick={() => setImagePopup(orderDetail.materialPhoto)}
                             />
@@ -720,8 +763,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
               )}
 
               <div className="mt-8 flex justify-end">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setViewItem(null)}
                   className="rounded-2xl bg-[var(--text)] px-6 py-3 font-bold text-white shadow-lg transition hover:brightness-110 active:scale-95 text-sm"
                 >
@@ -733,23 +776,94 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
         );
       })()}
 
+      {/* Change Client Switch Confirmation Modal */}
+      {pendingClientSwitch && (
+        <div className="fixed inset-0 z-[2000] grid place-items-center bg-black/60 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl border border-[var(--border)] bg-[var(--surface-strong)] p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <h3 className="text-lg font-bold text-[var(--text)] mb-2 flex items-center gap-2">
+              <UsersRound className="text-[var(--accent)]" size={20} />
+              Change Client?
+            </h3>
+            <p className="text-sm text-[var(--muted)] mb-6 leading-relaxed">
+              You have items in your cart. Do you want to change the linked client to <strong>{pendingClientSwitch.name}</strong>?
+            </p>
+
+            <div className="flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  // Cancel: no change
+                  setPendingClientSwitch(null);
+                }}
+                className="px-4 py-2.5 rounded-xl border border-[var(--border)] text-xs font-bold text-[var(--text)] hover:bg-[var(--soft)] transition"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  // Clear Cart: clear items, link to target client
+                  const isNewGuest = !clients.some(c => c.id === pendingClientSwitch.id);
+                  if (isNewGuest) {
+                    const updatedClients = [...clients, pendingClientSwitch];
+                    localStorage.setItem('clients', JSON.stringify(updatedClients));
+                    setClients(updatedClients);
+                  }
+                  setCart([]);
+                  setSelectedClient(pendingClientSwitch);
+                  setClientSearch(pendingClientSwitch.name);
+                  setIsSearchingClient(false);
+                  setPendingClientSwitch(null);
+                  if (showGlobalToast) showGlobalToast('Cart Cleared', `Switched client to ${pendingClientSwitch.name}`);
+                }}
+                className="px-4 py-2.5 rounded-xl bg-red-500 text-white text-xs font-bold shadow-lg hover:brightness-110 transition"
+              >
+                Clear Cart
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  // Yes: keep items, link to target client
+                  const isNewGuest = !clients.some(c => c.id === pendingClientSwitch.id);
+                  if (isNewGuest) {
+                    const updatedClients = [...clients, pendingClientSwitch];
+                    localStorage.setItem('clients', JSON.stringify(updatedClients));
+                    setClients(updatedClients);
+                  }
+                  setSelectedClient(pendingClientSwitch);
+                  setClientSearch(pendingClientSwitch.name);
+                  setIsSearchingClient(false);
+                  setPendingClientSwitch(null);
+                  if (showGlobalToast) showGlobalToast('Client Changed', `Linked cart to ${pendingClientSwitch.name}`);
+                }}
+                className="px-4 py-2.5 rounded-xl bg-[var(--accent)] text-white text-xs font-bold shadow-lg hover:brightness-110 transition"
+              >
+                Yes, Change
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Image Lightbox Popup */}
       {imagePopup && (
-        <div 
-          className="fixed inset-0 z-[3000] grid place-items-center bg-black/80 px-4 backdrop-blur-sm" 
+        <div
+          className="fixed inset-0 z-[3000] grid place-items-center bg-black/80 px-4 backdrop-blur-sm"
           onClick={() => setImagePopup(null)}
         >
           <div className="relative max-w-full max-h-full p-4">
-            <button 
-              className="absolute top-6 right-6 grid h-10 w-10 place-items-center rounded-full bg-white/20 text-white hover:bg-white/40 transition" 
+            <button
+              className="absolute top-6 right-6 grid h-10 w-10 place-items-center rounded-full bg-white/20 text-white hover:bg-white/40 transition"
               onClick={() => setImagePopup(null)}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
-            <img 
-              src={imagePopup} 
-              alt="Zoomed Reference" 
-              className="max-w-[90vw] max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-white/10" 
+            <img
+              src={imagePopup}
+              alt="Zoomed Reference"
+              className="max-w-[90vw] max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-white/10"
             />
           </div>
         </div>
@@ -810,9 +924,9 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                 </div>
                 <h2 className="text-3xl font-black">Sales Receipt</h2>
               </div>
-              <button 
+              <button
                 disabled={isSendingPdf}
-                onClick={() => setCurrentPage('view-sales')} 
+                onClick={() => setCurrentPage('view-sales')}
                 className="h-12 w-12 grid place-items-center rounded-2xl hover:bg-[var(--soft)] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -850,7 +964,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                     <tr key={idx}>
                       <td className="py-2 pr-1">
                         <p className="font-bold">{item.productName}</p>
-                        <p className="text-[8px] opacity-70">Rate: ₹{item.rate}</p>
+                        <p className="text-[8px] opacity-70">Rate: ₹{item.rate}{item.clientName ? ` • Client: ${item.clientName}` : ''}</p>
                       </td>
                       <td className="py-2 text-center px-2">{item.qty}</td>
                       <td className="py-2 text-right px-2">₹{item.discount}</td>
@@ -877,9 +991,9 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
             <div className="mb-6 p-4 rounded-2xl bg-[var(--surface-strong)] border border-[var(--border)]">
               <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--muted)] mb-2">WhatsApp / SMS Number</label>
               <div className="flex gap-2">
-                <input 
-                  type="tel" 
-                  value={showReceipt.client.phone || ''} 
+                <input
+                  type="tel"
+                  value={showReceipt.client.phone || ''}
                   onChange={(e) => setShowReceipt({
                     ...showReceipt,
                     client: { ...showReceipt.client, phone: e.target.value }
@@ -904,9 +1018,9 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                 Send SMS
               </button>
-              <button 
+              <button
                 disabled={isSendingPdf}
-                onClick={handleWhatsApp} 
+                onClick={handleWhatsApp}
                 className={`flex items-center justify-center gap-3 rounded-2xl bg-[#25D366] py-4 font-bold text-white shadow-xl shadow-[#25D366]/20 transition hover:brightness-95 ${isSendingPdf ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="fill-white"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-11.4 8.38 8.38 0 0 1 3.8.9L22 4Z" /></svg>
@@ -927,7 +1041,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       </div>
 
       <div className="grid gap-6 grid-cols-1 xl:grid-cols-[1.5fr_1fr]">
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           {/* Selection Source Toggle */}
           <div className="flex flex-wrap gap-2 rounded-2xl bg-[var(--surface-strong)] p-1.5 border border-[var(--border)] w-full sm:w-fit">
             <button
@@ -990,7 +1104,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
           )}
 
           {/* Item Selection */}
-          <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
+          <section className="relative z-9 rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
             <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
               <h3 className="text-lg font-bold flex items-center gap-2">
                 <ShoppingCart size={20} className="text-[var(--accent)]" /> {selectionMode === 'inventory' ? 'Stock Selection' : 'Order Collection'}
@@ -1009,11 +1123,12 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                   onFocus={() => setIsSearchingProduct(true)}
                 />
                 {isSearchingProduct && (
-                  <div className="absolute top-full left-0 right-0 z-50 mt-2 max-h-60 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-2xl backdrop-blur">
-                    <div className="flex justify-between items-center px-4 py-2 border-b border-[var(--border)] mb-1">
+                  <div className="absolute top-full left-0 right-0 z-50 mt-2 max-h-60 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl backdrop-blur">
+                    <div className="sticky top-0 z-10 flex justify-between items-center px-4 py-2 bg-[var(--surface-strong)] border-b border-[var(--border)]">
                       <span className="text-[10px] font-bold uppercase text-[var(--muted)]">Select {selectionMode}</span>
                       <button onClick={() => setIsSearchingProduct(false)} className="text-[var(--accent)] text-xs font-bold">Close</button>
                     </div>
+                    <div className="p-2">
                     {selectionMode === 'inventory' ? (
                       filteredProducts.length > 0 ? filteredProducts.map(p => (
                         <button
@@ -1055,6 +1170,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                         <p className="p-4 text-center text-xs text-[var(--muted)]">No completed orders found.</p>
                       )
                     )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1079,9 +1195,18 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                     <tr key={item.id} className="group">
                       <td>
                         <p className="font-bold text-[var(--text)]">{item.productName}</p>
-                        <p className="text-[10px] text-[var(--muted)] uppercase tracking-tight">
-                          {item.productId ? `ID: ${item.productId}` : ''} {item.type === 'order' ? '• Order' : ''}
-                        </p>
+                        <div className="flex flex-col gap-0.5 mt-1">
+                          {item.productId && (
+                            <p className="text-[10px] text-[var(--muted)] uppercase tracking-tight font-semibold">
+                              ID: {item.productId}
+                            </p>
+                          )}
+                          {item.type === 'order' && (
+                            <p className="text-[10px] text-purple-600 dark:text-purple-400 font-bold uppercase tracking-tight">
+                              Order for {item.clientName}
+                            </p>
+                          )}
+                        </div>
                       </td>
                       <td>
                         <div className="flex items-center gap-2">
@@ -1104,6 +1229,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                             className={`w-20 rounded-lg border bg-[var(--surface-strong)] px-2 py-1 font-bold text-[var(--text)] ${(parseFloat(item.finalPrice) || 0) <= 0 ? 'border-red-500/50 focus:border-red-500' : 'border-[var(--border)] focus:border-[var(--accent)]'}`}
                             value={item.finalPrice}
                             onFocus={(e) => e.target.select()}
+                            onClick={(e) => e.target.select()}
                             onChange={(e) => updatePrice(item.id, e.target.value)}
                           />
                         </div>
@@ -1112,13 +1238,14 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                         <input
                           type="number"
                           className="w-16 rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] px-2 py-1 font-bold text-[var(--accent)]"
-                          value={item.discount || 0}
+                          value={item.discount}
                           onFocus={(e) => e.target.select()}
+                          onClick={(e) => e.target.select()}
                           onChange={(e) => updateDiscount(item.id, e.target.value)}
                         />
                       </td>
                       <td className="text-right font-bold text-[var(--accent)]">
-                        ₹{Math.max(0, (item.finalPrice * item.qty) - (item.discount || 0)).toFixed(2)}
+                        ₹{Math.max(0, ((parseFloat(item.finalPrice) || 0) * item.qty) - (parseFloat(item.discount) || 0)).toFixed(2)}
                       </td>
                       <td className="text-right">
                         <div className="flex justify-end gap-1">
@@ -1152,9 +1279,9 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
           </section>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           {/* Client Selection */}
-          <section className="rounded-[24px] relative z-9 border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
+          <section className="rounded-[24px] relative z-8 border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <UsersRound size={20} className="text-[var(--accent)]" /> Client Info
             </h3>
@@ -1175,12 +1302,12 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                     if (filteredClients.length > 0) {
                       const c = filteredClients[0];
                       if (selectedClient && selectedClient.id !== c.id && cart.length > 0) {
-                        setCart([]);
-                        if (showGlobalToast) showGlobalToast('Cart Cleared', 'Switched to different client.');
+                        setPendingClientSwitch(c);
+                      } else {
+                        setSelectedClient(c);
+                        setClientSearch(c.name);
+                        setIsSearchingClient(false);
                       }
-                      setSelectedClient(c);
-                      setClientSearch(c.name);
-                      setIsSearchingClient(false);
                     } else if (clientSearch) {
                       handleAddGuest();
                     }
@@ -1188,23 +1315,24 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                 }}
               />
               {isSearchingClient && (
-                <div className="absolute top-full left-0 right-0 z-[100] mt-2 max-h-60 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-2xl">
-                  <div className="flex justify-between items-center px-3 py-1 border-b border-[var(--border)] mb-1">
+                <div className="absolute top-full left-0 right-0 z-[100] mt-2 max-h-60 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl">
+                  <div className="sticky top-0 z-10 flex justify-between items-center px-3 py-2 bg-[var(--surface-strong)] border-b border-[var(--border)]">
                     <span className="text-[10px] font-bold uppercase text-[var(--muted)]">Select Client</span>
                     <button onClick={() => setIsSearchingClient(false)} className="text-[var(--accent)] text-xs font-bold">Close</button>
                   </div>
+                  <div className="p-2">
                   {filteredClients.map(c => (
                     <button
                       key={c.id}
                       className="flex w-full items-center justify-between rounded-xl p-3 text-left transition hover:bg-[var(--soft)]"
                       onClick={() => {
                         if (selectedClient && selectedClient.id !== c.id && cart.length > 0) {
-                          setCart([]);
-                          if (showGlobalToast) showGlobalToast('Cart Cleared', 'Switched to different client.');
+                          setPendingClientSwitch(c);
+                        } else {
+                          setSelectedClient(c);
+                          setClientSearch(c.name);
+                          setIsSearchingClient(false);
                         }
-                        setSelectedClient(c);
-                        setClientSearch(c.name);
-                        setIsSearchingClient(false);
                       }}
                     >
                       <div>
@@ -1222,6 +1350,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                       {/^[0-9]+$/.test(clientSearch) ? `Use Phone: ${clientSearch}` : `Add "${clientSearch}" as Guest`}
                     </button>
                   )}
+                  </div>
                 </div>
               )}
             </div>

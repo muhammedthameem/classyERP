@@ -19,6 +19,12 @@
   /* 10px */
 }
 
+html {
+  /* overflow-x must live on html, not body — putting it on body creates
+     a new containing block and breaks position:fixed overlays in Chrome/Safari */
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -28,8 +34,17 @@ body {
   font-family: var(--font-family);
   font-size: var(--text-base);
   line-height: 1.5;
-  overflow-x: hidden;
   scroll-behavior: smooth;
+}
+
+/* ─── Global modal/overlay fix ───────────────────────────────────────────────
+   Any element that uses  position:fixed + inset-0  as a full-screen backdrop
+   must also have an explicit height so it covers the viewport even when the
+   page has scrolled.  100dvh = dynamic viewport height (accounts for mobile
+   browser chrome shrinking/growing).
+   ──────────────────────────────────────────────────────────────────────────── */
+[class*="fixed"][class*="inset-0"] {
+  min-height: 100dvh;
 }
 
 /* Global Typography Consistency */
