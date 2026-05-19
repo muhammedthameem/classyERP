@@ -170,6 +170,11 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
     }
   }, [highlightOrderId, filteredOrders]);
 
+  // Reset pagination to page 1 when search or filters change
+  useEffect(() => {
+    setCurrentPageNum(1)
+  }, [searchQuery, activeFilter, dateFilter])
+
   const sortedOrders = [...filteredOrders].sort((a, b) => {
     // Keep 'Closed' at the bottom regardless of sort
     if (a.status === 'Closed' && b.status !== 'Closed') return 1;
@@ -189,6 +194,13 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
   })
 
   const totalPages = Math.ceil(sortedOrders.length / itemsPerPage)
+
+  useEffect(() => {
+    if (totalPages > 0 && currentPageNum > totalPages) {
+      setCurrentPageNum(totalPages)
+    }
+  }, [totalPages, currentPageNum])
+
   const paginatedOrders = sortedOrders.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage)
 
   const getProgress = (order) => {

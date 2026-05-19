@@ -41,7 +41,20 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
   // Pagination Logic
   const [currentPageNum, setCurrentPageNum] = useState(1);
   const itemsPerPage = 10;
+
+  // Reset pagination to page 1 when search query changes
+  useEffect(() => {
+    setCurrentPageNum(1);
+  }, [searchQuery]);
+
   const totalPages = Math.ceil(filteredInventory.length / itemsPerPage);
+
+  useEffect(() => {
+    if (totalPages > 0 && currentPageNum > totalPages) {
+      setCurrentPageNum(totalPages);
+    }
+  }, [totalPages, currentPageNum]);
+
   const paginatedInventory = filteredInventory.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage);
 
   const handleDeleteConfirm = async () => {

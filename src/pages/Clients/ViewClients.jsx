@@ -25,6 +25,12 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
   const totalPages = Math.ceil(sortedClients.length / itemsPerPage)
 
   useEffect(() => {
+    if (totalPages > 0 && currentPageNum > totalPages) {
+      setCurrentPageNum(totalPages)
+    }
+  }, [totalPages, currentPageNum])
+
+  useEffect(() => {
     if (highlightClientId) {
       const index = sortedClients.findIndex(c => c.id === highlightClientId);
       if (index !== -1) {
@@ -44,6 +50,9 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
     }
   }, [highlightClientId, sortedClients, itemsPerPage, setHighlightClientId]);
 
+  useEffect(() => {
+    setCurrentPageNum(1);
+  }, [searchQuery]);
 
   const paginatedClients = sortedClients.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage)
 
