@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Package, Search, TrendingUp, UsersRound, Trash2, Download, ShoppingCart, CheckCircle, Plus } from 'lucide-react'
+import { Package, Search, TrendingUp, UsersRound, Trash2, Download, ShoppingCart, CheckCircle, Plus, Eye, Info } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
 import supabase from '../../supabase'
 import { orders } from '../../utils/constants'
@@ -16,6 +16,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
   const [showReceipt, setShowReceipt] = useState(null);
   const [cartAlert, setCartAlert] = useState(null); // { title: '', message: '', type: 'warning'|'error' }
   const [isSendingPdf, setIsSendingPdf] = useState(false);
+  const [viewItem, setViewItem] = useState(null);
+  const [imagePopup, setImagePopup] = useState(null);
 
 
   useEffect(() => {
@@ -520,6 +522,221 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
 
   return (
     <div style={themeStyle} className="space-y-6">
+      {/* View Item Details Modal */}
+      {viewItem && (() => {
+        const isOrder = viewItem.type === 'order';
+        const orderDetail = isOrder ? (orders || []).find(o => o.id === viewItem.orderId) : null;
+        
+        return (
+          <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setViewItem(null)}></div>
+            <div className="relative w-full max-w-lg rounded-[32px] bg-[var(--surface)] p-8 shadow-2xl border border-[var(--border)] animate-in zoom-in duration-300 overflow-y-auto max-h-[90vh]">
+              <button 
+                onClick={() => setViewItem(null)} 
+                className="absolute top-6 right-6 h-10 w-10 grid place-items-center rounded-xl hover:bg-[var(--soft)] text-[var(--muted)] hover:text-[var(--text)] transition"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+              
+              <div className="flex items-center gap-3 mb-6">
+                <div className="h-12 w-12 rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)] flex items-center justify-center">
+                  <Package size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-[var(--text)]">
+                    {isOrder ? `Order Details (#${viewItem.orderId})` : 'Product Details'}
+                  </h3>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
+                    {isOrder ? 'Finished Order' : 'Inventory Item'}
+                  </span>
+                </div>
+              </div>
+
+              {isOrder && orderDetail ? (
+                <div className="space-y-5">
+                  {/* Card 1: Client & Status */}
+                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-4 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase text-[var(--muted)] tracking-wider">Client Info</p>
+                        <p className="font-bold text-[var(--text)] text-base mt-0.5">{orderDetail.clientName}</p>
+                      </div>
+                      <span className="rounded-xl bg-green-50 px-3 py-1 text-xs font-bold text-green-600 border border-green-200">
+                        {orderDetail.status || 'Completed'}
+                      </span>
+                    </div>
+                    <div className="border-t border-dashed border-[var(--border)] pt-2.5 flex justify-between items-center text-xs text-[var(--muted)]">
+                      <span>Delivery: <strong className="text-[var(--text)]">{orderDetail.deliveryDate}</strong></span>
+                      <span>Order Date: <strong className="text-[var(--text)]">{orderDetail.orderDate}</strong></span>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Product & Stitching Cost (Estimate) */}
+                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-4 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase text-[var(--muted)] tracking-wider">Item Details</p>
+                        <p className="font-extrabold text-[var(--text)] text-lg mt-0.5">{orderDetail.product}</p>
+                        <p className="text-xs text-[var(--muted)]">{orderDetail.orderType} • Qty: {viewItem.qty}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] font-bold uppercase text-[var(--muted)] tracking-wider">Stitching Cost (Estimate)</p>
+                        <p className="font-black text-[var(--accent)] text-xl mt-0.5">₹{parseFloat(orderDetail.price || 0).toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Materials Card (If internal) */}
+                  {orderDetail.sourceOfMaterial === 'Internal' && orderDetail.internalItems && orderDetail.internalItems.length > 0 && (
+                    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-4 space-y-3">
+                      <p className="text-[10px] font-bold uppercase text-[var(--muted)] tracking-wider">Used Internal Materials</p>
+                      <div className="space-y-2">
+                        {orderDetail.internalItems.map((item, idx) => (
+                          <div key={idx} className="flex justify-between items-center text-xs border-b border-[var(--border)] last:border-0 pb-1.5 last:pb-0">
+                            <div>
+                              <p className="font-bold text-[var(--text)]">{item.productName}</p>
+                              <p className="text-[10px] text-[var(--muted)]">Qty: {item.quantity} {item.unit}</p>
+                            </div>
+                            <p className="font-semibold text-[var(--accent)]">₹{(item.totalPrice || 0).toFixed(2)}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="border-t border-dashed border-[var(--border)] pt-2.5 flex justify-between items-center text-xs font-bold text-[var(--accent)]">
+                        <span>Materials Total</span>
+                        <span>₹{orderDetail.internalItems.reduce((sum, i) => sum + (i.totalPrice || 0), 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Photos Section */}
+                  {(orderDetail.photo || orderDetail.materialPhoto) && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-bold uppercase text-[var(--muted)] tracking-wider">Reference & Material Photos</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        {orderDetail.photo ? (
+                          <div className="relative group overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)]">
+                            <img 
+                              src={orderDetail.photo} 
+                              alt="Design Ref" 
+                              className="h-32 w-full object-cover cursor-pointer hover:scale-105 transition duration-300"
+                              onClick={() => setImagePopup(orderDetail.photo)}
+                            />
+                            <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white px-2 py-0.5 rounded-lg text-[9px] font-bold">Design Ref</div>
+                          </div>
+                        ) : (
+                          <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-[var(--border)] bg-[var(--soft)] text-[10px] text-[var(--muted)]">
+                            No design reference
+                          </div>
+                        )}
+                        {orderDetail.materialPhoto ? (
+                          <div className="relative group overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)]">
+                            <img 
+                              src={orderDetail.materialPhoto} 
+                              alt="Material Fabric" 
+                              className="h-32 w-full object-cover cursor-pointer hover:scale-105 transition duration-300"
+                              onClick={() => setImagePopup(orderDetail.materialPhoto)}
+                            />
+                            <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white px-2 py-0.5 rounded-lg text-[9px] font-bold">Material Fabric</div>
+                          </div>
+                        ) : (
+                          <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-[var(--border)] bg-[var(--soft)] text-[10px] text-[var(--muted)]">
+                            No fabric photo
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Notes Card */}
+                  {orderDetail.notes && (
+                    <div className="rounded-2xl bg-[var(--soft)] p-4 border border-[var(--border)]">
+                      <p className="text-xs font-bold uppercase text-[var(--muted)] mb-1 flex items-center gap-1">
+                        <Info size={12} className="text-[var(--accent)]" /> Notes / Special Instructions
+                      </p>
+                      <p className="text-xs text-[var(--text)] leading-relaxed whitespace-pre-wrap">{orderDetail.notes}</p>
+                    </div>
+                  )}
+                </div>
+              ) : !isOrder ? (
+                // Inventory Item Details
+                <div className="space-y-5">
+                  {/* Card 1: Core Details */}
+                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-4 space-y-3">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-[var(--muted)] tracking-wider">Product Name</p>
+                      <p className="font-extrabold text-[var(--text)] text-lg mt-0.5">{viewItem.productName}</p>
+                      <p className="text-xs text-[var(--muted)] mt-0.5">ID: {viewItem.productId || viewItem.id}</p>
+                    </div>
+                    <div className="border-t border-dashed border-[var(--border)] pt-2.5 flex justify-between items-center text-xs text-[var(--muted)]">
+                      <span>Category: <strong className="text-[var(--text)]">{viewItem.productType || 'N/A'}</strong></span>
+                      <span>Vendor: <strong className="text-[var(--text)]">{viewItem.vendorName || 'No Vendor'}</strong></span>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Stock & Pricing */}
+                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase text-[var(--muted)] tracking-wider">Available Stock</p>
+                        <p className="font-extrabold text-[var(--text)] text-base mt-0.5">{viewItem.quantity} {viewItem.unit || 'nos'}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] font-bold uppercase text-[var(--muted)] tracking-wider">Price (Per Unit)</p>
+                        <p className="font-black text-[var(--accent)] text-xl mt-0.5">₹{parseFloat(viewItem.finalPrice || viewItem.rate || 0).toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Notes Card */}
+                  {viewItem.note && (
+                    <div className="rounded-2xl bg-[var(--soft)] p-4 border border-[var(--border)]">
+                      <p className="text-xs font-bold uppercase text-[var(--muted)] mb-1 flex items-center gap-1">
+                        <Info size={12} className="text-[var(--accent)]" /> Notes
+                      </p>
+                      <p className="text-xs text-[var(--text)] leading-relaxed whitespace-pre-wrap">{viewItem.note}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-center text-xs text-[var(--muted)] py-4">No detailed information available for this item.</p>
+              )}
+
+              <div className="mt-8 flex justify-end">
+                <button 
+                  type="button" 
+                  onClick={() => setViewItem(null)}
+                  className="rounded-2xl bg-[var(--text)] px-6 py-3 font-bold text-white shadow-lg transition hover:brightness-110 active:scale-95 text-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Image Lightbox Popup */}
+      {imagePopup && (
+        <div 
+          className="fixed inset-0 z-[3000] grid place-items-center bg-black/80 px-4 backdrop-blur-sm" 
+          onClick={() => setImagePopup(null)}
+        >
+          <div className="relative max-w-full max-h-full p-4">
+            <button 
+              className="absolute top-6 right-6 grid h-10 w-10 place-items-center rounded-full bg-white/20 text-white hover:bg-white/40 transition" 
+              onClick={() => setImagePopup(null)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            <img 
+              src={imagePopup} 
+              alt="Zoomed Reference" 
+              className="max-w-[90vw] max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-white/10" 
+            />
+          </div>
+        </div>
+      )}
+
       {/* Cart Alert Modal (Generic) */}
       {cartAlert && (
         <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4">
@@ -886,9 +1103,24 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                         ₹{Math.max(0, (item.finalPrice * item.qty) - (item.discount || 0)).toFixed(2)}
                       </td>
                       <td className="text-right">
-                        <button onClick={() => removeFromCart(item.id)} className="text-red-400 hover:text-red-600 transition p-2 hover:bg-red-50 rounded-lg">
-                          <Trash2 size={18} />
-                        </button>
+                        <div className="flex justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setViewItem(item)}
+                            className="text-[var(--accent)] hover:text-white transition p-2 hover:bg-[var(--accent-soft)] rounded-lg"
+                            title="View Details"
+                          >
+                            <Eye size={18} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeFromCart(item.id)}
+                            className="text-red-400 hover:text-red-600 transition p-2 hover:bg-red-50 rounded-lg"
+                            title="Remove"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )) : (
