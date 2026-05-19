@@ -173,11 +173,19 @@ function App() {
     if (typeof window === 'undefined') return null;
 
     let id = null;
-    // 1. Standard Search Params
-    const searchParams = new URLSearchParams(window.location.search);
-    id = searchParams.get('bill');
 
-    // 2. Hash Params (Social apps sometimes move query params after the hash)
+    // 1. Path-based: /bill/SALE-xxxx  ← Most reliable on iOS Safari & WhatsApp
+    //    iOS never strips URL path segments unlike query params
+    const pathMatch = window.location.pathname.match(/\/bill\/([^/?#]+)/);
+    if (pathMatch && pathMatch[1]) id = decodeURIComponent(pathMatch[1]);
+
+    // 2. Standard Search Params: ?bill=SALE-xxxx
+    if (!id) {
+      const searchParams = new URLSearchParams(window.location.search);
+      id = searchParams.get('bill');
+    }
+
+    // 3. Hash Params (some social apps move query params into hash)
     if (!id) {
       const hash = window.location.hash;
       if (hash.includes('bill=')) {
@@ -186,20 +194,24 @@ function App() {
       }
     }
 
-    // 3. Regex Fallback
+    // 4. Regex Fallback across entire href
     if (!id) {
-      const match = window.location.href.match(/[?&]bill=([^&#/]+)/);
+      const match = window.location.href.match(/[?&/]bill[=/]([^&?#/]+)/);
       if (match && match[1]) id = decodeURIComponent(match[1]);
     }
 
     const finalId = id?.trim() || null;
 
-    // 4. Persistence: If we found it, save it. If not, check if we had one.
+    // 5. Persistence: save found id; if nothing in URL, check previous session
     if (finalId) {
       localStorage.setItem('active_bill_id', finalId);
       return finalId;
     }
-    return localStorage.getItem('active_bill_id');
+    // Only use cached id if URL truly has no bill path or param (avoids stale receipts)
+    const hasAnyBillSignal = window.location.pathname.includes('/bill/') ||
+      window.location.search.includes('bill=') ||
+      window.location.hash.includes('bill=');
+    return hasAnyBillSignal ? null : localStorage.getItem('active_bill_id');
   };
 
   const [activeBillId, setActiveBillId] = useState(getInitialBillId);

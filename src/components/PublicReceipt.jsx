@@ -17,12 +17,38 @@ function PublicReceipt({ billId, onClear }) {
           return;
         }
 
-        // Search by ID or by saleId inside the data JSON (Use quotes for strings in .or)
-        const { data, error } = await supabase
+        // Strategy 1: match data->>'saleId' (PostgREST JSON operator)
+        let { data, error } = await supabase
           .from('erp_sales')
           .select('*')
-          .or(`id.eq."${cleanId}",data->>saleId.eq."${cleanId}"`)
+          .eq('data->>saleId', cleanId)
           .maybeSingle();
+
+        // Strategy 2: match top-level id column as text
+        if (!data) {
+          const res2 = await supabase
+            .from('erp_sales')
+            .select('*')
+            .eq('id', cleanId)
+            .maybeSingle();
+          if (res2.data) data = res2.data;
+        }
+
+        // Strategy 3: fetch recent sales and scan in JS (most reliable fallback)
+        if (!data) {
+          const res3 = await supabase
+            .from('erp_sales')
+            .select('*')
+            .order('id', { ascending: false })
+            .limit(500);
+          if (res3.data) {
+            const found = res3.data.find(row => {
+              const sale = row.data || row;
+              return sale.saleId === cleanId || String(row.id) === cleanId;
+            });
+            if (found) data = found;
+          }
+        }
 
         if (data) {
           setSale(data.data || data);

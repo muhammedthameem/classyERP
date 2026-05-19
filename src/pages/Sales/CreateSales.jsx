@@ -421,7 +421,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
         .getPublicUrl(fileName);
 
       const appUrlObj = new URL(window.location.origin);
-      appUrlObj.searchParams.set('bill', showReceipt.saleId);
+      appUrlObj.pathname = `/bill/${showReceipt.saleId}`;
       const finalAppUrl = appUrlObj.toString();
       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
       let message = `*✨ INVOICE: ${showReceipt.saleId} ✨*%0A`;
@@ -453,7 +453,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     } catch (err) {
       console.error('WhatsApp Share Error:', err);
       const appUrlObj = new URL(window.location.origin);
-      appUrlObj.searchParams.set('bill', showReceipt.saleId);
+      appUrlObj.pathname = `/bill/${showReceipt.saleId}`;
       const finalAppUrl = appUrlObj.toString();
       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
       let message = `*✨ INVOICE: ${showReceipt.saleId} ✨*%0A`;
