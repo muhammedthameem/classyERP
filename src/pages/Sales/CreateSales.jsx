@@ -173,6 +173,24 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       return;
     }
 
+    const hasZeroPriceItem = cart.some(item => {
+      const price = parseFloat(item.finalPrice);
+      return isNaN(price) || price <= 0;
+    });
+
+    if (hasZeroPriceItem) {
+      if (showGlobalToast) {
+        showGlobalToast('Price Required', 'Please enter the price for all items.');
+      }
+      setCartAlert({
+        title: 'Price Required',
+        message: 'One or more items in the cart have a price of 0. Please enter the price before completing the sale.',
+        type: 'error'
+      });
+      return;
+    }
+
+
     const updatedInventory = inventory.map(p => {
       const cartItem = cart.find(item => item.id === p.id && item.type === 'inventory');
       if (cartItem) return { ...p, quantity: p.quantity - cartItem.qty };
@@ -1083,7 +1101,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                           <span className="text-[var(--muted)]">₹</span>
                           <input
                             type="number"
-                            className="w-20 rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] px-2 py-1 font-bold text-[var(--text)]"
+                            className={`w-20 rounded-lg border bg-[var(--surface-strong)] px-2 py-1 font-bold text-[var(--text)] ${(parseFloat(item.finalPrice) || 0) <= 0 ? 'border-red-500/50 focus:border-red-500' : 'border-[var(--border)] focus:border-[var(--accent)]'}`}
                             value={item.finalPrice}
                             onFocus={(e) => e.target.select()}
                             onChange={(e) => updatePrice(item.id, e.target.value)}
