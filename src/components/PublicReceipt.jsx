@@ -76,7 +76,7 @@ function PublicReceipt({ billId, onClear }) {
         jsPDF: { unit: 'mm', format: [80, 200], orientation: 'portrait' }
       };
       
-      await html2pdf().set(opt).from(element).save();
+      await html2pdf().set(opt).from(element.outerHTML).save();
     } catch (err) {
       console.error("PDF Generation Error:", err);
       alert("Failed to generate PDF. Please try again or take a screenshot.");

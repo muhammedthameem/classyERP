@@ -407,7 +407,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       jsPDF: { unit: 'mm', format: [80, 200], orientation: 'portrait' }
                     };
 
-                    html2pdf().set(opt).from(container).save().then(() => {
+                    html2pdf().set(opt).from(container.outerHTML).save().then(() => {
                       if (showGlobalToast) showGlobalToast('Success', 'Receipt downloaded successfully.');
                     });
                   }}
@@ -438,7 +438,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
 
                       const fileName = `receipts/${viewSale.saleId}.pdf`;
                       
-                      const pdfBlob = await html2pdf().set(opt).from(visualBill).output('blob');
+                      const pdfBlob = await html2pdf().set(opt).from(visualBill.outerHTML).output('blob');
 
                       const { data, error: uploadError } = await supabase.storage
                         .from('receipts')

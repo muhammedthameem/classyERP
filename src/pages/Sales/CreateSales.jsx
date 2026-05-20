@@ -402,7 +402,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
 
       const fileName = `receipts/${showReceipt.saleId}.pdf`;
 
-      const pdfBlob = await html2pdf().set(opt).from(visualBill).output('blob');
+      const pdfBlob = await html2pdf().set(opt).from(visualBill.outerHTML).output('blob');
 
       const { error: uploadError } = await supabase.storage
         .from('receipts')
@@ -563,7 +563,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     };
 
     try {
-      const pdfBlob = await html2pdf().set(opt).from(container).output('blob');
+      const pdfBlob = await html2pdf().set(opt).from(container.outerHTML).output('blob');
       const file = new File([pdfBlob], `Bill_${showReceipt.saleId}.pdf`, { type: 'application/pdf' });
 
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
