@@ -200,18 +200,7 @@ function App() {
       if (match && match[1]) id = decodeURIComponent(match[1]);
     }
 
-    const finalId = id?.trim() || null;
-
-    // 5. Persistence: save found id; if nothing in URL, check previous session
-    if (finalId) {
-      localStorage.setItem('active_bill_id', finalId);
-      return finalId;
-    }
-    // Only use cached id if URL truly has no bill path or param (avoids stale receipts)
-    const hasAnyBillSignal = window.location.pathname.includes('/bill/') ||
-      window.location.search.includes('bill=') ||
-      window.location.hash.includes('bill=');
-    return hasAnyBillSignal ? null : localStorage.getItem('active_bill_id');
+    return id?.trim() || null;
   };
 
   const [activeBillId, setActiveBillId] = useState(getInitialBillId);
