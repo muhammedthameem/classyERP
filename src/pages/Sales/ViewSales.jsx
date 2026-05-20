@@ -438,8 +438,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
 
                       const fileName = `receipts/${viewSale.saleId}.pdf`;
                       
-      
-                      const pdfBlob = await html2pdf().set(opt).from(visualBill).toPdf().get('pdf').output('blob');
+                      const pdfBlob = await html2pdf().set(opt).from(visualBill).output('blob');
 
                       const { data, error: uploadError } = await supabase.storage
                         .from('receipts')

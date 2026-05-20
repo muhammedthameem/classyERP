@@ -402,7 +402,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
 
       const fileName = `receipts/${showReceipt.saleId}.pdf`;
 
-      const pdfBlob = await html2pdf().set(opt).from(visualBill).toPdf().get('pdf').output('blob');
+      const pdfBlob = await html2pdf().set(opt).from(visualBill).output('blob');
 
       const { error: uploadError } = await supabase.storage
         .from('receipts')
