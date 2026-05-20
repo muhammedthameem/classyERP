@@ -99,26 +99,43 @@ function PublicReceipt({ billId, onClear }) {
     </div>
   );
 
-  if (!sale) return (
-    <div className="flex h-screen items-center justify-center bg-[#f7f2ec] p-6">
-      <div className="text-center max-w-sm">
-        <div className="h-20 w-20 bg-rose-50 text-rose-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-rose-500/10">
-          <Package size={40} />
+  if (!sale) {
+    const { data: { publicUrl } } = supabase.storage
+      .from('receipts')
+      .getPublicUrl(`receipts/${billId}.pdf`);
+
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#f7f2ec] p-6">
+        <div className="text-center max-w-sm">
+          <div className="h-20 w-20 bg-amber-50 text-amber-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-amber-500/10">
+            <Package size={40} />
+          </div>
+          <h2 className="text-2xl font-black mb-2">Digital Receipt Details</h2>
+          <p className="text-stone-500 text-sm mb-6 leading-relaxed">
+            We couldn't load the interactive bill details (this may be due to security settings), but you can download the original PDF receipt below:
+          </p>
+          <a
+            href={publicUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 mb-4 px-8 py-4 bg-[#8B4513] text-white rounded-2xl font-bold text-sm shadow-xl hover:brightness-110 transition"
+          >
+            <Download size={18} /> Download PDF Receipt
+          </a>
+          <br />
+          <button
+            onClick={() => {
+              if (onClear) onClear();
+              window.history.replaceState({}, '', '/');
+            }}
+            className="inline-block mt-4 text-xs font-bold text-stone-500 uppercase tracking-widest hover:text-stone-800 transition"
+          >
+            Back to Home
+          </button>
         </div>
-        <h2 className="text-2xl font-black mb-2">Receipt Not Found</h2>
-        <p className="text-stone-500 text-sm mb-8 leading-relaxed">We couldn't find a digital receipt with ID <span className="text-stone-900 font-bold">#{billId}</span>. Please check the link or contact the shop.</p>
-        <button
-          onClick={() => {
-            if (onClear) onClear();
-            window.history.replaceState({}, '', '/');
-          }}
-          className="inline-block px-8 py-4 bg-stone-900 text-white rounded-2xl font-bold text-sm shadow-xl hover:brightness-110 transition"
-        >
-          Go to Login
-        </button>
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f7f2ec] p-4 lg:p-10 flex flex-col items-center">
