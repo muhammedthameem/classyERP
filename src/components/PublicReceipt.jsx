@@ -151,10 +151,10 @@ function PublicReceipt({ billId, onClear }) {
         <table className="w-full text-[10px] mb-6">
           <thead>
             <tr className="border-b border-dashed border-gray-300 text-left uppercase">
-              <th className="py-2">Item</th>
-              <th className="py-2 text-center">Qty</th>
-              <th className="py-2 text-right">Disc</th>
-              <th className="py-2 text-right">Total</th>
+              <th className="py-2 pr-2">Item</th>
+              <th className="py-2 px-3 text-center">Qty</th>
+              <th className="py-2 px-3 text-right">Disc</th>
+              <th className="py-2 pl-3 text-right">Total</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-dashed divide-gray-200">
@@ -172,9 +172,9 @@ function PublicReceipt({ billId, onClear }) {
                     <p className="font-bold">{item.productName}</p>
                     <p className="text-[8px] opacity-60">Rate: ₹{item.rate}{item.clientName ? ` • Client: ${item.clientName}` : ''}</p>
                   </td>
-                  <td className="py-3 text-center">{item.qty}</td>
-                  <td className="py-3 text-right text-[9px]">{discDisplay}</td>
-                  <td className="py-3 text-right font-bold">₹{parseFloat(rowTotal).toFixed(2)}</td>
+                  <td className="py-3 px-3 text-center">{item.qty}</td>
+                  <td className="py-3 px-3 text-right text-[9px]">{discDisplay}</td>
+                  <td className="py-3 pl-3 text-right font-bold">₹{parseFloat(rowTotal).toFixed(2)}</td>
                 </tr>
               );
             })}

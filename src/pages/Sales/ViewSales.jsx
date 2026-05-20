@@ -282,24 +282,24 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                 <table className="w-full text-[10px] mb-4">
                   <thead>
                     <tr className="border-b border-dashed border-gray-300 text-left">
-                      <th className="py-1 min-w-[100px]">Item</th>
-                      <th className="py-1 text-center px-2">Qty</th>
-                      <th className="py-1 text-right px-2 whitespace-nowrap">Disc (₹/%)</th>
-                      <th className="py-1 text-right px-2 whitespace-nowrap">Total</th>
+                      <th className="py-1 min-w-[100px] pr-2">Item</th>
+                      <th className="py-1 text-center px-3">Qty</th>
+                      <th className="py-1 text-right px-3 whitespace-nowrap">Disc (₹/%)</th>
+                      <th className="py-1 text-right pl-3 whitespace-nowrap">Total</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-dashed divide-gray-200">
                     {viewSale.items.map((item, idx) => (
                       <tr key={idx}>
-                        <td className="py-2 pr-1">
+                        <td className="py-2 pr-2">
                           <p className="font-bold">{item.productName}</p>
                           <p className="text-[8px] opacity-70">Rate: ₹{item.rate}{item.clientName ? ` • Client: ${item.clientName}` : ''}</p>
                         </td>
-                        <td className="py-2 text-center px-2">{item.qty}</td>
-                        <td className="py-2 text-right px-2">
+                        <td className="py-2 text-center px-3">{item.qty}</td>
+                        <td className="py-2 text-right px-3">
                           {item.rowTotal !== undefined ? '₹' : ''}{item.discount || 0}{item.rowTotal !== undefined ? '' : '%'}
                         </td>
-                        <td className="py-2 text-right px-2 font-bold">
+                        <td className="py-2 text-right pl-3 font-bold">
                           ₹{(item.rowTotal !== undefined 
                             ? item.rowTotal 
                             : (item.qty * item.price) * (1 - (item.discount || 0) / 100)).toFixed(2)}
@@ -344,13 +344,13 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
 
                       return `
                       <tr>
-                        <td style="padding: 4px 0; border-bottom: 1px dashed #eee;">
+                        <td style="padding: 4px 8px 4px 0; border-bottom: 1px dashed #eee;">
                           <div style="font-weight: bold; font-size: 11px;">${item.productName}</div>
                           <div style="font-size: 9px; color: #666;">Rate: ₹${item.rate}${item.clientName ? ` &bull; Client: ${item.clientName}` : ''}</div>
                         </td>
-                        <td style="text-align: center; font-size: 11px; padding: 4px 8px;">${item.qty}</td>
-                        <td style="text-align: right; font-size: 11px; padding: 4px 8px;">${discDisplay}</td>
-                        <td style="text-align: right; font-size: 11px; font-weight: bold; padding: 4px 8px;">₹${parseFloat(finalTotal).toFixed(2)}</td>
+                        <td style="text-align: center; font-size: 11px; padding: 4px 10px;">${item.qty}</td>
+                        <td style="text-align: right; font-size: 11px; padding: 4px 10px;">${discDisplay}</td>
+                        <td style="text-align: right; font-size: 11px; font-weight: bold; padding: 4px 0 4px 10px;">₹${parseFloat(finalTotal).toFixed(2)}</td>
                       </tr>
                     `}).join('');
 
@@ -374,10 +374,10 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
                         <thead>
                           <tr style="border-bottom: 1px dashed #000; font-size: 10px; text-align: left;">
-                            <th style="padding: 5px 0; min-width: 30mm;">Item</th>
-                            <th style="text-align: center; padding: 5px 8px; white-space: nowrap;">Qty</th>
-                            <th style="text-align: right; padding: 5px 8px; white-space: nowrap;">Disc (%)</th>
-                            <th style="text-align: right; padding: 5px 8px; white-space: nowrap;">Total</th>
+                            <th style="padding: 5px 8px 5px 0; min-width: 30mm;">Item</th>
+                            <th style="text-align: center; padding: 5px 10px; white-space: nowrap;">Qty</th>
+                            <th style="text-align: right; padding: 5px 10px; white-space: nowrap;">Disc (%)</th>
+                            <th style="text-align: right; padding: 5px 0 5px 10px; white-space: nowrap;">Total</th>
                           </tr>
                         </thead>
                         <tbody>

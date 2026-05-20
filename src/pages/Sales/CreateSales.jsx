@@ -310,13 +310,13 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
 
     let itemsHtml = showReceipt.items.map(item => `
       <tr>
-        <td style="padding: 4px 0; border-bottom: 1px dashed #eee;">
+        <td style="padding: 4px 8px 4px 0; border-bottom: 1px dashed #eee;">
           <div style="font-weight: bold; font-size: 11px;">${item.productName}</div>
           <div style="font-size: 9px; color: #666;">Rate: ₹${item.rate}${item.clientName ? ` &bull; Client: ${item.clientName}` : ''}</div>
         </td>
-        <td style="text-align: center; font-size: 11px;">${item.qty}</td>
-        <td style="text-align: right; font-size: 11px;">₹${parseFloat(item.discount || 0).toFixed(0)}</td>
-        <td style="text-align: right; font-size: 11px; font-weight: bold;">₹${parseFloat(item.rowTotal || (item.qty * item.price) - (item.discount || 0)).toFixed(2)}</td>
+        <td style="text-align: center; font-size: 11px; padding: 4px 8px;">${item.qty}</td>
+        <td style="text-align: right; font-size: 11px; padding: 4px 8px;">₹${parseFloat(item.discount || 0).toFixed(0)}</td>
+        <td style="text-align: right; font-size: 11px; font-weight: bold; padding: 4px 0 4px 8px;">₹${parseFloat(item.rowTotal || (item.qty * item.price) - (item.discount || 0)).toFixed(2)}</td>
       </tr>
     `).join('');
 
@@ -339,10 +339,10 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
         <thead>
           <tr style="border-bottom: 1px dashed #000; font-size: 10px; text-align: left;">
-            <th style="padding: 5px 0;">Item</th>
-            <th style="text-align: center;">Qty</th>
-            <th style="text-align: right;">Disc</th>
-            <th style="text-align: right;">Total</th>
+            <th style="padding: 5px 8px 5px 0;">Item</th>
+            <th style="text-align: center; padding: 5px 8px;">Qty</th>
+            <th style="text-align: right; padding: 5px 8px;">Disc</th>
+            <th style="text-align: right; padding: 5px 0 5px 8px;">Total</th>
           </tr>
         </thead>
         <tbody>
@@ -517,13 +517,13 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
 
     let itemsHtml = showReceipt.items.map(item => `
       <tr>
-        <td style="padding: 4px 0; border-bottom: 1px dashed #eee;">
+        <td style="padding: 4px 8px 4px 0; border-bottom: 1px dashed #eee;">
           <div style="font-weight: bold; font-size: 11px;">${item.productName}</div>
           <div style="font-size: 9px; color: #666;">Rate: ₹${item.rate}${item.clientName ? ` &bull; Client: ${item.clientName}` : ''}</div>
         </td>
-        <td style="text-align: center; font-size: 11px;">${item.qty}</td>
-        <td style="text-align: right; font-size: 11px;">₹${parseFloat(item.discount || 0).toFixed(0)}</td>
-        <td style="text-align: right; font-size: 11px; font-weight: bold;">₹${parseFloat(item.rowTotal || (item.qty * item.price) - (item.discount || 0)).toFixed(2)}</td>
+        <td style="text-align: center; font-size: 11px; padding: 4px 8px;">${item.qty}</td>
+        <td style="text-align: right; font-size: 11px; padding: 4px 8px;">₹${parseFloat(item.discount || 0).toFixed(0)}</td>
+        <td style="text-align: right; font-size: 11px; font-weight: bold; padding: 4px 0 4px 8px;">₹${parseFloat(item.rowTotal || (item.qty * item.price) - (item.discount || 0)).toFixed(2)}</td>
       </tr>
     `).join('');
 
@@ -540,10 +540,10 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
         <thead>
           <tr style="border-bottom: 1px dashed #000; font-size: 10px; text-align: left;">
-            <th style="padding: 5px 0;">Item</th>
-            <th style="text-align: center;">Qty</th>
-            <th style="text-align: right;">Disc</th>
-            <th style="text-align: right;">Total</th>
+            <th style="padding: 5px 8px 5px 0;">Item</th>
+            <th style="text-align: center; padding: 5px 8px;">Qty</th>
+            <th style="text-align: right; padding: 5px 8px;">Disc</th>
+            <th style="text-align: right; padding: 5px 0 5px 8px;">Total</th>
           </tr>
         </thead>
         <tbody>${itemsHtml}</tbody>
