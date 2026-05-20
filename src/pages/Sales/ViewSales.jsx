@@ -463,31 +463,31 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       const finalAppUrl = appUrlObj.toString();
 
                       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
-                      let msg = `*✨ INVOICE: ${viewSale.saleId} ✨*%0A`;
-                      msg += `------------------------------%0A`;
-                      msg += `Hello *${viewSale.client?.name || 'Guest'}*,%0A`;
-                      msg += `${greeting}%0A%0A`;
+                      let msg = `*✨ INVOICE: ${viewSale.saleId} ✨*\n`;
+                      msg += `------------------------------\n`;
+                      msg += `Hello *${viewSale.client?.name || 'Guest'}*,\n`;
+                      msg += `${greeting}\n\n`;
 
-                      msg += `*ORDER SUMMARY:*%0A`;
+                      msg += `*ORDER SUMMARY:*\n`;
                       viewSale.items.forEach(item => {
                         const itemPrice = parseFloat(item.price || 0).toFixed(2);
                         const clientSuffix = item.clientName ? ` (Client: ${item.clientName})` : '';
-                        msg += `* ${item.productName}${clientSuffix} (x${item.qty}) - ₹${itemPrice}%0A`;
+                        msg += `* ${item.productName}${clientSuffix} (x${item.qty}) - ₹${itemPrice}\n`;
                       });
 
                       const grandTotal = parseFloat(viewSale.total || 0).toFixed(2);
-                      msg += `%0AGrand Total: *₹${grandTotal}*%0A`;
-                      msg += `------------------------------%0A`;
-                      msg += `📄 *Download Digital Receipt:*%0A${finalAppUrl}%0A%0A`;
+                      msg += `\nGrand Total: *₹${grandTotal}*\n`;
+                      msg += `------------------------------\n`;
+                      msg += `📄 *Download Digital Receipt:*\n${finalAppUrl}\n\n`;
                       if (publicUrl) {
-                        msg += `📎 *Direct PDF Download:*%0A${publicUrl}%0A%0A`;
+                        msg += `📎 *Direct PDF Download:*\n${publicUrl}\n\n`;
                       }
-                      msg += `Visit again for more unique designs!%0A`;
+                      msg += `Visit again for more unique designs!\n`;
                       msg += `*Classy Couture - Be Unique, Be Classy*`;
 
                       const phone = viewSale.client?.phone ? viewSale.client.phone.replace(/[^0-9]/g, '') : '';
                       const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
-                      window.open(`https://wa.me/${formattedPhone}?text=${msg}`, '_blank');
+                      window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`, '_blank');
                     } catch (err) {
                       console.error('WhatsApp Share Error:', err);
                       const appUrlObj = new URL(window.location.origin);
@@ -495,26 +495,26 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       const finalAppUrl = appUrlObj.toString();
                       // Fallback: Send message WITH APP link even if PDF upload fails
                       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
-                      let msg = `*✨ INVOICE: ${viewSale.saleId} ✨*%0A`;
-                      msg += `------------------------------%0A`;
-                      msg += `Hello *${viewSale.client?.name || 'Guest'}*,%0A`;
-                      msg += `${greeting}%0A%0A`;
-                       msg += `*ORDER SUMMARY:*%0A`;
+                      let msg = `*✨ INVOICE: ${viewSale.saleId} ✨*\n`;
+                      msg += `------------------------------\n`;
+                      msg += `Hello *${viewSale.client?.name || 'Guest'}*,\n`;
+                      msg += `${greeting}\n\n`;
+                       msg += `*ORDER SUMMARY:*\n`;
                       viewSale.items.forEach(item => {
                         const itemPrice = parseFloat(item.price || 0).toFixed(2);
                         const clientSuffix = item.clientName ? ` (Client: ${item.clientName})` : '';
-                        msg += `* ${item.productName}${clientSuffix} (x${item.qty}) - ₹${itemPrice}%0A`;
+                        msg += `* ${item.productName}${clientSuffix} (x${item.qty}) - ₹${itemPrice}\n`;
                       });
                       const grandTotalFallback = parseFloat(viewSale.total || 0).toFixed(2);
-                      msg += `%0AGrand Total: *₹${grandTotalFallback}*%0A`;
-                      msg += `------------------------------%0A`;
-                      msg += `📄 *Download Digital Receipt:*%0A${finalAppUrl}%0A%0A`;
-                      msg += `Visit again for more unique designs!%0A`;
+                      msg += `\nGrand Total: *₹${grandTotalFallback}*\n`;
+                      msg += `------------------------------\n`;
+                      msg += `📄 *Download Digital Receipt:*\n${finalAppUrl}\n\n`;
+                      msg += `Visit again for more unique designs!\n`;
                       msg += `*Classy Couture - Be Unique, Be Classy*`;
 
                       const phone = viewSale.client?.phone ? viewSale.client.phone.replace(/[^0-9]/g, '') : '';
                       const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
-                      window.open(`https://wa.me/${formattedPhone}?text=${msg}`, '_blank');
+                      window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`, '_blank');
 
                       if (showGlobalToast) showGlobalToast('Warning', 'Bill sent without PDF link (Supabase storage not ready).');
                     } finally {

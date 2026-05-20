@@ -424,58 +424,58 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       appUrlObj.pathname = `/bill/${showReceipt.saleId}`;
       const finalAppUrl = appUrlObj.toString();
       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
-      let message = `*✨ INVOICE: ${showReceipt.saleId} ✨*%0A`;
-      message += `------------------------------%0A`;
-      message += `Hello *${showReceipt.client.name}*,%0A`;
-      message += `${greeting}%0A%0A`;
+      let message = `*✨ INVOICE: ${showReceipt.saleId} ✨*\n`;
+      message += `------------------------------\n`;
+      message += `Hello *${showReceipt.client.name}*,\n`;
+      message += `${greeting}\n\n`;
 
-      message += `*ORDER SUMMARY:*%0A`;
+      message += `*ORDER SUMMARY:*\n`;
       showReceipt.items.forEach(item => {
         const itemPrice = parseFloat(item.price || 0).toFixed(2);
         const clientSuffix = item.clientName ? ` (Client: ${item.clientName})` : '';
-        message += `* ${item.productName}${clientSuffix} (x${item.qty}) - ₹${itemPrice}%0A`;
+        message += `* ${item.productName}${clientSuffix} (x${item.qty}) - ₹${itemPrice}\n`;
       });
 
       const grandTotal = parseFloat(showReceipt.total || 0).toFixed(2);
-      message += `%0AGrand Total: *₹${grandTotal}*%0A`;
-      message += `------------------------------%0A`;
-      message += `📄 *Download Digital Receipt:*%0A${finalAppUrl}%0A%0A`;
+      message += `\nGrand Total: *₹${grandTotal}*\n`;
+      message += `------------------------------\n`;
+      message += `📄 *Download Digital Receipt:*\n${finalAppUrl}\n\n`;
       if (publicUrl) {
-        message += `📎 *Direct PDF Download:*%0A${publicUrl}%0A%0A`;
+        message += `📎 *Direct PDF Download:*\n${publicUrl}\n\n`;
       }
-      message += `Visit again for more unique designs!%0A`;
+      message += `Visit again for more unique designs!\n`;
       message += `*Classy Couture - Be Unique, Be Classy*`;
 
       const phone = showReceipt.client.phone ? showReceipt.client.phone.replace(/[^0-9]/g, '') : '';
       const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
 
-      window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
+      window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
     } catch (err) {
       console.error('WhatsApp Share Error:', err);
       const appUrlObj = new URL(window.location.origin);
       appUrlObj.pathname = `/bill/${showReceipt.saleId}`;
       const finalAppUrl = appUrlObj.toString();
       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
-      let message = `*✨ INVOICE: ${showReceipt.saleId} ✨*%0A`;
-      message += `------------------------------%0A`;
-      message += `Hello *${showReceipt.client.name}*,%0A`;
-      message += `${greeting}%0A%0A`;
-      message += `*ORDER SUMMARY:*%0A`;
+      let message = `*✨ INVOICE: ${showReceipt.saleId} ✨*\n`;
+      message += `------------------------------\n`;
+      message += `Hello *${showReceipt.client.name}*,\n`;
+      message += `${greeting}\n\n`;
+      message += `*ORDER SUMMARY:*\n`;
       showReceipt.items.forEach(item => {
         const itemPrice = parseFloat(item.price || 0).toFixed(2);
         const clientSuffix = item.clientName ? ` (Client: ${item.clientName})` : '';
-        message += `* ${item.productName}${clientSuffix} (x${item.qty}) - ₹${itemPrice}%0A`;
+        message += `* ${item.productName}${clientSuffix} (x${item.qty}) - ₹${itemPrice}\n`;
       });
       const grandTotalFallback = parseFloat(showReceipt.total || 0).toFixed(2);
-      message += `%0AGrand Total: *₹${grandTotalFallback}*%0A`;
-      message += `------------------------------%0A`;
-      message += `📄 *Download Digital Receipt:*%0A${finalAppUrl}%0A%0A`;
-      message += `Visit again for more unique designs!%0A`;
+      message += `\nGrand Total: *₹${grandTotalFallback}*\n`;
+      message += `------------------------------\n`;
+      message += `📄 *Download Digital Receipt:*\n${finalAppUrl}\n\n`;
+      message += `Visit again for more unique designs!\n`;
       message += `*Classy Couture - Be Unique, Be Classy*`;
 
       const phone = showReceipt.client.phone ? showReceipt.client.phone.replace(/[^0-9]/g, '') : '';
       const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
-      window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
+      window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
 
       if (showGlobalToast) showGlobalToast('Warning', 'Bill sent without PDF link (Supabase storage not ready).');
     } finally {
