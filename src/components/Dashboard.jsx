@@ -265,7 +265,7 @@ function Dashboard({
   // Smart Delivery Calendar Logic
   const deliveryStats = React.useMemo(() => {
     const counts = {};
-    orders.forEach(o => {
+    orders.filter(o => o.status !== 'Sold' && o.status !== 'Closed').forEach(o => {
       if (o.deliveryDate) {
         counts[o.deliveryDate] = (counts[o.deliveryDate] || 0) + 1;
       }
@@ -932,7 +932,7 @@ function Dashboard({
                                   </button>
                                 </div>
                                 <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
-                                  {orders.filter(o => o.deliveryDate === selectedCalendarDate).map((o, idx) => (
+                                  {orders.filter(o => o.deliveryDate === selectedCalendarDate && o.status !== 'Sold' && o.status !== 'Closed').map((o, idx) => (
                                     <button
                                       key={o.id || idx}
                                       className="w-full text-left bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 hover:border-[var(--accent)] transition flex items-center justify-between group"
