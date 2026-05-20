@@ -450,6 +450,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
 
                       if (uploadError) {
                         console.warn('Supabase Upload Error:', uploadError);
+                        alert(`Upload Error: ${uploadError.message || JSON.stringify(uploadError)}`);
                         throw uploadError;
                       }
 

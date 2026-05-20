@@ -414,6 +414,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
 
       if (uploadError) {
         console.warn('Supabase Upload Error:', uploadError);
+        alert(`Upload Error: ${uploadError.message || JSON.stringify(uploadError)}`);
         throw uploadError;
       }
       const { data: { publicUrl } } = supabase.storage
