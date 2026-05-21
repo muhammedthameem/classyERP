@@ -478,10 +478,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       const grandTotal = parseFloat(viewSale.total || 0).toFixed(2);
                       msg += `\nGrand Total: *₹${grandTotal}*\n`;
                       msg += `------------------------------\n`;
-                      msg += `📄 *Download Digital Receipt:*\n${finalAppUrl}\n\n`;
-                      if (publicUrl) {
-                        msg += `📎 *Direct PDF Download:*\n${publicUrl}\n\n`;
-                      }
+                      msg += `📄 *View Digital Receipt:*\n${finalAppUrl}\n\n`;
                       msg += `Visit again for more unique designs!\n`;
                       msg += `*Classy Couture - Be Unique, Be Classy*`;
 
@@ -508,7 +505,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       const grandTotalFallback = parseFloat(viewSale.total || 0).toFixed(2);
                       msg += `\nGrand Total: *₹${grandTotalFallback}*\n`;
                       msg += `------------------------------\n`;
-                      msg += `📄 *Download Digital Receipt:*\n${finalAppUrl}\n\n`;
+                      msg += `📄 *View Digital Receipt:*\n${finalAppUrl}\n\n`;
                       msg += `Visit again for more unique designs!\n`;
                       msg += `*Classy Couture - Be Unique, Be Classy*`;
 

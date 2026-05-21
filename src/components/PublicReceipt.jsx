@@ -79,7 +79,7 @@ function PublicReceipt({ billId, onClear }) {
       await html2pdf().set(opt).from(element.outerHTML).save();
     } catch (err) {
       console.error("PDF Generation Error:", err);
-      alert("Failed to generate PDF. Please try again or take a screenshot.");
+      alert("Could not generate PDF on this device. Please take a screenshot of the receipt instead.");
     } finally {
       setIsGenerating(false);
       // Clean up any potential html2pdf overlays
