@@ -33,6 +33,7 @@ function AddOrderPage({
       product: '',
       orderType: '',
       price: '',
+      advance: '',
       quantity: '',
       unit: 'nos',
       sourceOfMaterial: 'Outside',
@@ -109,6 +110,7 @@ function AddOrderPage({
           product: prefillProduct,
           orderType: '',
           price: '',
+          advance: '',
           quantity: '',
           unit: 'nos',
           sourceOfMaterial: 'Outside',
@@ -131,6 +133,7 @@ function AddOrderPage({
       product: '',
       orderType: '',
       price: '',
+      advance: '',
       quantity: '',
       unit: 'nos',
       sourceOfMaterial: 'Outside',
@@ -226,6 +229,7 @@ function AddOrderPage({
       product: item.product,
       orderType: item.orderType,
       price: item.price,
+      advance: parseFloat(item.advance) || 0,
       size: `${item.quantity} ${item.unit}`,
       sourceOfMaterial: item.sourceOfMaterial,
       internalItems: item.sourceOfMaterial === 'Internal' ? item.internalItems : [],
@@ -272,6 +276,7 @@ function AddOrderPage({
       product: '',
       orderType: '',
       price: '',
+      advance: '',
       quantity: '',
       unit: 'nos',
       sourceOfMaterial: 'Outside',
@@ -860,7 +865,7 @@ function AddOrderPage({
                       </div>
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2 mb-4">
+                    <div className="grid gap-4 sm:grid-cols-3 mb-4">
                       <div>
                         <span className="mb-2 block text-sm font-medium text-[var(--text)]">Quantity</span>
                         <div className="flex gap-2">
@@ -964,7 +969,7 @@ function AddOrderPage({
                       </div>
                       <div>
                         <div className="mb-2">
-                          <span className="text-sm font-medium text-[var(--text)]">Stitching Cost (Estimate)</span>
+                          <span className="text-sm font-medium text-[var(--text)]">Cost (Est.)</span>
                         </div>
                         <div className="relative">
                           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-[var(--muted)]">₹</span>
@@ -974,6 +979,21 @@ function AddOrderPage({
                             className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] py-2.5 pl-9 pr-4 text-sm font-semibold text-[var(--accent)] outline-none transition focus:border-[var(--accent)]"
                             value={item.price}
                             onChange={(e) => updateOrderItem(idx, { price: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="mb-2">
+                          <span className="text-sm font-medium text-[var(--text)]">Advance Paid</span>
+                        </div>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-[var(--muted)]">₹</span>
+                          <input
+                            type="number"
+                            placeholder="0.00"
+                            className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] py-2.5 pl-9 pr-4 text-sm font-semibold text-green-600 outline-none transition focus:border-[var(--accent)]"
+                            value={item.advance}
+                            onChange={(e) => updateOrderItem(idx, { advance: e.target.value })}
                           />
                         </div>
                       </div>

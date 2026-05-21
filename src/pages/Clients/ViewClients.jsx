@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, Search, UsersRound, Eye, Pencil, Trash2, Download, Plus } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
 import { formatDateDDMMYY } from '../../utils/constants'
@@ -14,14 +14,18 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
 
   const isDataLoading = !cloudLoaded || !currentUser || !clients;
 
-  const filteredClients = (clients || []).filter(client =>
-    (client.name?.toString() || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (client.mobile?.toString() || '').includes(searchQuery) ||
-    (client.address?.toString() || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (client.clientProduct?.toString() || '').toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredClients = useMemo(() => {
+    return (clients || []).filter(client =>
+      (client.name?.toString() || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (client.mobile?.toString() || '').includes(searchQuery) ||
+      (client.address?.toString() || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (client.clientProduct?.toString() || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [clients, searchQuery]);
 
-  const sortedClients = [...filteredClients].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+  const sortedClients = useMemo(() => {
+    return [...filteredClients].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  }, [filteredClients]);
   const totalPages = Math.ceil(sortedClients.length / itemsPerPage)
 
   useEffect(() => {

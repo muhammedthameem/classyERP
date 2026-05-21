@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2, Plus } from 'lucide-react'
 import { formatDateDDMMYY, getIndianDate, orders } from '../../utils/constants'
 import supabase from '../../supabase'
@@ -146,11 +146,31 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
     return true
   })
 
+  const sortedOrders = useMemo(() => {
+    return [...filteredOrders].sort((a, b) => {
+      // Keep 'Closed' at the bottom regardless of sort
+      if (a.status === 'Closed' && b.status !== 'Closed') return 1;
+      if (a.status !== 'Closed' && b.status === 'Closed') return -1;
+
+      let valA = a[sortConfig.key] || ''
+      let valB = b[sortConfig.key] || ''
+
+      if (sortConfig.key === 'orderDate' || sortConfig.key === 'deliveryDate') {
+        valA = new Date(valA || 0).getTime()
+        valB = new Date(valB || 0).getTime()
+      }
+
+      if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1
+      if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1
+      return 0
+    });
+  }, [filteredOrders, sortConfig]);
+
   // Scroll to highlight logic
   useEffect(() => {
     if (highlightOrderId) {
-      // Find the index in the filtered list
-      const index = filteredOrders.findIndex(o => o.id === highlightOrderId);
+      // Find the index in the sorted list to calculate the exact page
+      const index = sortedOrders.findIndex(o => o.id === highlightOrderId);
       if (index !== -1) {
         const page = Math.floor(index / itemsPerPage) + 1;
         setCurrentPageNum(page);
@@ -168,30 +188,12 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
         }, 300);
       }
     }
-  }, [highlightOrderId, filteredOrders]);
+  }, [highlightOrderId, sortedOrders]);
 
   // Reset pagination to page 1 when search or filters change
   useEffect(() => {
     setCurrentPageNum(1)
   }, [searchQuery, activeFilter, dateFilter])
-
-  const sortedOrders = [...filteredOrders].sort((a, b) => {
-    // Keep 'Closed' at the bottom regardless of sort
-    if (a.status === 'Closed' && b.status !== 'Closed') return 1;
-    if (a.status !== 'Closed' && b.status === 'Closed') return -1;
-
-    let valA = a[sortConfig.key] || ''
-    let valB = b[sortConfig.key] || ''
-
-    if (sortConfig.key === 'orderDate' || sortConfig.key === 'deliveryDate') {
-      valA = new Date(valA || 0).getTime()
-      valB = new Date(valB || 0).getTime()
-    }
-
-    if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1
-    if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1
-    return 0
-  })
 
   const totalPages = Math.ceil(sortedOrders.length / itemsPerPage)
 
@@ -252,7 +254,8 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
               <div>
                 <p className="text-sm font-medium text-[var(--muted)] mb-1">Product Details</p>
                 <p className="font-semibold text-[var(--text)]">{viewOrder.product}</p>
-                <p className="text-sm text-[var(--muted)] mt-0.5">{viewOrder.orderType} • {viewOrder.price}</p>
+                <p className="text-sm text-[var(--muted)] mt-0.5">{viewOrder.orderType} • ₹{viewOrder.price}</p>
+                {viewOrder.advance > 0 && <p className="text-sm text-green-600 font-semibold mt-0.5">Advance Paid: ₹{viewOrder.advance} • Bal: ₹{(parseFloat(viewOrder.price || 0) - parseFloat(viewOrder.advance || 0)).toFixed(2)}</p>}
                 {viewOrder.size && <p className="text-xs text-[var(--muted)] mt-1">Qty: <span className="font-medium text-[var(--text)]">{viewOrder.size}</span></p>}
               </div>
 
@@ -355,7 +358,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                   onChange={(e) => setEditOrder({ ...editOrder, product: e.target.value })}
                 />
               </label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <label className="block">
                   <span className="mb-1 block text-sm font-medium text-[var(--text)]">Order Type</span>
                   <input
@@ -366,12 +369,21 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-sm font-medium text-[var(--text)]">Stitching Cost (Estimate)</span>
+                  <span className="mb-1 block text-sm font-medium text-[var(--text)]">Est. Cost</span>
                   <input
                     type="text"
                     className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2 outline-none transition focus:border-[var(--accent)] text-[var(--text)]"
                     value={editOrder.price}
                     onChange={(e) => setEditOrder({ ...editOrder, price: e.target.value })}
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-[var(--text)]">Advance Paid</span>
+                  <input
+                    type="number"
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2 outline-none transition focus:border-[var(--accent)] text-green-600 font-semibold"
+                    value={editOrder.advance || ''}
+                    onChange={(e) => setEditOrder({ ...editOrder, advance: e.target.value })}
                   />
                 </label>
               </div>
@@ -704,9 +716,16 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                     </td>
                     <td>
                       <p className="text-[var(--text)] font-medium">{order.product}</p>
-                      <div className="flex gap-2 items-center text-xs mt-1">
-                        <span className="rounded bg-[var(--soft)] px-1.5 py-0.5 text-[var(--muted)]">{order.orderType}</span>
-                        <span className="font-semibold text-[var(--accent)]">{order.price}</span>
+                      <div className="flex flex-col gap-1 mt-1">
+                        <div className="flex gap-2 items-center text-xs">
+                          <span className="rounded bg-[var(--soft)] px-1.5 py-0.5 text-[var(--muted)]">{order.orderType}</span>
+                          <span className="font-semibold text-[var(--accent)]">₹{order.price}</span>
+                        </div>
+                        {order.advance > 0 && (
+                          <div className="text-[10px] font-semibold text-green-600">
+                            Adv: ₹{order.advance} • Bal: ₹{(parseFloat(order.price || 0) - parseFloat(order.advance || 0)).toFixed(2)}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td>

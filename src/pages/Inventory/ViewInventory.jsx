@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, Package, Search, Eye, Pencil, Trash2, Plus } from 'lucide-react'
 import supabase from '../../supabase'
 
@@ -9,13 +9,15 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
 
   const isDataLoading = !cloudLoaded || !inventory;
 
-  const filteredInventory = [...inventory]
-    .sort((a, b) => (b.id || 0) - (a.id || 0))
-    .filter(item =>
-      (item.productId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.productName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.productType || '').toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  const filteredInventory = useMemo(() => {
+    return [...inventory]
+      .sort((a, b) => (b.id || 0) - (a.id || 0))
+      .filter(item =>
+        (item.productId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.productName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.productType || '').toLowerCase().includes(searchQuery.toLowerCase())
+      );
+  }, [inventory, searchQuery]);
 
   // Scroll to highlight logic
   useEffect(() => {

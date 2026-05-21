@@ -19,7 +19,27 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
   const [viewItem, setViewItem] = useState(null);
   const [imagePopup, setImagePopup] = useState(null);
   const [pendingClientSwitch, setPendingClientSwitch] = useState(null);
+  const tableContainerRef = useRef(null);
 
+  useEffect(() => {
+    const container = tableContainerRef.current;
+    if (!container) return;
+    
+    const handleWheel = (e) => {
+      const hasHorizontalScroll = container.scrollWidth > container.clientWidth;
+      
+      // If table is horizontally scrollable and user is scrolling vertically
+      if (hasHorizontalScroll && Math.abs(e.deltaY) > 0) {
+        e.preventDefault();
+        e.stopPropagation(); // Ensure parent containers don't catch it
+        container.scrollLeft += e.deltaY;
+      }
+    };
+    
+    // Use passive: false to allow preventDefault
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, [cart]); // Re-bind if cart changes just in case, though empty array is mostly fine since ref persists
 
   useEffect(() => {
     if (cart.length === 0) {
@@ -92,6 +112,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       }
 
       const price = parsePrice(item.price);
+      const advance = parseFloat(item.advance) || 0;
+
       setCart([...cart, {
         id: `ORD-${item.id}`,
         productId: `ORD-${item.id}`,
@@ -101,6 +123,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
         unit: 'nos',
         rate: price,
         discount: 0,
+        advancePaid: advance,
         finalPrice: price,
         type: 'order',
         clientName: item.clientName
@@ -151,18 +174,32 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     setCart(cart.map(item => item.id === id ? { ...item, qty: Math.max(1, newQty) } : item));
   };
 
-  const calculateSubtotal = () => {
-    const total = cart.reduce((sum, item) => {
+  const calculateTotals = () => {
+    let subtotal = 0;
+    let totalDiscount = 0;
+    let totalAdvance = 0;
+    cart.forEach(item => {
       const itemTotal = (parseFloat(item.finalPrice) || 0) * item.qty;
       const discountAmount = parseFloat(item.discount) || 0;
-      const finalLineTotal = Math.max(0, itemTotal - discountAmount);
-      return sum + finalLineTotal;
-    }, 0);
-    return Number(total.toFixed(2));
+      const advanceAmount = parseFloat(item.advancePaid) || 0;
+      subtotal += itemTotal;
+      totalDiscount += discountAmount;
+      totalAdvance += advanceAmount;
+    });
+    return {
+      subtotal: Number(subtotal.toFixed(2)),
+      discount: Number(totalDiscount.toFixed(2)),
+      advance: Number(totalAdvance.toFixed(2)),
+      total: Number(Math.max(0, subtotal - totalDiscount - totalAdvance).toFixed(2))
+    };
   };
 
   const updateDiscount = (id, newDiscount) => {
     setCart(cart.map(item => item.id === id ? { ...item, discount: newDiscount === '' ? '' : (parseFloat(newDiscount) || 0) } : item));
+  };
+
+  const updateAdvancePaid = (id, newAdvance) => {
+    setCart(cart.map(item => item.id === id ? { ...item, advancePaid: newAdvance === '' ? '' : (parseFloat(newAdvance) || 0) } : item));
   };
 
   const updatePrice = (id, newPrice) => {
@@ -267,6 +304,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
         const itemPrice = parseFloat(item.finalPrice) || 0;
         const itemTotal = itemPrice * item.qty;
         const discountAmount = parseFloat(item.discount) || 0;
+        const advanceAmount = parseFloat(item.advancePaid) || 0;
         const finalLineTotal = Math.max(0, itemTotal - discountAmount);
 
         return {
@@ -276,13 +314,14 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
           unit: item.unit || 'nos',
           rate: parseFloat(item.rate) || 0,
           discount: discountAmount,
+          advancePaid: advanceAmount,
           price: itemPrice,
           rowTotal: finalLineTotal, // STORE PRE-CALCULATED TOTAL
           type: item.type,
           clientName: item.clientName || null
         };
       }),
-      total: calculateSubtotal(),
+      total: Number(Math.max(0, calculateTotals().subtotal - calculateTotals().discount).toFixed(2)),
       timestamp: new Date().toISOString()
     };
     // Instant Cloud Save
@@ -311,8 +350,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     let itemsHtml = showReceipt.items.map(item => `
       <tr>
         <td style="padding: 4px 8px 4px 0; border-bottom: 1px dashed #eee;">
-          <div style="font-weight: bold; font-size: 11px;">${item.productName}</div>
-          <div style="font-size: 9px; color: #666;">Rate: ₹${item.rate}${item.clientName ? ` &bull; Client: ${item.clientName}` : ''}</div>
+          <div style="font-weight: bold; font-size: 11px;">${item.productName.replace(/\s*\(Order #[^)]+\)/g, '')}</div>
+          <div style="font-size: 12px; font-weight: 700; color: #666; margin-top: 1px;">Rate: ₹${item.rate}</div>
         </td>
         <td style="text-align: center; font-size: 11px; padding: 4px 8px;">${item.qty}</td>
         <td style="text-align: right; font-size: 11px; padding: 4px 8px;">₹${parseFloat(item.discount || 0).toFixed(0)}</td>
@@ -368,7 +407,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       filename: `Receipt_${showReceipt.saleId}.pdf`,
       image: { type: 'jpeg', quality: 1 },
       html2canvas: { scale: 3, useCORS: true },
-      jsPDF: { unit: 'mm', format: [80, 200], orientation: 'portrait' }
+      jsPDF: { unit: 'mm', format: [97, 200], orientation: 'portrait' }
     };
 
     html2pdf().set(opt).from(container).save().then(() => {
@@ -397,7 +436,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
         filename: `Receipt_${showReceipt.saleId}.pdf`,
         image: { type: 'jpeg', quality: 1 },
         html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: [80, 200], orientation: 'portrait' }
+        jsPDF: { unit: 'mm', format: [97, 200], orientation: 'portrait' }
       };
 
       const fileName = `receipts/${showReceipt.saleId}.pdf`;
@@ -491,8 +530,13 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
 
     let itemsText = showReceipt.items.map(item => `${item.productName} (x${item.qty}) - ₹${item.price}`).join(', ');
 
+    const subtotal = showReceipt.items.reduce((s, i) => s + (i.rate * i.qty), 0);
+    const totDisc = showReceipt.items.reduce((s, i) => s + (parseFloat(i.discount) || 0), 0);
+
     let message = `Hi ${showReceipt.client.name}, %0a%0a`;
     message += `Items: ${itemsText}%0a`;
+    message += `Total Amount: ₹${subtotal.toFixed(2)}%0a`;
+    if(totDisc > 0) message += `Discount: -₹${totDisc.toFixed(2)}%0a`;
     message += `Grand Total: ₹${parseFloat(showReceipt.total).toFixed(2)}%0a%0a`;
     message += `Thank you for shopping!%0a`;
     message += `Your elegance is our priority.%0a`;
@@ -507,21 +551,24 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     if (!showReceipt) return;
     if (showGlobalToast) showGlobalToast('Preparing Share', 'Generating PDF for sharing...');
 
+    const subtotal = showReceipt.items.reduce((s, i) => s + (i.rate * i.qty), 0);
+    const totDisc = showReceipt.items.reduce((s, i) => s + (parseFloat(i.discount) || 0), 0);
+
     const container = document.createElement('div');
-    container.style.width = '80mm';
+    container.style.width = '97mm';
     container.style.padding = '5mm';
     container.style.color = '#000';
     container.style.fontFamily = 'monospace';
 
     let itemsHtml = showReceipt.items.map(item => `
       <tr>
-        <td style="padding: 4px 8px 4px 0; border-bottom: 1px dashed #eee;">
-          <div style="font-weight: bold; font-size: 11px;">${item.productName}</div>
-          <div style="font-size: 9px; color: #666;">Rate: ₹${item.rate}${item.clientName ? ` &bull; Client: ${item.clientName}` : ''}</div>
+        <td style="padding: 4px 4px 4px 0; border-bottom: 1px dashed #eee;">
+          <div style="font-weight: bold; font-size: 11px;">${item.productName.replace(/\s*\(Order #[^)]+\)/g, '')}</div>
+          <div style="font-size: 12px; font-weight: 700; color: #666; margin-top: 1px;">Rate: ₹${item.rate}</div>
         </td>
-        <td style="text-align: center; font-size: 11px; padding: 4px 8px;">${item.qty}</td>
-        <td style="text-align: right; font-size: 11px; padding: 4px 8px;">₹${parseFloat(item.discount || 0).toFixed(0)}</td>
-        <td style="text-align: right; font-size: 11px; font-weight: bold; padding: 4px 0 4px 8px;">₹${parseFloat(item.rowTotal || (item.qty * item.price) - (item.discount || 0)).toFixed(2)}</td>
+        <td style="text-align: center; font-size: 11px; padding: 4px 4px;">${item.qty}</td>
+        <td style="text-align: right; font-size: 11px; padding: 4px 4px;">₹${parseFloat(item.discount || 0).toFixed(0)}</td>
+        <td style="text-align: right; font-size: 11px; font-weight: bold; padding: 4px 0 4px 4px;">₹${parseFloat(item.rowTotal || (item.qty * item.rate) - (item.discount || 0)).toFixed(2)}</td>
       </tr>
     `).join('');
 
@@ -538,16 +585,18 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
         <thead>
           <tr style="border-bottom: 1px dashed #000; font-size: 10px; text-align: left;">
-            <th style="padding: 5px 8px 5px 0;">Item</th>
-            <th style="text-align: center; padding: 5px 8px;">Qty</th>
-            <th style="text-align: right; padding: 5px 8px;">Disc</th>
-            <th style="text-align: right; padding: 5px 0 5px 8px;">Total</th>
+            <th style="padding: 5px 4px 5px 0;">Item</th>
+            <th style="text-align: center; padding: 5px 4px;">Qty</th>
+            <th style="text-align: right; padding: 5px 4px;">Disc</th>
+            <th style="text-align: right; padding: 5px 0 5px 4px;">Total</th>
           </tr>
         </thead>
         <tbody>${itemsHtml}</tbody>
       </table>
       <div style="border-top: 2px dashed #000; padding-top: 10px; font-size: 12px; font-weight: bold; text-align: right;">
-        Grand Total: ₹${parseFloat(showReceipt.total).toFixed(2)}
+        <div style="font-size: 10px; font-weight: normal; margin-bottom: 2px;">Subtotal: ₹${subtotal.toFixed(2)}</div>
+        ${totDisc > 0 ? `<div style="font-size: 10px; font-weight: normal; margin-bottom: 2px;">Discount: -₹${totDisc.toFixed(2)}</div>` : ''}
+        <div style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed #ccc;">Grand Total: ₹${parseFloat(showReceipt.total).toFixed(2)}</div>
       </div>
     `;
 
@@ -556,7 +605,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       filename: `Receipt_${showReceipt.saleId}.pdf`,
       image: { type: 'jpeg', quality: 1 },
       html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: [80, 150], orientation: 'portrait' }
+      jsPDF: { unit: 'mm', format: [97, 150], orientation: 'portrait' }
     };
 
     try {
@@ -937,7 +986,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
               </button>
             </div>
 
-            <div id="printable-bill" className="mb-8 bg-white p-4 text-black shadow-inner overflow-hidden mx-auto" style={{ width: '80mm', minHeight: '120mm', fontFamily: 'monospace' }}>
+            <div id="printable-bill" className="mb-8 bg-white p-4 text-black shadow-inner overflow-hidden mx-auto" style={{ width: '97mm', minHeight: '120mm', fontFamily: 'monospace' }}>
               <div className="text-center mb-4 border-b-2 border-dashed border-gray-300 pb-4">
                 <img src="/logo-black.png" alt="Logo" className="w-28 h-32 mx-auto mb-4 object-contain" />
                 <h3 className="uppercase tracking-tight !text-[24px] !font-extrabold">Classy Couture</h3>
@@ -967,8 +1016,10 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                   {showReceipt.items.map((item, idx) => (
                     <tr key={idx}>
                       <td className="py-2 pr-1">
-                        <p className="font-bold">{item.productName}</p>
-                        <p className="text-[8px] opacity-70">Rate: ₹{item.rate}{item.clientName ? ` • Client: ${item.clientName}` : ''}</p>
+                        <p className="font-bold">{item.productName.replace(/\s*\(Order #[^)]+\)/g, '')}</p>
+                        <div className="flex flex-col mt-0.5">
+                          <p style={{ fontSize: '12px', fontWeight: 700 }} className="opacity-70">Rate: ₹{item.rate}</p>
+                        </div>
                       </td>
                       <td className="py-2 text-center px-2">{item.qty}</td>
                       <td className="py-2 text-right px-2">₹{item.discount}</td>
@@ -1182,14 +1233,14 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
 
             {/* Quick Add Client Orders */}
 
-            <div className="erp-table-container">
+            <div className="erp-table-container" ref={tableContainerRef}>
               <table className="erp-table">
                 <thead>
                   <tr>
                     <th>Item Details</th>
                     <th>Qty</th>
                     <th>Rate/Price</th>
-                    <th>Disc (₹)</th>
+                    <th>Deductions</th>
                     <th className="text-right">Total</th>
                     <th className="text-right"></th>
                   </tr>
@@ -1217,7 +1268,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                           {item.type === 'inventory' ? (
                             <input
                               type="number"
-                              className="w-12 rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] px-2 py-1 font-bold text-[var(--text)]"
+                              className="w-12 rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] px-2 py-1 font-bold text-[var(--text)] text-sm"
                               value={item.qty}
                               onChange={(e) => updateQty(item.id, parseInt(e.target.value) || 0)}
                             />
@@ -1230,7 +1281,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                           <span className="text-[var(--muted)]">₹</span>
                           <input
                             type="number"
-                            className={`w-20 rounded-lg border bg-[var(--surface-strong)] px-2 py-1 font-bold text-[var(--text)] ${(parseFloat(item.finalPrice) || 0) <= 0 ? 'border-red-500/50 focus:border-red-500' : 'border-[var(--border)] focus:border-[var(--accent)]'}`}
+                            className={`w-16 rounded-lg border bg-[var(--surface-strong)] px-2 py-1 font-bold text-[var(--text)] text-sm ${(parseFloat(item.finalPrice) || 0) <= 0 ? 'border-red-500/50 focus:border-red-500' : 'border-[var(--border)] focus:border-[var(--accent)]'}`}
                             value={item.finalPrice}
                             onFocus={(e) => e.target.select()}
                             onClick={(e) => e.target.select()}
@@ -1239,17 +1290,33 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                         </div>
                       </td>
                       <td>
-                        <input
-                          type="number"
-                          className="w-16 rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] px-2 py-1 font-bold text-[var(--accent)]"
-                          value={item.discount}
-                          onFocus={(e) => e.target.select()}
-                          onClick={(e) => e.target.select()}
-                          onChange={(e) => updateDiscount(item.id, e.target.value)}
-                        />
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-[var(--muted)] w-8 text-right font-semibold uppercase">Disc</span>
+                            <input
+                              type="number"
+                              className="w-14 rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-1.5 py-0.5 font-bold text-[var(--accent)] text-xs"
+                              value={item.discount}
+                              onFocus={(e) => e.target.select()}
+                              onClick={(e) => e.target.select()}
+                              onChange={(e) => updateDiscount(item.id, e.target.value)}
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-[var(--muted)] w-8 text-right font-semibold uppercase">Adv</span>
+                            <input
+                              type="number"
+                              className="w-14 rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-1.5 py-0.5 font-bold text-green-600 text-xs"
+                              value={item.advancePaid || 0}
+                              onFocus={(e) => e.target.select()}
+                              onClick={(e) => e.target.select()}
+                              onChange={(e) => updateAdvancePaid(item.id, e.target.value)}
+                            />
+                          </div>
+                        </div>
                       </td>
                       <td className="text-right font-bold text-[var(--accent)]">
-                        ₹{Math.max(0, ((parseFloat(item.finalPrice) || 0) * item.qty) - (parseFloat(item.discount) || 0)).toFixed(2)}
+                        ₹{Math.max(0, ((parseFloat(item.finalPrice) || 0) * item.qty) - (parseFloat(item.discount) || 0) - (parseFloat(item.advancePaid) || 0)).toFixed(2)}
                       </td>
                       <td className="text-right">
                         <div className="flex justify-end gap-1">
@@ -1259,7 +1326,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                             className="text-[var(--accent)] hover:text-white transition p-2 hover:bg-[var(--accent-soft)] rounded-lg"
                             title="View Details"
                           >
-                            <Eye size={18} />
+                            <Eye size={16} />
                           </button>
                           <button
                             type="button"
@@ -1267,7 +1334,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                             className="text-red-400 hover:text-red-600 transition p-2 hover:bg-red-50 rounded-lg"
                             title="Remove"
                           >
-                            <Trash2 size={18} />
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </td>
@@ -1379,9 +1446,25 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                 <span className="text-[var(--muted)]">Total Items</span>
                 <span className="font-bold">{cart.reduce((s, i) => s + i.qty, 0)}</span>
               </div>
-              <div className="flex justify-between border-t border-[var(--border)] pt-4">
-                <span className="text-lg font-bold">Grand Total</span>
-                <span className="text-3xl font-black text-[var(--accent)]">₹{calculateSubtotal().toFixed(2)}</span>
+              <div className="flex justify-between border-t border-[var(--border)] pt-4 mt-2">
+                <span className="text-[var(--muted)]">Total Amount</span>
+                <span className="font-semibold">₹{calculateTotals().subtotal.toFixed(2)}</span>
+              </div>
+              {calculateTotals().discount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-[var(--muted)]">Total Discount</span>
+                  <span className="font-semibold text-red-500">- ₹{calculateTotals().discount.toFixed(2)}</span>
+                </div>
+              )}
+              {calculateTotals().advance > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-[var(--muted)]">Advance Paid</span>
+                  <span className="font-semibold text-green-600">- ₹{calculateTotals().advance.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between border-t border-dashed border-[var(--border)] pt-4 mt-2">
+                <span className="text-lg font-bold">Balance (Grand Total)</span>
+                <span className="text-3xl font-black text-[var(--accent)]">₹{calculateTotals().total.toFixed(2)}</span>
               </div>
               <button
                 onClick={handleCheckout}

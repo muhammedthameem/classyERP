@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, Search, TrendingUp, Eye, Trash2, Download, Plus } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
 import { orders } from '../../utils/constants'
@@ -48,19 +48,23 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
     }
   };
 
-  const filteredSales = sales.filter(s => {
-    const sId = (s.saleId || '').toString().toLowerCase();
-    const cName = (s.client?.name || s.client || '').toString().toLowerCase();
-    const query = searchQuery.toLowerCase();
-    return sId.includes(query) || cName.includes(query);
-  });
+  const filteredSales = useMemo(() => {
+    return sales.filter(s => {
+      const sId = (s.saleId || '').toString().toLowerCase();
+      const cName = (s.client?.name || s.client || '').toString().toLowerCase();
+      const query = searchQuery.toLowerCase();
+      return sId.includes(query) || cName.includes(query);
+    });
+  }, [sales, searchQuery]);
 
   // Sort sales: Newest first (using timestamp or id as fallback)
-  const sortedSales = [...filteredSales].sort((a, b) => {
-    const timeA = new Date(a.timestamp || a.id || 0).getTime();
-    const timeB = new Date(b.timestamp || b.id || 0).getTime();
-    return timeB - timeA;
-  });
+  const sortedSales = useMemo(() => {
+    return [...filteredSales].sort((a, b) => {
+      const timeA = new Date(a.timestamp || a.id || 0).getTime();
+      const timeB = new Date(b.timestamp || b.id || 0).getTime();
+      return timeB - timeA;
+    });
+  }, [filteredSales]);
 
   // Scroll to highlight logic
   useEffect(() => {
@@ -81,7 +85,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
         }, 300);
       }
     }
-  }, [highlightSaleId, filteredSales]);
+  }, [highlightSaleId, sortedSales]);
 
   // Pagination Logic
   const [currentPageNum, setCurrentPageNum] = useState(1);
@@ -190,7 +194,9 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                     </div>
                   </td>
                   <td className="text-right">
-                    <p className="text-lg font-black text-[var(--accent)]">₹{parseFloat(sale.total).toFixed(2)}</p>
+                    <p className="text-lg font-black text-[var(--accent)]">
+                      ₹{sale.items.reduce((sum, item) => sum + ((parseFloat(item.rate) || parseFloat(item.price) || 0) * (item.qty || 0)) - (parseFloat(item.discount) || 0), 0).toFixed(2)}
+                    </p>
                   </td>
                   <td>
                     <div className="flex justify-center gap-2">
@@ -262,7 +268,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
 
             <div className="mb-8 space-y-6">
               {/* Receipt Visual Container */}
-              <div id="printable-bill-view" className="mb-8 bg-white p-4 text-black shadow-inner overflow-hidden mx-auto" style={{ width: '80mm', minHeight: '120mm', fontFamily: 'monospace' }}>
+              <div id="printable-bill-view" className="mb-8 bg-white p-4 text-black shadow-inner overflow-hidden mx-auto" style={{ width: '97mm', minHeight: '120mm', fontFamily: 'monospace' }}>
                 <div className="text-center mb-4 border-b-2 border-dashed border-gray-300 pb-4">
                   <img src="/logo-black.png" alt="Logo" className="w-28 h-32 mx-auto mb-4 object-contain" />
                   <h3 className="uppercase tracking-tight !text-[24px] !font-extrabold">Classy Couture</h3>
@@ -292,8 +298,10 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                     {viewSale.items.map((item, idx) => (
                       <tr key={idx}>
                         <td className="py-2 pr-2">
-                          <p className="font-bold">{item.productName}</p>
-                          <p className="text-[8px] opacity-70">Rate: ₹{item.rate}{item.clientName ? ` • Client: ${item.clientName}` : ''}</p>
+                          <p className="font-bold">{item.productName.replace(/\s*\(Order #[^)]+\)/g, '')}</p>
+                          <div className="flex flex-col mt-0.5">
+                            <p style={{ fontSize: '12px', fontWeight: 700 }} className="opacity-70">Rate: ₹{item.rate}</p>
+                          </div>
                         </td>
                         <td className="py-2 text-center px-3">{item.qty}</td>
                         <td className="py-2 text-right px-3">
@@ -312,7 +320,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                 <div className="border-t-2 border-dashed border-gray-300 pt-3 space-y-1">
                   <div className="flex justify-between text-sm font-black">
                     <span>Grand Total</span>
-                    <span>₹{parseFloat(viewSale.total).toFixed(2)}</span>
+                    <span>₹{((viewSale.items || []).reduce((s, i) => s + (i.rate * i.qty), 0) - (viewSale.items?.reduce((s, i) => s + (parseFloat(i.discount) || 0), 0) || 0)).toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -329,7 +337,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                     if (showGlobalToast) showGlobalToast('Preparing Receipt', 'Generating your professional bill...');
 
                     const container = document.createElement('div');
-                    container.style.width = '80mm';
+                    container.style.width = '97mm';
                     container.style.padding = '5mm';
                     container.style.color = '#000';
                     container.style.fontFamily = 'monospace';
@@ -345,14 +353,17 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       return `
                       <tr>
                         <td style="padding: 4px 8px 4px 0; border-bottom: 1px dashed #eee;">
-                          <div style="font-weight: bold; font-size: 11px;">${item.productName}</div>
-                          <div style="font-size: 9px; color: #666;">Rate: ₹${item.rate}${item.clientName ? ` &bull; Client: ${item.clientName}` : ''}</div>
+                          <div style="font-weight: bold; font-size: 11px;">${item.productName.replace(/\s*\(Order #[^)]+\)/g, '')}</div>
+                          <div style="font-size: 12px; font-weight: 700; color: #666; margin-top: 1px;">Rate: ₹${item.rate}</div>
                         </td>
                         <td style="text-align: center; font-size: 11px; padding: 4px 10px;">${item.qty}</td>
                         <td style="text-align: right; font-size: 11px; padding: 4px 10px;">${discDisplay}</td>
                         <td style="text-align: right; font-size: 11px; font-weight: bold; padding: 4px 0 4px 10px;">₹${parseFloat(finalTotal).toFixed(2)}</td>
                       </tr>
                     `}).join('');
+                    
+                    const subtotal = viewSale.items.reduce((s, i) => s + (i.rate * i.qty), 0);
+                    const totDisc = viewSale.items.reduce((s, i) => s + (parseFloat(i.discount) || 0), 0);
 
                     container.innerHTML = `
                       <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
@@ -388,7 +399,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       <div style="border-top: 2px dashed #000; padding-top: 10px; margin-bottom: 20px;">
                         <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 900;">
                           <span>Grand Total</span>
-                          <span>₹${parseFloat(viewSale.total).toFixed(2)}</span>
+                          <span>₹${(subtotal - totDisc).toFixed(2)}</span>
                         </div>
                       </div>
 
@@ -404,7 +415,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       filename: `Receipt_${viewSale.saleId}.pdf`,
                       image: { type: 'jpeg', quality: 1 },
                       html2canvas: { scale: 3, useCORS: true },
-                      jsPDF: { unit: 'mm', format: [80, 200], orientation: 'portrait' }
+                      jsPDF: { unit: 'mm', format: [97, 200], orientation: 'portrait' }
                     };
 
                     html2pdf().set(opt).from(container.outerHTML).save().then(() => {
@@ -433,7 +444,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                         filename: `Receipt_${viewSale.saleId}.pdf`,
                         image: { type: 'jpeg', quality: 1 },
                         html2canvas: { scale: 2, useCORS: true },
-                        jsPDF: { unit: 'mm', format: [80, 200], orientation: 'portrait' }
+                        jsPDF: { unit: 'mm', format: [97, 200], orientation: 'portrait' }
                       };
 
                       const fileName = `receipts/${viewSale.saleId}.pdf`;

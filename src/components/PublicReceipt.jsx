@@ -73,7 +73,7 @@ function PublicReceipt({ billId, onClear }) {
         filename: `Receipt_${sale.saleId}.pdf`,
         image: { type: 'jpeg', quality: 1 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: [80, 200], orientation: 'portrait' }
+        jsPDF: { unit: 'mm', format: [97, 200], orientation: 'portrait' }
       };
       
       await html2pdf().set(opt).from(element.outerHTML).save();
@@ -138,7 +138,7 @@ function PublicReceipt({ billId, onClear }) {
         <p className="text-stone-500 text-sm">Thank you for your purchase!</p>
       </div>
 
-      <div id="printable-bill" className="mb-8 bg-white p-6 text-black shadow-2xl rounded-sm overflow-hidden mx-auto" style={{ width: '80mm', minHeight: '120mm', fontFamily: 'monospace' }}>
+      <div id="printable-bill" className="mb-8 bg-white p-6 text-black shadow-2xl rounded-sm overflow-hidden mx-auto" style={{ width: '97mm', minHeight: '120mm', fontFamily: 'monospace' }}>
         <div className="text-center mb-6 border-b-2 border-dashed border-gray-300 pb-6">
           <img src="/logo-black.png" alt="Logo" className="w-24 h-24 mx-auto mb-4 object-contain" />
           <h3 className="text-lg font-bold uppercase tracking-tight">Classy Couture</h3>
@@ -176,8 +176,10 @@ function PublicReceipt({ billId, onClear }) {
               return (
                 <tr key={idx}>
                   <td className="py-3 pr-2">
-                    <p className="font-bold">{item.productName}</p>
-                    <p className="text-[8px] opacity-60">Rate: ₹{item.rate}{item.clientName ? ` • Client: ${item.clientName}` : ''}</p>
+                    <p className="font-bold">{item.productName.replace(/\s*\(Order #[^)]+\)/g, '')}</p>
+                    <div className="flex flex-col mt-0.5">
+                      <p style={{ fontSize: '12px', fontWeight: 700 }} className="opacity-60">Rate: ₹{item.rate}</p>
+                    </div>
                   </td>
                   <td className="py-3 px-3 text-center">{item.qty}</td>
                   <td className="py-3 px-3 text-right text-[9px]">{discDisplay}</td>
@@ -191,7 +193,7 @@ function PublicReceipt({ billId, onClear }) {
         <div className="border-t-2 border-dashed border-gray-300 pt-4 mb-6">
           <div className="flex justify-between text-base font-black">
             <span>GRAND TOTAL</span>
-            <span>₹{parseFloat(sale.total || 0).toFixed(2)}</span>
+            <span>₹{(sale.items || []).reduce((sum, item) => sum + ((parseFloat(item.rate) || parseFloat(item.price) || 0) * (item.qty || 0)) - (parseFloat(item.discount) || 0), 0).toFixed(2)}</span>
           </div>
         </div>
 
