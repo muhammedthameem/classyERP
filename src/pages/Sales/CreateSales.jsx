@@ -500,7 +500,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     message += `Thank you for shopping!%0a`;
     message += `Your elegance is our priority.%0a`;
     message += `Please visit again for more unique designs.%0a%0a`;
-    message += `Digital Receipt: https://classy-couture.web.app/bill/${showReceipt.saleId}`;
+    message += `Digital Receipt: ${window.location.origin}/bill/${showReceipt.saleId}`;
 
     const phone = showReceipt.client.phone ? showReceipt.client.phone.replace(/[^0-9]/g, '') : '';
     window.location.href = `sms:${phone}?body=${message}`;
