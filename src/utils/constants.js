@@ -138,6 +138,17 @@ export const navItems = [
       { label: 'View Users', id: 'view-users' }
     ]
   },
+  {
+    label: 'Account',
+    icon: CircleDollarSign,
+    id: 'account',
+    hasSubmenu: true,
+    submenu: [
+      { label: 'Add Income', id: 'add-income' },
+      { label: 'Add Expense', id: 'add-expense' },
+      { label: 'View Accounts', id: 'view-accounts' }
+    ]
+  },
   { label: 'Reports', icon: BarChart3, id: 'reports' },
 ]
 

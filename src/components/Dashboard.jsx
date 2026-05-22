@@ -14,6 +14,9 @@ const InventoryDetailPage = lazy(() => import('../pages/Inventory/InventoryDetai
 const CreateSalesPage = lazy(() => import('../pages/Sales/CreateSales'))
 const ViewSalesPage = lazy(() => import('../pages/Sales/ViewSales'))
 const ReportsPage = lazy(() => import('../pages/Reports/Reports'))
+const AddIncomePage = lazy(() => import('../pages/Accounts/AddIncome'))
+const AddExpensePage = lazy(() => import('../pages/Accounts/AddExpense'))
+const ViewAccountsPage = lazy(() => import('../pages/Accounts/ViewAccounts'))
 import AccountDetailsModal from './AccountDetailsModal'
 
 import supabase from '../supabase'
@@ -34,6 +37,8 @@ function Dashboard({
   orderTypes, setOrderTypes,
   productTypes, setProductTypes,
   inventoryUnits, setInventoryUnits,
+  incomeCategories, setIncomeCategories,
+  expenseCategories, setExpenseCategories,
   orderLimits, setOrderLimits,
   cloudLoaded,
   syncError,
@@ -360,7 +365,7 @@ function Dashboard({
 
         <nav className="flex-1 overflow-y-auto space-y-2 px-4 py-6">
           {navItems.filter(item => {
-            if (['users', 'inventory', 'reports'].includes(item.id) && user?.role !== 'Admin') return false;
+            if (['users', 'inventory', 'reports', 'account'].includes(item.id) && user?.role !== 'Admin' && user?.role !== 'Owner') return false;
             return true;
           }).map(({ label, icon: Icon, hasSubmenu, submenu, id }, index) => (
             <div key={label}>
@@ -1168,6 +1173,9 @@ function Dashboard({
               {currentPage === 'inventory-detail' && <InventoryDetailPage themeStyle={themeStyle} item={selectedInventoryItem} setCurrentPage={setCurrentPage} setSelectedInventoryItem={setSelectedInventoryItem} initialMode={inventoryDetailMode} setInventoryDetailMode={setInventoryDetailMode} showGlobalToast={showGlobalToast} currentUser={user} inventory={inventory} setInventory={setInventory} cloudLoaded={cloudLoaded} />}
               {currentPage === 'create-sales' && <CreateSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} sales={sales} setSales={setSales} clients={clients} setClients={setClients} orders={orders} setOrders={setOrders} inventory={inventory} setInventory={setInventory} saveSale={saveSale} saveOrder={saveOrder} cloudLoaded={cloudLoaded} />}
               {currentPage === 'view-sales' && <ViewSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightSaleId={highlightSaleId} setHighlightSaleId={setHighlightSaleId} sales={sales} setSales={setSales} inventory={inventory} setInventory={setInventory} orders={orders} setOrders={setOrders} cloudLoaded={cloudLoaded} />}
+              {currentPage === 'add-income' && <AddIncomePage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} incomeCategories={incomeCategories} setIncomeCategories={setIncomeCategories} saveConfig={saveConfig} sales={sales} />}
+              {currentPage === 'add-expense' && <AddExpensePage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} expenseCategories={expenseCategories} setExpenseCategories={setExpenseCategories} saveConfig={saveConfig} inventory={inventory} />}
+              {currentPage === 'view-accounts' && <ViewAccountsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} />}
               {currentPage === 'reports' && <ReportsPage themeStyle={themeStyle} showGlobalToast={showGlobalToast} currentUser={user} sales={sales} orders={orders} clients={clients} inventory={inventory} cloudLoaded={cloudLoaded} />}
               {currentPage === 'create-user' && <CreateUserPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} users={users} setUsers={setUsers} designations={designations} setDesignations={setDesignations} currentUser={user} saveUser={saveUser} cloudLoaded={cloudLoaded} />}
               {currentPage === 'view-users' && <ViewUsersPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} users={users} setUsers={setUsers} designations={designations} setDesignations={setDesignations} currentUser={user} cloudLoaded={cloudLoaded} />}

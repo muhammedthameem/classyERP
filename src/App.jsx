@@ -22,6 +22,8 @@ function App() {
   const [productTypes, setProductTypes] = useState(() => { try { return JSON.parse(localStorage.getItem('productTypes') || '[]') } catch (e) { return [] } })
   const [inventoryUnits, setInventoryUnits] = useState(() => { try { return JSON.parse(localStorage.getItem('inventoryUnits') || '["nos", "mtr", "kg", "yd", "set"]') } catch (e) { return ["nos", "mtr", "kg", "yd", "set"] } })
   const [orderLimits, setOrderLimits] = useState(() => { try { return JSON.parse(localStorage.getItem('orderLimits') || '{}') } catch (e) { return {} } })
+  const [incomeCategories, setIncomeCategories] = useState(() => { try { return JSON.parse(localStorage.getItem('incomeCategories') || '["Sales", "Service", "Commission", "Other"]') } catch (e) { return ["Sales", "Service", "Commission", "Other"] } })
+  const [expenseCategories, setExpenseCategories] = useState(() => { try { return JSON.parse(localStorage.getItem('expenseCategories') || '["Rent", "Salaries", "Materials & Fabric", "Utilities", "Marketing", "Maintenance", "Other"]') } catch (e) { return ["Rent", "Salaries", "Materials & Fabric", "Utilities", "Marketing", "Maintenance", "Other"] } })
   const [cloudLoaded, setCloudLoaded] = useState(false)
   const [syncError, setSyncError] = useState(null)
 
@@ -56,6 +58,8 @@ function App() {
             if (item.id === 'productTypes') setProductTypes(item.data);
             if (item.id === 'inventoryUnits') setInventoryUnits(item.data);
             if (item.id === 'orderLimits') setOrderLimits(item.data);
+            if (item.id === 'incomeCategories') setIncomeCategories(item.data);
+            if (item.id === 'expenseCategories') setExpenseCategories(item.data);
           });
         }
         setCloudLoaded(true);
@@ -96,6 +100,8 @@ function App() {
   useEffect(() => { localStorage.setItem('productTypes', JSON.stringify(productTypes)) }, [productTypes])
   useEffect(() => { localStorage.setItem('inventoryUnits', JSON.stringify(inventoryUnits)) }, [inventoryUnits])
   useEffect(() => { localStorage.setItem('orderLimits', JSON.stringify(orderLimits)) }, [orderLimits])
+  useEffect(() => { localStorage.setItem('incomeCategories', JSON.stringify(incomeCategories)) }, [incomeCategories])
+  useEffect(() => { localStorage.setItem('expenseCategories', JSON.stringify(expenseCategories)) }, [expenseCategories])
 
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser] = useState(null)
@@ -304,6 +310,8 @@ function App() {
               orderTypes={orderTypes} setOrderTypes={setOrderTypes}
               productTypes={productTypes} setProductTypes={setProductTypes}
               inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits}
+              incomeCategories={incomeCategories} setIncomeCategories={setIncomeCategories}
+              expenseCategories={expenseCategories} setExpenseCategories={setExpenseCategories}
               cloudLoaded={cloudLoaded}
               syncError={syncError}
               selectedClient={selectedClient}
