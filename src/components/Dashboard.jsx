@@ -55,6 +55,36 @@ function Dashboard({
   const [showAllNotifications, setShowAllNotifications] = useState(false)
   const [notificationsPage, setNotificationsPage] = useState(1)
   const notificationsPerPage = 10
+  
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true)
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          
+          if (currentScrollY < 60) {
+            setIsHeaderVisible(true);
+          } else if (currentScrollY > lastScrollY && currentScrollY - lastScrollY > 5) {
+            setIsHeaderVisible(false); // scrolling down
+          } else if (currentScrollY < lastScrollY && lastScrollY - currentScrollY > 5) {
+            setIsHeaderVisible(true); // scrolling up
+          }
+          
+          lastScrollY = currentScrollY;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const [dashboardCards, setDashboardCards] = useState(() => {
     try {
@@ -326,10 +356,10 @@ function Dashboard({
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-[100] border-r border-[var(--border)] text-[var(--text)] shadow-[15px_0_80px_rgba(0,0,0,0.15)] ${transitionClass} lg:flex lg:flex-col ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        className={`fixed inset-y-0 left-0 z-[100] border-r border-[var(--border)] text-[var(--text)] shadow-[15px_0_80px_rgba(0,0,0,0.15)] ${transitionClass} flex flex-col ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           } ${isSidebarCollapsed ? 'lg:w-24' : 'lg:w-72'} w-72 bg-[var(--surface-strong)]`}
       >
-        <div className="flex h-20 items-center justify-between border-b border-[var(--border)] px-5">
+        <div className="flex shrink-0 h-20 items-center justify-between border-b border-[var(--border)] px-5 sticky top-0 z-10 bg-[var(--surface-strong)]">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 place-items-center rounded-xl bg-white p-1 shadow-sm">
               <img src="/logo-black.png" alt="CB" className="h-full w-full object-contain" />
@@ -363,7 +393,7 @@ function Dashboard({
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto space-y-2 px-4 py-6">
+        <nav className="flex-1 overflow-y-auto scrollbar-hide space-y-2 px-4 py-6 pb-20">
           {navItems.filter(item => {
             if (['users', 'inventory', 'reports', 'account'].includes(item.id) && user?.role !== 'Admin' && user?.role !== 'Owner') return false;
             return true;
@@ -423,7 +453,7 @@ function Dashboard({
       </aside>
 
       <div className={`min-w-0 bg-[var(--page-bg)] ${transitionClass} ${sidebarWidth}`}>
-        <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--surface)] px-5 py-3 shadow-sm backdrop-blur-xl lg:px-8">
+        <header className={`sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--surface)] px-5 py-3 shadow-sm backdrop-blur-xl lg:px-8 transition-transform duration-300 ease-in-out ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'}`}>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <button

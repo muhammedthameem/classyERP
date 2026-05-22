@@ -22,7 +22,7 @@
 html {
   /* overflow-x must live on html, not body — putting it on body creates
      a new containing block and breaks position:fixed overlays in Chrome/Safari */
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
@@ -116,7 +116,7 @@ textarea {
 
 #root {
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* iOS Safari auto-zoom prevention */
