@@ -211,11 +211,17 @@ function InventoryDetailPage({ themeStyle, item, setCurrentPage, setSelectedInve
               <div>
                 <p className="text-xs font-bold uppercase text-[var(--muted)] mb-1">Purchase Price (from Vendor)</p>
                 {mode === 'view' ? (
-                  <p className="text-lg font-semibold text-[var(--text)]">₹{formData.purchasePrice}</p>
+                  <div>
+                    <p className="text-lg font-semibold text-[var(--text)]">₹{formData.purchasePrice} <span className="text-sm font-normal text-[var(--muted)]">/ {formData.unit}</span></p>
+                    <p className="text-[10px] font-bold text-[var(--muted)] uppercase mt-0.5">Total: ₹{(parseFloat(formData.purchasePrice || 0) * parseFloat(formData.initialQuantity !== undefined ? formData.initialQuantity : formData.quantity || 0)).toLocaleString()}</p>
+                  </div>
                 ) : (
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)] font-bold">₹</span>
-                    <input className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] py-2.5 pl-8 pr-4 outline-none focus:border-[var(--accent)]" type="number" value={formData.purchasePrice} onChange={e => setFormData({ ...formData, purchasePrice: e.target.value })} />
+                  <div className="space-y-1">
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)] font-bold">₹</span>
+                      <input className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] py-2.5 pl-8 pr-4 outline-none focus:border-[var(--accent)]" type="number" value={formData.purchasePrice} onChange={e => setFormData({ ...formData, purchasePrice: e.target.value })} />
+                    </div>
+                    <p className="text-[10px] font-bold text-[var(--muted)] uppercase px-1">Total: ₹{(parseFloat(formData.purchasePrice || 0) * parseFloat(formData.initialQuantity !== undefined ? formData.initialQuantity : formData.quantity || 0)).toLocaleString()}</p>
                   </div>
                 )}
               </div>

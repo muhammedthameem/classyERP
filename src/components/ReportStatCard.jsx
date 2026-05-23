@@ -5,7 +5,9 @@ function ReportStatCard({ icon, label, value, color }) {
     green: 'bg-green-50/50 border-green-100',
     blue: 'bg-blue-50/50 border-blue-100',
     orange: 'bg-orange-50/50 border-orange-100',
-    purple: 'bg-purple-50/50 border-purple-100'
+    purple: 'bg-purple-50/50 border-purple-100',
+    red: 'bg-red-50/50 border-red-100',
+    teal: 'bg-teal-50/50 border-teal-100'
   };
 
   return (

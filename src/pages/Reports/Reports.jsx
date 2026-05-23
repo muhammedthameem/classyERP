@@ -1,25 +1,48 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { CalendarDays, ChevronLeft, ChevronRight, ShoppingBag, TrendingUp, UsersRound, Download, Clock, BarChart3 } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, ShoppingBag, TrendingUp, UsersRound, Download, Clock, BarChart3, CircleDollarSign, TrendingDown } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
 import { orders } from '../../utils/constants'
 import ReportStatCard from '../../components/ReportStatCard'
+import supabase from '../../supabase'
 
 function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inventory, cloudLoaded }) {
   const [filter, setFilter] = useState('all'); // all, today, month, custom
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  const isDataLoading = !cloudLoaded || !sales || !orders || !clients || !inventory;
+  const [accounts, setAccounts] = useState([]);
+  const [accountsLoading, setAccountsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAccounts = async () => {
+      try {
+        const { data, error } = await supabase.from('erp_accounts').select('*');
+        if (error) throw error;
+        setAccounts(data || []);
+      } catch (err) {
+        console.error("Error fetching accounts:", err);
+      } finally {
+        setAccountsLoading(false);
+      }
+    };
+    fetchAccounts();
+  }, []);
+
+  const isDataLoading = !cloudLoaded || !sales || !orders || !clients || !inventory || accountsLoading;
 
   // Pagination State
   const [salesPage, setSalesPage] = useState(1);
   const [ordersPage, setOrdersPage] = useState(1);
+  const [incomePage, setIncomePage] = useState(1);
+  const [expensePage, setExpensePage] = useState(1);
   const itemsPerPage = 10;
 
   useEffect(() => {
     // Reset pages when filter changes
     setSalesPage(1);
     setOrdersPage(1);
+    setIncomePage(1);
+    setExpensePage(1);
   }, [filter, startDate, endDate]);
 
   const getFilteredData = (data) => {
@@ -28,7 +51,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
     const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 
     return data.filter(item => {
-      const dateStr = item.timestamp || item.createdAt;
+      const dateStr = item.date || item.timestamp || item.createdAt;
       if (!dateStr) return true;
       const itemDate = new Date(dateStr).getTime();
 
@@ -40,26 +63,40 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
         return itemDate >= start && itemDate <= end;
       }
       return true;
-    }).sort((a, b) => new Date(b.timestamp || b.createdAt) - new Date(a.timestamp || a.createdAt));
+    }).sort((a, b) => {
+      const dateA = a.date || a.timestamp || a.createdAt;
+      const dateB = b.date || b.timestamp || b.createdAt;
+      return new Date(dateB).getTime() - new Date(dateA).getTime();
+    });
   };
 
   const filteredSales = getFilteredData(sales);
   const filteredOrders = getFilteredData(orders);
   const filteredInventory = getFilteredData(inventory);
+  const filteredAccounts = getFilteredData(accounts);
+
+  const filteredIncome = filteredAccounts.filter(a => a.type === 'Income');
+  const filteredExpense = filteredAccounts.filter(a => a.type === 'Expense');
 
   // Paginated Data
   const paginatedSales = filteredSales.slice((salesPage - 1) * itemsPerPage, salesPage * itemsPerPage);
   const paginatedOrders = filteredOrders.slice((ordersPage - 1) * itemsPerPage, ordersPage * itemsPerPage);
+  const paginatedIncome = filteredIncome.slice((incomePage - 1) * itemsPerPage, incomePage * itemsPerPage);
+  const paginatedExpense = filteredExpense.slice((expensePage - 1) * itemsPerPage, expensePage * itemsPerPage);
 
   const totalSalesPages = Math.ceil(filteredSales.length / itemsPerPage);
   const totalOrdersPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const totalIncomePages = Math.ceil(filteredIncome.length / itemsPerPage);
+  const totalExpensePages = Math.ceil(filteredExpense.length / itemsPerPage);
 
   const reportStats = {
     totalRevenue: filteredSales.reduce((sum, s) => sum + parseFloat(s.total || 0), 0),
     totalInvestment: filteredInventory.reduce((sum, i) => sum + (parseFloat(i.purchasePrice || 0) * (parseFloat(i.quantity) || 0)), 0),
     salesCount: filteredSales.length,
     pendingOrders: filteredOrders.filter(o => o.status === 'Not Ready' || o.status === 'Pending').length,
-    totalClients: clients.length
+    totalClients: clients.length,
+    totalIncome: filteredIncome.reduce((sum, a) => sum + parseFloat(a.amount || 0), 0),
+    totalExpense: filteredExpense.reduce((sum, a) => sum + parseFloat(a.amount || 0), 0)
   };
 
   const downloadPDF = () => {
@@ -77,7 +114,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
         <p style="margin: 15px 0 0 0; font-size: 14px; color: #374151;">Filter: <strong>${filter.toUpperCase()}</strong> | Date: <strong>${new Date().toLocaleDateString()}</strong></p>
       </div>
 
-      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 40px;">
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 20px;">
         <div style="background: #f0fdf4; border: 1px solid #bcf0da; padding: 15px; border-radius: 12px; text-align: center;">
           <p style="margin: 0; font-size: 10px; color: #166534; font-weight: 800; text-transform: uppercase;">Total Revenue</p>
           <p style="margin: 5px 0 0 0; font-size: 20px; font-weight: 900; color: #14532d;">₹${reportStats.totalRevenue.toLocaleString()}</p>
@@ -93,6 +130,17 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
         <div style="background: #faf5ff; border: 1px solid #f3e8ff; padding: 15px; border-radius: 12px; text-align: center;">
           <p style="margin: 0; font-size: 10px; color: #6b21a8; font-weight: 800; text-transform: uppercase;">Purchase Investment</p>
           <p style="margin: 5px 0 0 0; font-size: 20px; font-weight: 900; color: #581c87;">₹${reportStats.totalInvestment.toLocaleString()}</p>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 40px;">
+        <div style="background: #f0fdfa; border: 1px solid #ccfbf1; padding: 15px; border-radius: 12px; text-align: center;">
+          <p style="margin: 0; font-size: 10px; color: #0f766e; font-weight: 800; text-transform: uppercase;">Other Income</p>
+          <p style="margin: 5px 0 0 0; font-size: 20px; font-weight: 900; color: #0f766e;">₹${reportStats.totalIncome.toLocaleString()}</p>
+        </div>
+        <div style="background: #fef2f2; border: 1px solid #fee2e2; padding: 15px; border-radius: 12px; text-align: center;">
+          <p style="margin: 0; font-size: 10px; color: #b91c1c; font-weight: 800; text-transform: uppercase;">Other Expenses</p>
+          <p style="margin: 5px 0 0 0; font-size: 20px; font-weight: 900; color: #b91c1c;">₹${reportStats.totalExpense.toLocaleString()}</p>
         </div>
       </div>
 
@@ -207,6 +255,16 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
       filteredInventory.forEach(i => {
         csvContent += `${new Date(i.createdAt).toLocaleDateString()},${i.productId},${i.productName},${i.vendorName || ''},${i.purchasePrice},${i.quantity},${parseFloat(i.purchasePrice || 0) * (parseFloat(i.quantity) || 0)}\n`;
       });
+    } else if (type === 'income') {
+      csvContent += "Date,Category,Reference,Amount\n";
+      filteredIncome.forEach(i => {
+        csvContent += `${new Date(i.date).toLocaleDateString()},${i.category},${i.reference || ''},${i.amount}\n`;
+      });
+    } else if (type === 'expense') {
+      csvContent += "Date,Category,Reference,Amount\n";
+      filteredExpense.forEach(e => {
+        csvContent += `${new Date(e.date).toLocaleDateString()},${e.category},${e.reference || ''},${e.amount}\n`;
+      });
     }
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -296,9 +354,9 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
       {/* Printable Wrapper */}
       <div id="report-content" className="space-y-8 p-1">
         {/* Stats Grid */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {isDataLoading ? (
-            [1, 2, 3, 4].map(i => (
+            [1, 2, 3, 4, 5, 6].map(i => (
               <div key={i} className="skeleton h-32 rounded-[24px]" />
             ))
           ) : (
@@ -306,7 +364,9 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
               <ReportStatCard icon={<TrendingUp className="text-green-500" />} label="Total Revenue" value={`₹${reportStats.totalRevenue.toLocaleString()}`} color="green" />
               <ReportStatCard icon={<ShoppingBag className="text-blue-500" />} label="Total Purchase" value={`₹${reportStats.totalInvestment.toLocaleString()}`} color="red" />
               <ReportStatCard icon={<Clock className="text-orange-500" />} label="Pending Orders" value={reportStats.pendingOrders} color="orange" />
-              <ReportStatCard icon={<UsersRound className="text-purple-500" />} label="Total Customers" value={reportStats.totalClients} color="purple" />
+              <ReportStatCard icon={<UsersRound className="text-purple-500" />} label="Customers" value={reportStats.totalClients} color="purple" />
+              <ReportStatCard icon={<CircleDollarSign className="text-teal-500" />} label="Other Income" value={`₹${reportStats.totalIncome.toLocaleString()}`} color="teal" />
+              <ReportStatCard icon={<TrendingDown className="text-red-500" />} label="Other Expense" value={`₹${reportStats.totalExpense.toLocaleString()}`} color="red" />
             </>
           )}
         </div>
@@ -509,6 +569,150 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                     className="grid h-8 w-8 place-items-center rounded-lg border border-[var(--border)] transition hover:bg-[var(--soft)] disabled:opacity-30"
                   >
                     <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
+
+        <div className="grid gap-8 lg:grid-cols-2">
+          {/* Income Analysis Table */}
+          <section className="rounded-[32px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] lg:p-8">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h3 className="text-h3">Other Income</h3>
+                <p className="text-xs text-[var(--muted)]">Filtered results: {filteredIncome.length}</p>
+              </div>
+              <button onClick={() => downloadCSV('income')} className="flex items-center gap-2 rounded-xl bg-[var(--soft)] px-4 py-2 text-xs font-bold text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white">
+                <Download size={14} /> Export CSV
+              </button>
+            </div>
+            <div className="erp-table-container">
+              <table className="erp-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Reference</th>
+                    <th className="text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isDataLoading ? (
+                    [1, 2, 3].map(i => (
+                      <tr key={i}>
+                        <td><div className="skeleton h-4 w-20 rounded" /></td>
+                        <td><div className="skeleton h-5 w-24 rounded" /></td>
+                        <td><div className="skeleton h-5 w-32 rounded" /></td>
+                        <td className="text-right"><div className="skeleton h-6 w-20 rounded ml-auto" /></td>
+                      </tr>
+                    ))
+                  ) : paginatedIncome.map(s => (
+                    <tr key={s.id}>
+                      <td>{new Date(s.date).toLocaleDateString()}</td>
+                      <td className="font-mono font-bold text-[var(--muted)]">{s.category}</td>
+                      <td className="font-medium">{s.reference || '-'}</td>
+                      <td className="text-right font-black text-green-600">₹{parseFloat(s.amount).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                  {paginatedIncome.length === 0 && !isDataLoading && (
+                    <tr>
+                      <td colSpan="4" className="text-center text-[var(--muted)]">No income records found for this period</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {totalIncomePages > 1 && (
+              <div className="mt-6 flex items-center justify-between border-t border-[var(--border)] pt-4">
+                <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Page {incomePage} of {totalIncomePages}</span>
+                <div className="flex gap-2">
+                  <button
+                    disabled={incomePage === 1}
+                    onClick={() => setIncomePage(prev => prev - 1)}
+                    className="grid h-8 w-8 place-items-center rounded-lg border border-[var(--border)] transition hover:bg-[var(--soft)] disabled:opacity-30"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button
+                    disabled={incomePage === totalIncomePages}
+                    onClick={() => setIncomePage(prev => prev + 1)}
+                    className="grid h-8 w-8 place-items-center rounded-lg border border-[var(--border)] transition hover:bg-[var(--soft)] disabled:opacity-30"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* Expense Analysis Table */}
+          <section className="rounded-[32px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] lg:p-8">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h3 className="text-h3">Other Expense</h3>
+                <p className="text-xs text-[var(--muted)]">Filtered results: {filteredExpense.length}</p>
+              </div>
+              <button onClick={() => downloadCSV('expense')} className="flex items-center gap-2 rounded-xl bg-[var(--soft)] px-4 py-2 text-xs font-bold text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white">
+                <Download size={14} /> Export CSV
+              </button>
+            </div>
+            <div className="erp-table-container">
+              <table className="erp-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Reference</th>
+                    <th className="text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isDataLoading ? (
+                    [1, 2, 3].map(i => (
+                      <tr key={i}>
+                        <td><div className="skeleton h-4 w-20 rounded" /></td>
+                        <td><div className="skeleton h-5 w-24 rounded" /></td>
+                        <td><div className="skeleton h-5 w-32 rounded" /></td>
+                        <td className="text-right"><div className="skeleton h-6 w-20 rounded ml-auto" /></td>
+                      </tr>
+                    ))
+                  ) : paginatedExpense.map(s => (
+                    <tr key={s.id}>
+                      <td>{new Date(s.date).toLocaleDateString()}</td>
+                      <td className="font-mono font-bold text-[var(--muted)]">{s.category}</td>
+                      <td className="font-medium">{s.reference || '-'}</td>
+                      <td className="text-right font-black text-red-600">₹{parseFloat(s.amount).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                  {paginatedExpense.length === 0 && !isDataLoading && (
+                    <tr>
+                      <td colSpan="4" className="text-center text-[var(--muted)]">No expense records found for this period</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {totalExpensePages > 1 && (
+              <div className="mt-6 flex items-center justify-between border-t border-[var(--border)] pt-4">
+                <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Page {expensePage} of {totalExpensePages}</span>
+                <div className="flex gap-2">
+                  <button
+                    disabled={expensePage === 1}
+                    onClick={() => setExpensePage(prev => prev - 1)}
+                    className="grid h-8 w-8 place-items-center rounded-lg border border-[var(--border)] transition hover:bg-[var(--soft)] disabled:opacity-30"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button
+                    disabled={expensePage === totalExpensePages}
+                    onClick={() => setExpensePage(prev => prev + 1)}
+                    className="grid h-8 w-8 place-items-center rounded-lg border border-[var(--border)] transition hover:bg-[var(--soft)] disabled:opacity-30"
+                  >
+                    <ChevronRight size={16} />
                   </button>
                 </div>
               </div>

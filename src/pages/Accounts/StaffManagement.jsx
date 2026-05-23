@@ -121,7 +121,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
       <div className="mb-6 flex items-center gap-3">
         <Users size={32} className="text-[var(--accent)]" />
         <div>
-          <h1 className="text-h1">Staff Management</h1>
+          <h1 className="text-h1">Staff Payroll</h1>
           <p className="text-para text-[var(--muted)] mt-1">Manage studio staff, designations, and salaries</p>
         </div>
       </div>

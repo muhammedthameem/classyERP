@@ -76,16 +76,19 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
 
   const handleInventorySelect = (e) => {
     const val = e.target.value;
-    setFormData(prev => ({ ...prev, linked_inventory_id: val }));
     if (val) {
       const item = inventory.find(i => i.productId?.toString() === val || i.id?.toString() === val);
       if (item) {
+        const totalAmount = (parseFloat(item.initialQuantity || item.quantity || 0) * parseFloat(item.purchasePrice || 0)).toFixed(2);
         setFormData(prev => ({
           ...prev,
-          category: formData.category,
-          reference: item.supplier || item.productName || ''
+          linked_inventory_id: val,
+          amount: totalAmount,
+          reference: item.vendorName || item.supplier || item.productName || ''
         }));
       }
+    } else {
+      setFormData(prev => ({ ...prev, linked_inventory_id: val }));
     }
   }
 
@@ -209,7 +212,7 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
                   <option value="">-- No linked inventory --</option>
                   {inventory.map(i => (
                     <option key={i.productId || i.id} value={i.productId || i.id}>
-                      Item #{i.productId || i.id} - {i.productName} ({i.quantity} {i.unit})
+                      Item #{i.productId || i.id} - {i.productName} (Qty: {i.initialQuantity || i.quantity} {i.unit} @ ₹{i.purchasePrice || 0})
                     </option>
                   ))}
                 </select>
@@ -252,6 +255,19 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
                   <span className="text-xs font-semibold text-[var(--accent)] bg-[var(--accent-soft)] px-2 py-0.5 rounded-md">
                     Base Salary: ₹{selectedStaff.salary || 0}
                   </span>
+                )}
+                {formData.linked_inventory_id && (
+                  (() => {
+                    const item = inventory.find(i => i.productId?.toString() === formData.linked_inventory_id || i.id?.toString() === formData.linked_inventory_id);
+                    if (item) {
+                      return (
+                        <span className="text-xs font-semibold text-[var(--accent)] bg-[var(--accent-soft)] px-2 py-0.5 rounded-md">
+                          Inventory Cost: ₹{(parseFloat(item.initialQuantity || item.quantity || 0) * parseFloat(item.purchasePrice || 0)).toLocaleString()}
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()
                 )}
               </div>
               <input

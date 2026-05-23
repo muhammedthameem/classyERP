@@ -146,7 +146,7 @@ export const navItems = [
     submenu: [
       { label: 'Add Income', id: 'add-income' },
       { label: 'Add Expense', id: 'add-expense' },
-      { label: 'Staff Management', id: 'staff-management' },
+      { label: 'Staff Payroll', id: 'staff-management' },
       { label: 'View Accounts', id: 'view-accounts' }
     ]
   },
