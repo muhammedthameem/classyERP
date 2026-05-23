@@ -170,7 +170,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
               />
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-[var(--text)]">Weekly Salary (₹) <span className="text-red-500">*</span></span>
+              <span className="text-sm font-medium text-[var(--text)]">Salary (₹) <span className="text-red-500">*</span></span>
               <input
                 name="salary"
                 className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
