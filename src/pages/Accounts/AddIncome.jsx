@@ -6,7 +6,7 @@ import { getIndianDate } from '../../utils/constants'
 function AddIncomePage({ themeStyle, setCurrentPage, showGlobalToast, incomeCategories = [], setIncomeCategories, saveConfig, sales = [] }) {
   const [formData, setFormData] = useState({
     date: getIndianDate(),
-    category: 'Sales',
+    category: '',
     amount: '',
     payment_mode: 'Cash',
     reference: '',
@@ -17,7 +17,7 @@ function AddIncomePage({ themeStyle, setCurrentPage, showGlobalToast, incomeCate
 
   // Dynamic Category State
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
-  const [categorySearch, setCategorySearch] = useState('Sales')
+  const [categorySearch, setCategorySearch] = useState('')
 
   const paymentModes = ['Cash', 'Bank Transfer', 'UPI', 'Card', 'Cheque']
   const completedSales = sales.filter(s => s.status === 'Completed' || s.status === 'Delivered' || s.status === 'Billed' || s.totalAmount > 0)

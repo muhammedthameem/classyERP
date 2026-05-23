@@ -17,6 +17,7 @@ const ReportsPage = lazy(() => import('../pages/Reports/Reports'))
 const AddIncomePage = lazy(() => import('../pages/Accounts/AddIncome'))
 const AddExpensePage = lazy(() => import('../pages/Accounts/AddExpense'))
 const ViewAccountsPage = lazy(() => import('../pages/Accounts/ViewAccounts'))
+const StaffManagementPage = lazy(() => import('../pages/Accounts/StaffManagement'))
 import AccountDetailsModal from './AccountDetailsModal'
 
 import supabase from '../supabase'
@@ -44,6 +45,7 @@ function Dashboard({
   syncError,
   saveSale, saveOrder, saveClient, saveUser, deleteClient, deleteOrder, saveConfig, saveActivity,
   selectedClient, setSelectedClient, clientDetailMode, setClientDetailMode,
+  staffList, setStaffList,
   themeStyle
 }) {
   const [showAccountMenu, setShowAccountMenu] = useState(false)
@@ -1204,7 +1206,8 @@ function Dashboard({
               {currentPage === 'create-sales' && <CreateSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} sales={sales} setSales={setSales} clients={clients} setClients={setClients} orders={orders} setOrders={setOrders} inventory={inventory} setInventory={setInventory} saveSale={saveSale} saveOrder={saveOrder} cloudLoaded={cloudLoaded} />}
               {currentPage === 'view-sales' && <ViewSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightSaleId={highlightSaleId} setHighlightSaleId={setHighlightSaleId} sales={sales} setSales={setSales} inventory={inventory} setInventory={setInventory} orders={orders} setOrders={setOrders} cloudLoaded={cloudLoaded} />}
               {currentPage === 'add-income' && <AddIncomePage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} incomeCategories={incomeCategories} setIncomeCategories={setIncomeCategories} saveConfig={saveConfig} sales={sales} />}
-              {currentPage === 'add-expense' && <AddExpensePage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} expenseCategories={expenseCategories} setExpenseCategories={setExpenseCategories} saveConfig={saveConfig} inventory={inventory} />}
+              {currentPage === 'add-expense' && <AddExpensePage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} expenseCategories={expenseCategories} setExpenseCategories={setExpenseCategories} saveConfig={saveConfig} inventory={inventory} staffList={staffList} setStaffList={setStaffList} />}
+              {currentPage === 'staff-management' && <StaffManagementPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} staffList={staffList} setStaffList={setStaffList} saveConfig={saveConfig} />}
               {currentPage === 'view-accounts' && <ViewAccountsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} />}
               {currentPage === 'reports' && <ReportsPage themeStyle={themeStyle} showGlobalToast={showGlobalToast} currentUser={user} sales={sales} orders={orders} clients={clients} inventory={inventory} cloudLoaded={cloudLoaded} />}
               {currentPage === 'create-user' && <CreateUserPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} users={users} setUsers={setUsers} designations={designations} setDesignations={setDesignations} currentUser={user} saveUser={saveUser} cloudLoaded={cloudLoaded} />}

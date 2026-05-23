@@ -3,10 +3,10 @@ import { TrendingDown, Calendar, CreditCard, Tag, FileText, FileSignature, Chevr
 import supabase from '../../supabase'
 import { getIndianDate } from '../../utils/constants'
 
-function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCategories = [], setExpenseCategories, saveConfig, inventory = [] }) {
+function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCategories = [], setExpenseCategories, saveConfig, inventory = [], staffList = [], setStaffList }) {
   const [formData, setFormData] = useState({
     date: getIndianDate(),
-    category: 'Rent',
+    category: '',
     amount: '',
     payment_mode: 'Bank Transfer',
     reference: '',
@@ -15,9 +15,12 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const [selectedStaff, setSelectedStaff] = useState(null)
+  const [overtimeInput, setOvertimeInput] = useState('')
+
   // Dynamic Category State
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
-  const [categorySearch, setCategorySearch] = useState('Rent')
+  const [categorySearch, setCategorySearch] = useState('')
 
   const paymentModes = ['Cash', 'Bank Transfer', 'UPI', 'Card', 'Cheque']
 
@@ -34,7 +37,7 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
     }
 
     setIsSubmitting(true)
-    
+
     try {
       const { data, error } = await supabase
         .from('erp_accounts')
@@ -49,6 +52,17 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
         }])
 
       if (error) throw error;
+
+      if (selectedStaff && saveConfig) {
+        const updatedStaffList = staffList.map(s => {
+          if (s.id === selectedStaff.id) {
+            return { ...s, totalPaid: (parseFloat(s.totalPaid) || 0) + parseFloat(formData.amount) };
+          }
+          return s;
+        });
+        if (setStaffList) setStaffList(updatedStaffList);
+        saveConfig('staffList', updatedStaffList);
+      }
 
       if (showGlobalToast) showGlobalToast('Success!', 'Expense recorded successfully.');
       setCurrentPage('view-accounts')
@@ -66,12 +80,40 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
     if (val) {
       const item = inventory.find(i => i.productId?.toString() === val || i.id?.toString() === val);
       if (item) {
-        setFormData(prev => ({ 
-          ...prev, 
-          category: formData.category, 
-          reference: item.supplier || item.productName || '' 
+        setFormData(prev => ({
+          ...prev,
+          category: formData.category,
+          reference: item.supplier || item.productName || ''
         }));
       }
+    }
+  }
+
+  const handleStaffSelect = (e) => {
+    const staffId = e.target.value;
+    if (staffId) {
+      const staff = staffList.find(s => s.id === staffId);
+      if (staff) {
+        setSelectedStaff(staff);
+
+        let noteStr = '';
+        let fillAmt = '';
+        if (formData.category === 'Overtime Payment') {
+          noteStr = `Overtime payment for ${staff.name} (${staff.designation})`;
+        } else {
+          noteStr = `Salary payout for ${staff.name} (${staff.designation})`;
+          fillAmt = staff.salary || '';
+        }
+
+        setFormData(prev => ({
+          ...prev,
+          amount: fillAmt.toString(),
+          reference: `${formData.category === 'Overtime Payment' ? 'Overtime' : 'Salary'} - ${staff.name}`,
+          notes: noteStr
+        }));
+      }
+    } else {
+      setSelectedStaff(null);
     }
   }
 
@@ -89,7 +131,7 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
           <div className="grid gap-6 sm:grid-cols-2">
 
             <div className="relative sm:col-span-2">
-              <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1 mb-2"><Tag size={16}/> Expense Type / Category</span>
+              <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1 mb-2"><Tag size={16} /> Expense Type / Category</span>
               <input
                 className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
                 type="text"
@@ -158,7 +200,7 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
 
             {(formData.category?.toLowerCase().includes('material') || formData.category?.toLowerCase().includes('fabric') || formData.category?.toLowerCase() === 'purchase') && (
               <label className="block sm:col-span-2 pt-2">
-                <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><Link size={16}/> Link to Inventory Purchase (Optional)</span>
+                <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><Link size={16} /> Link to Inventory Purchase (Optional)</span>
                 <select
                   className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
                   value={formData.linked_inventory_id}
@@ -173,9 +215,27 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
                 </select>
               </label>
             )}
-            
+
+            {(formData.category?.toLowerCase().includes('staff') || formData.category?.toLowerCase().includes('salary') || formData.category === 'Overtime Payment') && (
+              <label className="block sm:col-span-2 pt-2">
+                <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><Link size={16} /> Select Staff Member</span>
+                <select
+                  className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                  onChange={handleStaffSelect}
+                  value={selectedStaff ? selectedStaff.id : ""}
+                >
+                  <option value="" disabled>-- Select a staff member --</option>
+                  {staffList.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} - {s.designation}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
             <label className="block pt-2">
-              <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><Calendar size={16}/> Date</span>
+              <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><Calendar size={16} /> Date</span>
               <input
                 className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
                 type="date"
@@ -186,7 +246,14 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><TrendingDown size={16}/> Amount (₹)</span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><TrendingDown size={16} /> Amount (₹)</span>
+                {selectedStaff && (
+                  <span className="text-xs font-semibold text-[var(--accent)] bg-[var(--accent-soft)] px-2 py-0.5 rounded-md">
+                    Base Salary: ₹{selectedStaff.salary || 0}
+                  </span>
+                )}
+              </div>
               <input
                 className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
                 type="number"
@@ -200,7 +267,7 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><CreditCard size={16}/> Payment Mode</span>
+              <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><CreditCard size={16} /> Payment Mode</span>
               <select
                 className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
                 value={formData.payment_mode}
@@ -212,7 +279,7 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
 
             {!formData.linked_inventory_id && (
               <label className="block">
-                <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><FileSignature size={16}/> Vendor / Payee Name</span>
+                <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><FileSignature size={16} /> Vendor / Payee Name</span>
                 <input
                   className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
                   type="text"
@@ -224,7 +291,7 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
             )}
 
             <label className="block sm:col-span-2">
-              <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><FileText size={16}/> Notes</span>
+              <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><FileText size={16} /> Notes</span>
               <textarea
                 className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10 resize-none"
                 rows="3"

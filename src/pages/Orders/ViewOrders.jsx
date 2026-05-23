@@ -107,7 +107,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
     } else if (activeFilter === 'In Progress') {
       matchesStatus = o.status === 'In Progress' || o.status === 'Start'
     } else if (activeFilter === 'Completed') {
-      matchesStatus = o.status === 'Completed' || o.status === 'Sold'
+      matchesStatus = o.status === 'Completed'
     } else if (activeFilter === 'Not Ready') {
       matchesStatus = o.status === 'Not Ready' || o.status === 'Pending'
     } else if (activeFilter !== 'All') {
@@ -517,7 +517,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
             { id: 'Not Ready', label: 'Not Ready' },
             { id: 'In Progress', label: 'In Progress' },
             { id: 'Hold', label: 'On Hold' },
-            { id: 'Completed', label: 'Completed (Ready for Sale)' },
+            { id: 'Completed', label: 'Completed' },
             { id: 'Sold', label: 'Sold/Delivered' },
           ].map(opt => (
             <option key={opt.id} value={opt.id}>{opt.label}</option>
@@ -533,7 +533,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
           { id: 'Not Ready', label: 'Not Ready', value: pendingCount, icon: Clock, color: 'text-orange-600', bgColor: 'bg-orange-50' },
           { id: 'In Progress', label: 'Progress', value: progressCount, icon: Play, color: 'text-indigo-600', bgColor: 'bg-indigo-50' },
           { id: 'Hold', label: 'Hold', value: holdCount, icon: Pause, color: 'text-red-600', bgColor: 'bg-red-50' },
-          { id: 'Completed', label: 'Ready', value: orders.filter(o => o.status === 'Completed').length, icon: CheckCircle2, color: 'text-green-600', bgColor: 'bg-green-50' },
+          { id: 'Completed', label: 'Completed', value: orders.filter(o => o.status === 'Completed').length, icon: CheckCircle2, color: 'text-green-600', bgColor: 'bg-green-50' },
           { id: 'Sold', label: 'Sold', value: orders.filter(o => o.status === 'Sold').length, icon: CircleDollarSign, color: 'text-emerald-700', bgColor: 'bg-emerald-50' },
         ].map((stat) => (
           <button
