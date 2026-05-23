@@ -168,6 +168,7 @@ function Dashboard({
   }
   const [showAlertsDropdown, setShowAlertsDropdown] = useState(false)
   const [expandedSubmenu, setExpandedSubmenu] = useState(null)
+  const [flyoutMenu, setFlyoutMenu] = useState(null)
   const [globalSearch, setGlobalSearch] = useState('')
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false)
   const searchRef = useRef(null)
@@ -421,22 +422,28 @@ function Dashboard({
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto scrollbar-hide space-y-2 px-4 py-6 pb-20">
+        <nav className="flex-1 overflow-y-auto scrollbar-hide space-y-2 px-4 py-6 pb-20" onScroll={() => setFlyoutMenu(null)}>
           {navItems.filter(item => {
             if (['users', 'inventory', 'reports', 'account'].includes(item.id) && user?.role !== 'Admin' && user?.role !== 'Owner') return false;
             return true;
           }).map(({ label, icon: Icon, hasSubmenu, submenu, id }, index) => (
-            <div key={label}>
+            <div key={label} className="relative">
               <button
                 className={`group flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm transition ${activeSidebarPage === id || (hasSubmenu && submenu.some(s => s.id === activeSidebarPage))
                   ? 'bg-[var(--accent-soft)] font-semibold text-[var(--accent)] shadow-sm'
                   : 'text-[var(--muted)] hover:bg-[var(--soft)] hover:text-[var(--text)]'
                   }`}
-                onClick={() => {
+                onClick={(e) => {
                   if (hasSubmenu) {
-                    setExpandedSubmenu(expandedSubmenu === label ? null : label)
+                    if (isSidebarCollapsed) {
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      setFlyoutMenu(flyoutMenu?.label === label ? null : { top: rect.top, label, submenu })
+                    } else {
+                      setExpandedSubmenu(expandedSubmenu === label ? null : label)
+                    }
                   } else {
                     setCurrentPage(id)
+                    setFlyoutMenu(null)
                   }
                 }}
                 title={isSidebarCollapsed ? label : undefined}
@@ -1538,6 +1545,35 @@ function Dashboard({
           </div>
         )}
       </div>
+
+      {/* Global Flyout Menu for Collapsed Sidebar */}
+      {flyoutMenu && (
+        <>
+          <div className="fixed inset-0 z-[190]" onClick={() => setFlyoutMenu(null)} />
+          <div 
+            className="fixed z-[200] w-48 rounded-2xl bg-[var(--surface-strong)] shadow-2xl shadow-black/20 border border-[var(--border)] overflow-hidden py-2 animate-in fade-in slide-in-from-left-2"
+            style={{ top: flyoutMenu.top, left: '5.5rem' }}
+          >
+            <div className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] border-b border-[var(--border)] mb-1">
+              {flyoutMenu.label}
+            </div>
+            {flyoutMenu.submenu.map((subItem) => (
+              <button
+                className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition hover:bg-[var(--soft)] hover:text-[var(--text)] ${activeSidebarPage === subItem.id ? 'text-[var(--accent)] font-semibold bg-[var(--accent-soft)]' : 'text-[var(--muted)]'
+                  }`}
+                key={subItem.label}
+                onClick={() => {
+                  setCurrentPage(subItem.id)
+                  setFlyoutMenu(null)
+                }}
+                type="button"
+              >
+                {subItem.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }
