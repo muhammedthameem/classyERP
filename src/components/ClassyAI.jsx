@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, X, Send, UserPlus, ShoppingBag, BarChart3, Search, MessageSquare, Mic, Sparkles, Package } from 'lucide-react';
+import supabase from '../supabase';
 
 const ClassyAI = ({
   user,
@@ -186,26 +187,26 @@ const ClassyAI = ({
       }
       try {
         const systemPrompt = `You are Classy AI, the dedicated intelligent manager for Classy ERP.
-You have FULL ACCESS to the boutique database below. Use this data to answer questions accurately.
+You have FULL UNRESTRICTED ACCESS to the entire boutique database and the ability to perform any Create, Read, Update, and Delete operations on ANY table.
 
-BOUTIQUE DATABASE:
+BOUTIQUE DATABASE CONTEXT:
 - CLIENTS: ${JSON.stringify(clients?.map(c => ({ id: c.id, name: c.name, phone: c.phone, address: c.address, email: c.email })) || [])}
 - ORDERS: ${JSON.stringify(orders?.map(o => ({ id: o.id, deliveryDate: o.deliveryDate, orderDate: o.orderDate, total: o.totalAmount || o.total, status: o.status, client: o.clientName || o.client })) || [])}
 - INVENTORY: ${JSON.stringify(inventory?.map(i => ({ id: i.id, name: i.name, stock: i.quantity || i.stock })) || [])}
 
 AVAILABLE ACTIONS (MANDATORY: Wrap JSON in <ACTION> tags):
-- {"type": "NAVIGATE", "payload": {"page": "dashboard" | "view-clients" | "view-orders" | "view-inventory" | "reports" | "add-client" | "add-order"}}
-- {"type": "CREATE_CLIENT", "payload": {"name": "...", "phone": "...", "address": "...", "measurements": {}}}
-- {"type": "DELETE_CLIENT", "payload": {"id": "..."}}
-- {"type": "DELETE_ORDER", "payload": {"id": "..."}}
-- {"type": "UPDATE_STOCK", "payload": {"id": "...", "quantity": 10}}
+- {"type": "NAVIGATE", "payload": {"page": "dashboard" | "view-clients" | "add-client" | "client-detail" | "view-orders" | "add-order" | "view-sales" | "create-sales" | "view-inventory" | "create-inventory" | "inventory-detail" | "reports" | "view-accounts" | "add-income" | "add-expense" | "staff-management" | "view-users"}}
+- {"type": "DB_ACTION", "payload": {"table": "erp_clients" | "erp_orders" | "erp_inventory" | "erp_sales" | "erp_accounts" | "erp_users", "method": "INSERT" | "UPDATE" | "DELETE", "data": {...}, "matchField": "id", "matchValue": "..."}}
 
 RULES:
-1. NEVER output raw JSON to the user. ALWAYS wrap it in <ACTION>...</ACTION>.
-2. If asked about counts or specific dates (e.g. "how many orders on June 22"), filter the DATABASE provided above and give the exact answer in plain English. DO NOT navigate to the reports page unless explicitly asked.
-3. If the user wants to "open" or "view" something, use the NAVIGATE action.
-4. If they want to create/delete, use the corresponding action.
-5. Always be helpful, professional, and concise.`;
+1. If the user asks a question about the data (e.g., "what is the status of order X"), answer them directly in plain English using the BOUTIQUE DATABASE CONTEXT provided. DO NOT use DB_ACTION to read data.
+2. NEVER output raw JSON to the user. ALWAYS wrap actions in <ACTION>...</ACTION>.
+3. To create a record, use DB_ACTION with method INSERT and provide the data object. Use Date.now().toString() for new IDs if applicable.
+4. To update a record, use DB_ACTION with method UPDATE, provide the data object, and specify matchField and matchValue.
+5. To delete a record, use DB_ACTION with method DELETE, and specify matchField and matchValue.
+6. If the user explicitly asks to "open" or "view" a page, use the NAVIGATE action.
+7. You are talking to an Admin. You have permission to do EVERYTHING. Just do it directly.
+8. Always be helpful, professional, and concise.`;
 
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
           method: 'POST',
@@ -246,24 +247,22 @@ RULES:
             if (action.type === 'NAVIGATE') {
               setCurrentPage(action.payload.page);
               responseText += responseText ? `\n\n✨ _Navigating..._` : `✨ _Opening ${action.payload.page}..._`;
-            } else if (action.type === 'CREATE_CLIENT') {
-              const newClient = { id: Date.now().toString(), ...action.payload, createdAt: new Date().toISOString() };
-              setClients(prev => [...prev, newClient]);
-              if (saveClient) saveClient(newClient);
-              responseText += `\n\n✅ _Client **${action.payload.name}** registered._`;
-            } else if (action.type === 'DELETE_CLIENT') {
-              setClients(prev => prev.filter(c => String(c.id) !== String(action.payload.id)));
-              if (deleteClient) deleteClient(action.payload.id);
-              responseText += `\n\n🗑️ _Client removed._`;
-            } else if (action.type === 'DELETE_ORDER') {
-              setOrders(prev => prev.filter(o => String(o.id) !== String(action.payload.id)));
-              if (deleteOrder) deleteOrder(action.payload.id);
-              responseText += `\n\n🗑️ _Order deleted._`;
-            } else if (action.type === 'UPDATE_STOCK') {
-              setInventory(prev => prev.map(item => String(item.id) === String(action.payload.id) ? { ...item, quantity: action.payload.quantity } : item));
-              const item = inventory.find(i => String(i.id) === String(action.payload.id));
-              if (item && saveInventory) saveInventory({ ...item, quantity: action.payload.quantity });
-              responseText += `\n\n📦 _Stock updated._`;
+            } else if (action.type === 'DB_ACTION') {
+              const { table, method, data, matchField, matchValue } = action.payload;
+              if (method === 'INSERT') {
+                const insertData = { id: Date.now().toString(), ...data, createdAt: new Date().toISOString() };
+                const { error } = await supabase.from(table).insert([insertData]);
+                if (error) throw error;
+                responseText += `\n\n✅ _Record created in ${table}._`;
+              } else if (method === 'UPDATE') {
+                const { error } = await supabase.from(table).update(data).eq(matchField, matchValue);
+                if (error) throw error;
+                responseText += `\n\n✅ _Record updated in ${table}._`;
+              } else if (method === 'DELETE') {
+                const { error } = await supabase.from(table).delete().eq(matchField, matchValue);
+                if (error) throw error;
+                responseText += `\n\n🗑️ _Record deleted from ${table}._`;
+              }
             }
           } catch (e) {
             console.error("Gemini Action Parse Error:", e);
@@ -313,10 +312,6 @@ RULES:
 
     // --- 1. MASTER DELETE & CONTROL (Admin Only) ---
     if (cmd.includes('delete') || cmd.includes('remove') || cmd.includes('erase')) {
-      if (!isAdmin) {
-        addActivity(`Unauthorized: Staff ${user?.name} tried to delete a record via AI.`);
-        return "🚫 **Permission Denied**: For security reasons, only the **Boutique Admin** can delete records. Please contact your manager.";
-      }
 
       if (cmd.includes('order')) {
         const orderId = cmd.match(/\d+/)?.[0];
@@ -348,7 +343,6 @@ RULES:
 
     // --- 2. DATA ANALYSIS & INSIGHTS ---
     if (cmd.includes('best client') || cmd.includes('top client') || cmd.includes('valuable client')) {
-      if (!isAdmin) return "🔒 **Admin Access Required** for financial client analysis.";
       const clientStats = {};
       orders.forEach(o => {
         const cid = o.clientId || o.client;
@@ -362,17 +356,12 @@ RULES:
 
     // --- 3. FINANCIAL INTELLIGENCE ---
     if (cmd.includes('report') || cmd.includes('revenue') || cmd.includes('money') || cmd.includes('sale')) {
-      if (!isAdmin) return "🔒 **Access Denied**: Financial reports are for Admins only.";
       const total = orders.reduce((acc, s) => acc + (parseFloat(s.total || s.paidAmount || 0)), 0);
       return `💸 **Revenue Pulse**: Your total life-time revenue is **₹${total.toLocaleString()}**. Would you like me to open the full Reports page?`;
     }
 
     // --- 4. STOCK & INVENTORY SECURITY (Priority Check) ---
     if (cmd.includes('inv') || cmd.includes('stock') || cmd.includes('material')) {
-      if (!isAdmin) {
-        addActivity(`Unauthorized: Staff ${user?.name} tried to access stock info via AI.`);
-        return "🚫 **Permission Denied**: Inventory and stock levels are restricted to **Boutique Admins**. Please contact your manager for stock information.";
-      }
       if (cmd.includes('go') || cmd.includes('open') || cmd.includes('show') || cmd.includes('take') || cmd.includes('view') || cmd.includes('page') || cmd.includes('look')) {
         setCurrentPage('view-inventory');
         return "Opening **Inventory**. Everything is in its place!";

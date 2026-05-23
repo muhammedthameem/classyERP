@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { ChevronLeft, ChevronRight, Search, CircleDollarSign, TrendingDown, Trash2, Plus, Wallet, TrendingUp, Lightbulb, Book, Filter, X, Save, Edit3, Download, Eye } from 'lucide-react'
 import supabase from '../../supabase'
 import { formatDateDDMMYY } from '../../utils/constants'
 import html2pdf from 'html2pdf.js'
 
-function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser }) {
+function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightAccountId, setHighlightAccountId }) {
+  const rowRefs = useRef({})
   const [activeTab, setActiveTab] = useState('All') // 'All', 'Income', 'Expense', 'Cashbook'
   const [cashbookMode, setCashbookMode] = useState('All') // 'All' or 'Cash'
   const [accounts, setAccounts] = useState([])
@@ -196,6 +197,24 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
   }, [accounts]);
 
   const netBalance = totalIncome - totalExpense;
+  const sortedAccounts = useMemo(() => {
+    return [...filteredAccounts].sort((a, b) => new Date(b.date) - new Date(a.date))
+  }, [filteredAccounts])
+
+  useEffect(() => {
+    if (highlightAccountId) {
+      setTimeout(() => {
+        const row = rowRefs.current[highlightAccountId];
+        if (row) {
+          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => {
+            if (setHighlightAccountId) setHighlightAccountId(null);
+          }, 3000);
+        }
+      }, 300);
+    }
+  }, [highlightAccountId, setHighlightAccountId]);
+
   const balancePercentage = totalIncome > 0 ? Math.min(100, Math.round((netBalance / totalIncome) * 100)) : 0;
 
   const currentListLength = activeTab === 'Cashbook' ? cashbookData.length : filteredAccounts.length;
@@ -506,7 +525,11 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
                   </tr>
                 ) : (
                   paginatedAccounts.map((item) => (
-                    <tr key={item.id} className="transition hover:bg-[var(--soft)] group">
+                    <tr 
+                      key={item.id} 
+                      ref={el => rowRefs.current[item.id] = el}
+                      className={`transition-all duration-1000 group ${highlightAccountId === item.id ? 'bg-[var(--accent-soft)]/50 ring-2 ring-[var(--accent)] ring-inset' : 'hover:bg-[var(--soft)]'}`}
+                    >
                       <td className="p-4 whitespace-nowrap">{formatDateDDMMYY(item.date)}</td>
                       <td className="p-4">
                         <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-bold ${item.type === 'Income' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>

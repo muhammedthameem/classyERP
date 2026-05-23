@@ -176,6 +176,17 @@ function Dashboard({
   const [highlightSaleId, setHighlightSaleId] = useState(null)
   const [highlightInventoryId, setHighlightInventoryId] = useState(null)
   const [highlightClientId, setHighlightClientId] = useState(null)
+  const [highlightStaffId, setHighlightStaffId] = useState(null)
+  const [highlightAccountId, setHighlightAccountId] = useState(null)
+
+  const [allAccounts, setAllAccounts] = useState([])
+  useEffect(() => {
+    if (user?.role === 'Admin' || user?.role === 'Owner') {
+      supabase.from('erp_accounts').select('*').then(({ data }) => {
+        if (data) setAllAccounts(data)
+      })
+    }
+  }, [user])
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -286,17 +297,32 @@ function Dashboard({
 
   // Global Search Logic
   const searchResults = React.useMemo(() => {
-    if (!globalSearch.trim()) return { clients: [], orders: [], inventory: [], sales: [] }
+    if (!globalSearch.trim()) return { clients: [], orders: [], inventory: [], sales: [], pages: [], users: [], staffPayroll: [], accounts: [] }
     const q = globalSearch.toLowerCase()
     const isAdmin = user?.role === 'Admin'
+
+    const matchedPages = navItems.reduce((acc, item) => {
+      if (item.hasSubmenu) {
+        acc.push(...item.submenu.filter(sub => sub.label.toLowerCase().includes(q) || sub.id.toLowerCase().includes(q)).map(sub => ({ id: sub.id, label: sub.label, icon: item.icon })))
+      } else {
+        if (item.label.toLowerCase().includes(q) || item.id.toLowerCase().includes(q)) {
+          acc.push({ id: item.id, label: item.label, icon: item.icon })
+        }
+      }
+      return acc;
+    }, []).slice(0, 3)
 
     return {
       clients: allClients.filter(c => c.name?.toLowerCase().includes(q) || c.phone?.includes(q)).slice(0, 4),
       orders: allOrders.filter(o => o.clientName?.toLowerCase().includes(q) || o.product?.toLowerCase().includes(q) || o.id?.toString().includes(q)).slice(0, 4),
       inventory: isAdmin ? allInventory.filter(p => p.productName?.toLowerCase().includes(q) || p.productId?.toLowerCase().includes(q)).slice(0, 4) : [],
-      sales: isAdmin ? allSales.filter(s => s.saleId?.toLowerCase().includes(q) || s.client?.name?.toLowerCase().includes(q)).slice(0, 4) : []
+      sales: isAdmin ? allSales.filter(s => s.saleId?.toLowerCase().includes(q) || s.client?.name?.toLowerCase().includes(q)).slice(0, 4) : [],
+      pages: matchedPages,
+      users: isAdmin ? users.filter(u => u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)).slice(0, 3) : [],
+      staffPayroll: isAdmin ? (staffList || []).filter(s => s.name?.toLowerCase().includes(q) || s.designation?.toLowerCase().includes(q) || s.phone?.includes(q)).slice(0, 3) : [],
+      accounts: isAdmin ? allAccounts.filter(a => a.partyName?.toLowerCase().includes(q) || a.category?.toLowerCase().includes(q) || a.description?.toLowerCase().includes(q)).slice(0, 4) : []
     }
-  }, [globalSearch, allClients, allOrders, allInventory, allSales, user?.role])
+  }, [globalSearch, allClients, allOrders, allInventory, allSales, user?.role, navItems, users, staffList, allAccounts])
   const hasSearchResults = Object.values(searchResults).some(arr => arr.length > 0)
 
   // Smart Delivery Calendar Logic
@@ -596,6 +622,103 @@ function Dashboard({
                                   </div>
                                 </button>
                               ))}
+                            </div>
+                          )}
+
+                          {searchResults.users.length > 0 && (
+                            <div>
+                              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-[var(--accent)]">System Users</p>
+                              {searchResults.users.map(u => (
+                                <button
+                                  key={u.id || u.email}
+                                  className="flex w-full items-center gap-3 rounded-xl p-3 text-left transition hover:bg-[var(--soft)]"
+                                  onClick={() => {
+                                    setCurrentPage('view-users')
+                                    setIsGlobalSearchOpen(false)
+                                    setGlobalSearch('')
+                                  }}
+                                >
+                                  <div className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]"><ShieldCheck size={16} /></div>
+                                  <div>
+                                    <p className="text-sm font-bold">{u.name}</p>
+                                    <p className="text-[10px] text-[var(--muted)]">{u.email} • {u.designation || u.role}</p>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {searchResults.staffPayroll?.length > 0 && (
+                            <div>
+                              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-[var(--accent)]">Staff Payroll</p>
+                              {searchResults.staffPayroll.map(s => (
+                                <button
+                                  key={s.id}
+                                  className="flex w-full items-center gap-3 rounded-xl p-3 text-left transition hover:bg-[var(--soft)]"
+                                  onClick={() => {
+                                    setHighlightStaffId(s.id)
+                                    setCurrentPage('staff-management')
+                                    setIsGlobalSearchOpen(false)
+                                    setGlobalSearch('')
+                                  }}
+                                >
+                                  <div className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--soft)] text-[var(--text)]"><UsersRound size={16} /></div>
+                                  <div>
+                                    <p className="text-sm font-bold">{s.name}</p>
+                                    <p className="text-[10px] text-[var(--muted)]">{s.designation} • {s.phone}</p>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {searchResults.accounts?.length > 0 && (
+                            <div>
+                              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-[var(--accent)]">Account Records</p>
+                              {searchResults.accounts.map(a => (
+                                <button
+                                  key={a.id}
+                                  className="flex w-full items-center gap-3 rounded-xl p-3 text-left transition hover:bg-[var(--soft)]"
+                                  onClick={() => {
+                                    setHighlightAccountId(a.id)
+                                    setCurrentPage('view-accounts')
+                                    setIsGlobalSearchOpen(false)
+                                    setGlobalSearch('')
+                                  }}
+                                >
+                                  <div className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]"><BarChart3 size={16} /></div>
+                                  <div>
+                                    <p className="text-sm font-bold">{a.partyName} <span className="font-normal text-xs">({a.type})</span></p>
+                                    <p className="text-[10px] text-[var(--muted)]">{a.category} • ₹{a.amount}</p>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {searchResults.pages.length > 0 && (
+                            <div>
+                              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-[var(--accent)]">Navigation</p>
+                              {searchResults.pages.map(p => {
+                                const Icon = p.icon || Search;
+                                return (
+                                  <button
+                                    key={p.id}
+                                    className="flex w-full items-center gap-3 rounded-xl p-3 text-left transition hover:bg-[var(--soft)]"
+                                    onClick={() => {
+                                      setCurrentPage(p.id)
+                                      setIsGlobalSearchOpen(false)
+                                      setGlobalSearch('')
+                                    }}
+                                  >
+                                    <div className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--soft)] text-[var(--text)]"><Icon size={16} /></div>
+                                    <div>
+                                      <p className="text-sm font-bold">{p.label}</p>
+                                      <p className="text-[10px] text-[var(--muted)]">Go to page</p>
+                                    </div>
+                                  </button>
+                                )
+                              })}
                             </div>
                           )}
                         </div>
@@ -1207,8 +1330,8 @@ function Dashboard({
               {currentPage === 'view-sales' && <ViewSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightSaleId={highlightSaleId} setHighlightSaleId={setHighlightSaleId} sales={sales} setSales={setSales} inventory={inventory} setInventory={setInventory} orders={orders} setOrders={setOrders} cloudLoaded={cloudLoaded} />}
               {currentPage === 'add-income' && <AddIncomePage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} incomeCategories={incomeCategories} setIncomeCategories={setIncomeCategories} saveConfig={saveConfig} sales={sales} />}
               {currentPage === 'add-expense' && <AddExpensePage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} expenseCategories={expenseCategories} setExpenseCategories={setExpenseCategories} saveConfig={saveConfig} inventory={inventory} staffList={staffList} setStaffList={setStaffList} />}
-              {currentPage === 'staff-management' && <StaffManagementPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} staffList={staffList} setStaffList={setStaffList} saveConfig={saveConfig} />}
-              {currentPage === 'view-accounts' && <ViewAccountsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} />}
+              {currentPage === 'staff-management' && <StaffManagementPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} staffList={staffList} setStaffList={setStaffList} saveConfig={saveConfig} highlightStaffId={highlightStaffId} setHighlightStaffId={setHighlightStaffId} />}
+              {currentPage === 'view-accounts' && <ViewAccountsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightAccountId={highlightAccountId} setHighlightAccountId={setHighlightAccountId} />}
               {currentPage === 'reports' && <ReportsPage themeStyle={themeStyle} showGlobalToast={showGlobalToast} currentUser={user} sales={sales} orders={orders} clients={clients} inventory={inventory} cloudLoaded={cloudLoaded} />}
               {currentPage === 'create-user' && <CreateUserPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} users={users} setUsers={setUsers} designations={designations} setDesignations={setDesignations} currentUser={user} saveUser={saveUser} cloudLoaded={cloudLoaded} />}
               {currentPage === 'view-users' && <ViewUsersPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} users={users} setUsers={setUsers} designations={designations} setDesignations={setDesignations} currentUser={user} cloudLoaded={cloudLoaded} />}

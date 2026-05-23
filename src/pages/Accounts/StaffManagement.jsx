@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Users, Pencil, Trash2, Search, Plus, Save, X } from 'lucide-react'
 
-function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staffList = [], setStaffList, saveConfig }) {
+function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staffList = [], setStaffList, saveConfig, highlightStaffId, setHighlightStaffId }) {
+  const rowRefs = useRef({})
   const [formData, setFormData] = useState({
     id: '',
     name: '',
@@ -85,6 +86,20 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
     s.designation.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.phone.includes(searchQuery)
   )
+
+  useEffect(() => {
+    if (highlightStaffId) {
+      setTimeout(() => {
+        const row = rowRefs.current[highlightStaffId];
+        if (row) {
+          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => {
+            if (setHighlightStaffId) setHighlightStaffId(null);
+          }, 3000);
+        }
+      }, 300);
+    }
+  }, [highlightStaffId, setHighlightStaffId]);
 
   return (
     <div style={themeStyle} className="relative">
@@ -235,7 +250,11 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
             <tbody>
               {filteredStaff.length > 0 ? (
                 filteredStaff.map((staff) => (
-                  <tr key={staff.id} className="group transition-colors hover:bg-[var(--soft)]">
+                  <tr 
+                    key={staff.id} 
+                    ref={el => rowRefs.current[staff.id] = el}
+                    className={`group transition-all duration-1000 ${highlightStaffId === staff.id ? 'bg-[var(--accent-soft)]/50 ring-2 ring-[var(--accent)] ring-inset' : 'hover:bg-[var(--soft)]'}`}
+                  >
                     <td className="font-semibold text-[var(--text)]">{staff.name}</td>
                     <td>
                       <span className="rounded bg-[var(--accent-soft)] px-2 py-1 text-xs font-semibold text-[var(--accent)]">

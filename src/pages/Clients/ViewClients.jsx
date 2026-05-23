@@ -263,7 +263,10 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
           <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-[var(--accent)] mb-1">
             <UsersRound size={16} /> CRM Database
           </p>
-          <h1 className="text-h1">View Clients</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-h1">View Clients</h1>
+            <span className="rounded-full bg-[var(--soft)] px-3 py-1 text-sm font-bold text-[var(--text)] border border-[var(--border)]">{clients ? clients.length : 0} Total</span>
+          </div>
           <p className="text-para text-[var(--muted)] mt-2">Manage and search all client records</p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
