@@ -10,43 +10,79 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
   const [searchQuery, setSearchQuery] = useState('');
   const [viewSale, setViewSale] = useState(null);
   const [saleToDelete, setSaleToDelete] = useState(null);
+  const [recentlyDeletedSale, setRecentlyDeletedSale] = useState(null);
+  const undoTimeoutRef = useRef(null);
   const [isSendingPdf, setIsSendingPdf] = useState(false);
 
   const isDataLoading = !cloudLoaded || !sales;
 
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = () => {
     if (!saleToDelete) return;
 
     const idToDelete = saleToDelete.id;
+    const sale = { ...saleToDelete };
 
-    // 1. Restore Stock/Orders Logic
-    let updatedInventory = [...inventory];
-    let updatedOrders = [...orders];
+    setRecentlyDeletedSale(sale);
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
 
-    saleToDelete.items.forEach(soldItem => {
-      if (soldItem.type === 'order') {
-        updatedOrders = updatedOrders.map(o => o.id === soldItem.orderId ? { ...o, status: 'Completed' } : o);
-      } else {
-        updatedInventory = updatedInventory.map(p => p.id === soldItem.id ? { ...p, quantity: (p.quantity || 0) + soldItem.qty } : p);
+    undoTimeoutRef.current = setTimeout(async () => {
+      // 1. Restore Stock/Orders Logic
+      let updatedInventory = [...inventory];
+      let updatedOrders = [...orders];
+
+      sale.items.forEach(soldItem => {
+        if (soldItem.type === 'order') {
+          updatedOrders = updatedOrders.map(o => o.id === soldItem.orderId ? { ...o, status: 'Completed' } : o);
+        } else {
+          updatedInventory = updatedInventory.map(p => p.id === soldItem.id ? { ...p, quantity: (p.quantity || 0) + soldItem.qty } : p);
+        }
+      });
+
+      setInventory(updatedInventory);
+      setOrders(updatedOrders);
+
+      // 2. Background Cloud Sync
+      try {
+        await supabase.from('erp_sales').delete().eq('id', idToDelete);
+        
+        const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+        
+        // Sync restored inventory & orders
+        for (const soldItem of sale.items) {
+          if (soldItem.type === 'order') {
+            const orderToUpdate = updatedOrders.find(o => o.id === soldItem.orderId);
+            if (orderToUpdate) {
+              await supabase.from('erp_orders').upsert([{ id: orderToUpdate.id.toString(), data: clean(orderToUpdate) }]);
+            }
+          } else {
+            const inventoryToUpdate = updatedInventory.find(p => p.id === soldItem.id);
+            if (inventoryToUpdate) {
+              await supabase.from('erp_inventory').upsert([{ id: inventoryToUpdate.id.toString(), data: clean(inventoryToUpdate) }]);
+            }
+          }
+        }
+        
+      } catch (err) {
+        console.error("Cloud delete failed:", err);
       }
-    });
+      setRecentlyDeletedSale(null);
+    }, 8000);
 
-    // 2. Optimistic UI update (Instant)
+    // 3. Optimistic UI update (Instant)
     const updatedSales = sales.filter(s => s.id !== idToDelete);
     setSales(updatedSales);
-    setInventory(updatedInventory);
-    setOrders(updatedOrders);
     setSaleToDelete(null);
-    if (showGlobalToast) showGlobalToast('Sale Deleted', 'Sales record removed successfully.');
-
-    // 3. Background Cloud Sync
-    try {
-      await supabase.from('erp_sales').delete().eq('id', idToDelete);
-    } catch (err) {
-      console.error("Cloud delete failed:", err);
-    }
+    if (showGlobalToast) showGlobalToast('Sale Deleted', `Sales record #${sale.saleId || sale.id} removed.`);
   };
+
+  const handleUndoDelete = () => {
+    if (!recentlyDeletedSale) return;
+    setSales(prev => [...prev, recentlyDeletedSale]);
+    if (showGlobalToast) showGlobalToast('Restored', `Sales record #${recentlyDeletedSale.saleId || recentlyDeletedSale.id} has been restored.`);
+    setRecentlyDeletedSale(null);
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+  }
 
   const filteredSales = useMemo(() => {
     return sales.filter(s => {
@@ -107,7 +143,26 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
   const paginatedSales = sortedSales.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage);
 
   return (
-    <div style={themeStyle} className="space-y-6">
+    <div style={themeStyle} className="relative space-y-6">
+
+      {/* Undo Popup */}
+      {recentlyDeletedSale && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[3000] animate-in slide-in-from-bottom-5 duration-300">
+          <div className="flex items-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-5 py-3.5 text-sm font-medium text-[var(--text)] shadow-2xl backdrop-blur-md">
+            <span>Deleted Sale <strong className="text-[var(--accent)]">#{recentlyDeletedSale.saleId || recentlyDeletedSale.id}</strong></span>
+            <button
+              onClick={handleUndoDelete}
+              className="rounded-lg bg-[var(--accent)] px-4 py-1.5 font-bold text-white transition hover:opacity-90 active:scale-95 shadow-sm"
+            >
+              Undo
+            </button>
+            <button onClick={() => { setRecentlyDeletedSale(null); if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current); }} className="text-[var(--muted)] hover:text-[var(--text)] transition ml-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-[var(--accent)] mb-1">

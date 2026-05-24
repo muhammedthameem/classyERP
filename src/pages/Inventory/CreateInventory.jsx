@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { ChevronDown, CircleDollarSign, Package, Search, Sparkles } from 'lucide-react'
+import { ChevronDown, CircleDollarSign, Package, Search, Sparkles, Trash2 } from 'lucide-react'
 
-function CreateInventoryPage({ themeStyle, setCurrentPage, showGlobalToast, inventory, setInventory, productTypes, setProductTypes, inventoryUnits, setInventoryUnits }) {
+function CreateInventoryPage({ themeStyle, setCurrentPage, showGlobalToast, inventory, setInventory, productTypes, setProductTypes, inventoryUnits, setInventoryUnits, saveConfig }) {
   const [productId, setProductId] = useState('');
   const [productName, setProductName] = useState('');
   const [productType, setProductType] = useState('');
@@ -228,19 +228,32 @@ function CreateInventoryPage({ themeStyle, setCurrentPage, showGlobalToast, inve
                       />
                       <div className="max-h-40 overflow-y-auto space-y-1">
                         {inventoryUnits.filter(u => u.toLowerCase().includes(unitSearch.toLowerCase())).map(u => (
-                          <button
-                            key={u}
-                            type="button"
-                            className="w-full rounded-lg px-3 py-2 text-left text-xs hover:bg-[var(--soft)]"
-                            onClick={() => {
-                              setUnit(u)
-                              setShowUnitDropdown(false)
-                            }}
-                          >
-                            {u}
-                          </button>
+                          <div key={u} className="flex items-center gap-1 group">
+                            <button
+                              type="button"
+                              className="flex-1 rounded-lg px-3 py-2 text-left text-xs transition hover:bg-[var(--soft)]"
+                              onClick={() => {
+                                setUnit(u)
+                                setShowUnitDropdown(false)
+                              }}
+                            >
+                              {u}
+                            </button>
+                            <button
+                              type="button"
+                              className="p-2 text-red-500 hover:text-red-700 transition"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const updated = inventoryUnits.filter(item => item !== u);
+                                setInventoryUnits(updated);
+                                if (saveConfig) saveConfig("inventoryUnits", updated);
+                              }}
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
                         ))}
-                        {unitSearch && !unitsList.includes(unitSearch.toLowerCase()) && (
+                        {unitSearch && !inventoryUnits.includes(unitSearch.toLowerCase()) && (
                           <button
                             type="button"
                             className="w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-[var(--accent)] hover:bg-[var(--accent-soft)]"

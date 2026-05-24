@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { ChevronDown, Search, Settings, ShoppingBag, Pencil, Trash2, Plus, Package, Info, Calendar, UsersRound, CheckCircle } from 'lucide-react'
 import { formatDateDDMMYY, getIndianDate } from '../../utils/constants'
 import CustomDatePicker from '../../components/CustomDatePicker'
+import supabase from '../../supabase'
 
 function AddOrderPage({ 
   themeStyle, setCurrentPage, showGlobalToast, 
@@ -260,6 +261,19 @@ function AddOrderPage({
     });
 
     setInventory(updatedInventory);
+    
+    // Sync updated inventory to cloud
+    const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+    updatedInventory.forEach(inv => {
+      // Find original to check if changed
+      const orig = inventory.find(i => i.id === inv.id);
+      if (orig && orig.quantity !== inv.quantity) {
+        supabase.from('erp_inventory').upsert([{ id: inv.id.toString(), data: clean(inv) }]).then(({error}) => {
+          if (error) console.error("Inventory sync failed:", error);
+        });
+      }
+    });
+
     setOrders([...orders, ...newOrders]);
 
     // Instant Cloud Save
@@ -683,7 +697,7 @@ function AddOrderPage({
                                     </button>
                                     <button
                                       type="button"
-                                      className="p-2 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition"
+                                      className="p-2 text-red-500 hover:text-red-600 transition"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         const updated = productTypesList.filter(item => item !== t);
@@ -786,7 +800,7 @@ function AddOrderPage({
                                     </button>
                                     <button
                                       type="button"
-                                      className="p-2 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition"
+                                      className="p-2 text-red-500 hover:text-red-600 transition"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         const updated = orderTypes.filter(item => item !== t);
@@ -931,7 +945,7 @@ function AddOrderPage({
                                         </button>
                                         <button
                                           type="button"
-                                          className="p-2 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition"
+                                          className="p-2 text-red-500 hover:text-red-700 transition"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             const updated = unitsList.filter(item => item !== u);

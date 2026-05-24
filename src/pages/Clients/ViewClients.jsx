@@ -9,6 +9,8 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
   const rowRefs = useRef({})
   const [searchQuery, setSearchQuery] = useState('')
   const [clientToDelete, setClientToDelete] = useState(null)
+  const [recentlyDeletedClient, setRecentlyDeletedClient] = useState(null)
+  const undoTimeoutRef = useRef(null)
   const [currentPageNum, setCurrentPageNum] = useState(1)
   const itemsPerPage = 10
 
@@ -59,6 +61,41 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
   }, [searchQuery]);
 
   const paginatedClients = sortedClients.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage)
+
+  const handleDeleteConfirm = () => {
+    if (!clientToDelete) return;
+    const idToDelete = clientToDelete.id;
+    const client = { ...clientToDelete };
+    
+    setRecentlyDeletedClient(client);
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+    
+    undoTimeoutRef.current = setTimeout(async () => {
+      try {
+        if (deleteClient) {
+          await deleteClient(idToDelete);
+        } else {
+          await supabase.from('erp_clients').delete().eq('id', idToDelete);
+        }
+      } catch (err) {
+        console.error("Cloud delete failed:", err);
+      }
+      setRecentlyDeletedClient(null);
+    }, 8000);
+
+    const updatedClients = clients.filter(c => c.id !== idToDelete);
+    setClients(updatedClients);
+    setClientToDelete(null);
+    if (showGlobalToast) showGlobalToast('Client Deleted', `Client "${client.name}" removed.`);
+  };
+
+  const handleUndoDelete = () => {
+    if (!recentlyDeletedClient) return;
+    setClients(prev => [...prev, recentlyDeletedClient]);
+    if (showGlobalToast) showGlobalToast('Restored', `Client "${recentlyDeletedClient.name}" has been restored.`);
+    setRecentlyDeletedClient(null);
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+  }
 
   const downloadClientPdf = (client) => {
     if (showGlobalToast) showGlobalToast('Generating PDF...', 'Please wait while we prepare the document.')
@@ -217,47 +254,8 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
 
   return (
     <div style={themeStyle}>
-      {clientToDelete && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-3xl border border-[var(--border)] bg-[var(--surface-strong)] p-6 shadow-2xl">
-            <h3 className="text-xl font-semibold text-[var(--text)]">Delete Client</h3>
-            <p className="mt-2 text-sm text-[var(--muted)]">
-              Are you sure you want to delete <span className="font-semibold text-[var(--text)]">{clientToDelete.name}</span>? This action cannot be undone and will remove all their associated measurements.
-            </p>
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-2.5 text-sm font-semibold transition hover:bg-[var(--soft)]"
-                onClick={() => setClientToDelete(null)}
-              >
-                Cancel
-              </button>
-              <button
-                className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
-                onClick={async () => {
-                  try {
-                    const idToDelete = clientToDelete.id
-                    // 1. Cloud Delete
-                    if (deleteClient) {
-                      await deleteClient(idToDelete);
-                    } else {
-                      await supabase.from('erp_clients').delete().eq('id', idToDelete.toString());
-                    }
 
-                    // 2. Update local UI (Optimistic)
-                    setClients(prev => prev.filter(c => c.id !== idToDelete))
-                    setClientToDelete(null)
-                    if (showGlobalToast) showGlobalToast('Client Removed', `Client "${clientToDelete.name}" removed successfully.`)
-                  } catch (err) {
-                    console.error("Delete failed:", err);
-                  }
-                }}
-              >
-                Delete Client
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Undo Popup */}
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-[var(--accent)] mb-1">
@@ -421,6 +419,51 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
           </div>
         )}
       </section>
+
+      {/* Delete Confirmation Modal */}
+      {clientToDelete && (
+        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/50 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] p-6 shadow-2xl text-center">
+            <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-red-500/10 text-red-500">
+              <Trash2 size={32} />
+            </div>
+            <h3 className="mb-2 text-xl font-bold text-[var(--text)]">Delete Client?</h3>
+            <p className="mb-6 text-sm text-[var(--muted)]">
+              Are you sure you want to delete <strong className="text-[var(--text)]">{clientToDelete.name}</strong>? This action will permanently remove their records.
+            </p>
+            <div className="flex gap-3">
+              <button
+                className="flex-1 rounded-xl border border-[var(--border)] px-4 py-3 font-semibold transition hover:bg-[var(--soft)]"
+                onClick={() => setClientToDelete(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className="flex-1 rounded-xl bg-red-500 px-4 py-3 font-semibold text-white shadow-lg shadow-red-500/20 transition hover:bg-red-600 active:scale-95"
+                onClick={handleDeleteConfirm}
+              >
+                Delete Client
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Undo Toast */}
+      {recentlyDeletedClient && (
+        <div className="fixed bottom-6 left-1/2 z-[100] flex -translate-x-1/2 items-center gap-4 rounded-2xl bg-[var(--surface-strong)] px-6 py-4 shadow-2xl border border-[var(--border)]">
+          <div>
+            <p className="font-bold text-[var(--text)]">Client Deleted</p>
+            <p className="text-xs text-[var(--muted)]">Permanently removing in 8 seconds</p>
+          </div>
+          <button
+            onClick={handleUndoDelete}
+            className="rounded-xl bg-[var(--accent)] px-4 py-2 font-bold text-white transition hover:brightness-95 active:scale-95"
+          >
+            Undo
+          </button>
+        </div>
+      )}
     </div>
   )
 }

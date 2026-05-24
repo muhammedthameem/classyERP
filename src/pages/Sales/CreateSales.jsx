@@ -237,11 +237,22 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     }
 
 
+    // Await all inventory updates to prevent race conditions with App.jsx realtime sync
+    const inventoryPromises = [];
     const updatedInventory = inventory.map(p => {
       const cartItem = cart.find(item => item.id === p.id && item.type === 'inventory');
-      if (cartItem) return { ...p, quantity: p.quantity - cartItem.qty };
+      if (cartItem) {
+        const updatedItem = { ...p, quantity: parseFloat(p.quantity || 0) - parseFloat(cartItem.qty || 0) };
+        const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+        inventoryPromises.push(
+          supabase.from('erp_inventory').upsert([{ id: p.id.toString(), data: clean(updatedItem) }])
+        );
+        return updatedItem;
+      }
       return p;
     });
+
+    Promise.all(inventoryPromises).catch(err => console.error("Inventory sync failed:", err));
 
     const updatedOrders = orders.map(o => {
       const cartItem = cart.find(item => item.orderId === o.id);
@@ -1249,7 +1260,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
 
             {/* Quick Add Client Orders */}
 
-            <div className="erp-table-container" ref={tableContainerRef}>
+            <div className="erp-table-container scrollbar-hide" ref={tableContainerRef}>
               <table className="erp-table">
                 <thead>
                   <tr>
@@ -1284,9 +1295,10 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                           {item.type === 'inventory' ? (
                             <input
                               type="number"
-                              className="w-12 rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] px-2 py-1 font-bold text-[var(--text)] text-sm"
+                              step="any"
+                              className="w-16 rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] px-2 py-1 font-bold text-[var(--text)] text-sm"
                               value={item.qty}
-                              onChange={(e) => updateQty(item.id, parseInt(e.target.value) || 0)}
+                              onChange={(e) => updateQty(item.id, parseFloat(e.target.value) || 0)}
                             />
                           ) : <span className="font-bold text-[var(--text)]">{item.qty}</span>}
                           <span className="text-[10px] font-bold text-[var(--muted)] uppercase">{item.unit}</span>

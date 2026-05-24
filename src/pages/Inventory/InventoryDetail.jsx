@@ -146,9 +146,12 @@ function InventoryDetailPage({ themeStyle, item, setCurrentPage, setSelectedInve
               <div>
                 <p className="text-xs font-bold uppercase text-[var(--muted)] mb-1">Stock Quantity (Remaining)</p>
                 {mode === 'view' ? (
-                  <div className="flex items-center gap-2">
-                    <p className="text-lg font-black text-[var(--accent)]">{formData.quantity} {formData.unit}</p>
-                    <span className="text-[10px] font-bold text-[var(--muted)] uppercase">Remaining</span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-lg font-black text-[var(--accent)]">{formData.quantity} {formData.unit}</p>
+                      <span className="text-[10px] font-bold text-[var(--muted)] uppercase">Remaining</span>
+                    </div>
+                    <p className="text-[10px] font-bold text-[var(--muted)] uppercase mt-0.5">Total Value: ₹{(parseFloat(formData.finalPrice || 0) * parseFloat(formData.quantity || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                   </div>
                 ) : (
                   <div className="flex gap-2">
@@ -180,7 +183,7 @@ function InventoryDetailPage({ themeStyle, item, setCurrentPage, setSelectedInve
                     <p className="text-2xl font-black text-[var(--accent)]">
                       ₹{formData.finalPrice} <span className="text-sm text-[var(--muted)] font-bold">/ {formData.unit}</span>
                     </p>
-                    <p className="text-sm font-semibold text-[var(--muted)] mt-1 uppercase tracking-wide">Total: ₹{(parseFloat(formData.finalPrice || 0) * parseFloat(formData.quantity || 0)).toFixed(2)}</p>
+                    <p className="text-sm font-semibold text-[var(--muted)] mt-1 uppercase tracking-wide">Total: ₹{(parseFloat(formData.finalPrice || 0) * parseFloat(formData.initialQuantity !== undefined ? formData.initialQuantity : formData.quantity || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -207,7 +210,7 @@ function InventoryDetailPage({ themeStyle, item, setCurrentPage, setSelectedInve
                     </div>
                     <p className="text-[10px] font-bold text-[var(--muted)] uppercase px-1">
                       {priceEntryMode === 'per-unit' 
-                        ? `Total: ₹${(parseFloat(formData.finalPrice) * parseFloat(formData.quantity)).toFixed(2)}` 
+                        ? `Total: ₹${(parseFloat(formData.finalPrice) * parseFloat(formData.initialQuantity !== undefined ? formData.initialQuantity : formData.quantity || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
                         : `Unit Price: ₹${formData.finalPrice}`}
                     </p>
                   </div>

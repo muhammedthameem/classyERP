@@ -6,6 +6,8 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
   const rowRefs = useRef({});
   const [searchQuery, setSearchQuery] = useState('');
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [recentlyDeletedInventory, setRecentlyDeletedInventory] = useState(null);
+  const undoTimeoutRef = useRef(null);
 
   const isDataLoading = !cloudLoaded || !inventory;
 
@@ -59,27 +61,60 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
 
   const paginatedInventory = filteredInventory.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage);
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = () => {
     if (itemToDelete) {
       const idToDelete = itemToDelete.id;
+      const item = { ...itemToDelete };
+
+      setRecentlyDeletedInventory(item);
+      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+
+      undoTimeoutRef.current = setTimeout(async () => {
+        try {
+          await supabase.from('erp_inventory').delete().eq('id', idToDelete);
+        } catch (err) {
+          console.error("Cloud delete failed:", err);
+        }
+        setRecentlyDeletedInventory(null);
+      }, 8000);
 
       // 1. Optimistic UI Update (Instant)
-      const updated = inventory.filter(item => item.id !== idToDelete);
+      const updated = inventory.filter(inv => inv.id !== idToDelete);
       setInventory(updated);
       setItemToDelete(null);
-      if (showGlobalToast) showGlobalToast('Deleted!', 'Stock item removed successfully.');
-
-      // 2. Background Cloud Sync
-      try {
-        await supabase.from('erp_inventory').delete().eq('id', idToDelete);
-      } catch (err) {
-        console.error("Cloud delete failed:", err);
-      }
+      if (showGlobalToast) showGlobalToast('Deleted!', `Stock item "${item.productName}" removed.`);
     }
   };
 
+  const handleUndoDelete = () => {
+    if (!recentlyDeletedInventory) return;
+    setInventory(prev => [...prev, recentlyDeletedInventory]);
+    if (showGlobalToast) showGlobalToast('Restored', `Stock item "${recentlyDeletedInventory.productName}" has been restored.`);
+    setRecentlyDeletedInventory(null);
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+  }
+
   return (
     <div style={themeStyle} className="relative">
+
+      {/* Undo Popup */}
+      {recentlyDeletedInventory && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[3000] animate-in slide-in-from-bottom-5 duration-300">
+          <div className="flex items-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-5 py-3.5 text-sm font-medium text-[var(--text)] shadow-2xl backdrop-blur-md">
+            <span>Deleted Inventory <strong className="text-[var(--accent)]">{recentlyDeletedInventory.productName}</strong></span>
+            <button
+              onClick={handleUndoDelete}
+              className="rounded-lg bg-[var(--accent)] px-4 py-1.5 font-bold text-white transition hover:opacity-90 active:scale-95 shadow-sm"
+            >
+              Undo
+            </button>
+            <button onClick={() => { setRecentlyDeletedInventory(null); if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current); }} className="text-[var(--muted)] hover:text-[var(--text)] transition ml-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       {itemToDelete && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-3xl border border-[var(--border)] bg-[var(--surface-strong)] p-6 shadow-2xl">

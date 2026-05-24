@@ -19,6 +19,8 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
   const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' })
   const [tableMonthFilter, setTableMonthFilter] = useState(new Date().toISOString().slice(0, 7)) // Default to current month
   const [staffToDelete, setStaffToDelete] = useState(null)
+  const [recentlyDeletedStaff, setRecentlyDeletedStaff] = useState(null)
+  const undoTimeoutRef = useRef(null)
   const [ledgerStaff, setLedgerStaff] = useState(null)
   const [activeStaffForPdf, setActiveStaffForPdf] = useState(null)
 
@@ -168,15 +170,33 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
   const handleConfirmDelete = () => {
     if (!staffToDelete) return
     const id = staffToDelete.id
+    
+    const staff = { ...staffToDelete }
+    setRecentlyDeletedStaff(staff)
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current)
+    undoTimeoutRef.current = setTimeout(() => {
+      setRecentlyDeletedStaff(null)
+    }, 8000)
+
     const updatedList = staffList.filter(s => s.id !== id)
     setStaffList(updatedList)
     if (saveConfig) saveConfig('staffList', updatedList)
-    if (showGlobalToast) showGlobalToast('Deleted', 'Staff member removed.')
+    if (showGlobalToast) showGlobalToast('Deleted', `${staff.name} removed.`)
     if (isEditing && formData.id === id) {
       setFormData({ id: '', name: '', designation: '', phone: '', salary: '', overtimeType: 'Hourly', overtimeRate: '0' })
       setIsEditing(false)
     }
     setStaffToDelete(null)
+  }
+
+  const handleUndoDelete = () => {
+    if (!recentlyDeletedStaff) return;
+    const updatedList = [...staffList, recentlyDeletedStaff];
+    setStaffList(updatedList);
+    if (saveConfig) saveConfig('staffList', updatedList);
+    if (showGlobalToast) showGlobalToast('Restored', `${recentlyDeletedStaff.name} has been restored.`);
+    setRecentlyDeletedStaff(null);
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
   }
 
   const cancelEdit = () => {
@@ -279,6 +299,24 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
                 Delete Now
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Undo Popup */}
+      {recentlyDeletedStaff && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[3000] animate-in slide-in-from-bottom-5 duration-300">
+          <div className="flex items-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-5 py-3.5 text-sm font-medium text-[var(--text)] shadow-2xl backdrop-blur-md">
+            <span>Deleted <strong className="text-[var(--accent)]">{recentlyDeletedStaff.name}</strong></span>
+            <button
+              onClick={handleUndoDelete}
+              className="rounded-lg bg-[var(--accent)] px-4 py-1.5 font-bold text-white transition hover:opacity-90 active:scale-95 shadow-sm"
+            >
+              Undo
+            </button>
+            <button onClick={() => { setRecentlyDeletedStaff(null); if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current); }} className="text-[var(--muted)] hover:text-[var(--text)] transition ml-2">
+              <X size={18} />
+            </button>
           </div>
         </div>
       )}

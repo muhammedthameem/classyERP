@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { ChevronDown, ChevronLeft, Package, Search, Settings, ShoppingBag, UsersRound, Pencil, Trash2, Plus } from 'lucide-react'
 import { formatDateDDMMYY, formatDateTimeDDMMYY, products } from '../../utils/constants'
+import supabase from '../../supabase'
 
 function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClient, initialMode, setClientDetailMode, showGlobalToast, currentUser, clients, setClients, saveClient, productTypes = [], setProductTypes, saveConfig }) {
   const [clientsList, setClientsList] = useState([])

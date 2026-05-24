@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
-import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2, Plus } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2, Plus, X } from 'lucide-react'
 import { formatDateDDMMYY, getIndianDate, orders } from '../../utils/constants'
 import supabase from '../../supabase'
 
@@ -11,6 +11,8 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
   const [imagePopup, setImagePopup] = useState(null)
   const [editOrder, setEditOrder] = useState(null)
   const [orderToDelete, setOrderToDelete] = useState(null)
+  const [recentlyDeletedOrder, setRecentlyDeletedOrder] = useState(null)
+  const undoTimeoutRef = useRef(null)
   const [viewOrder, setViewOrder] = useState(null)
   const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'desc' })
   const [dateFilter, setDateFilter] = useState('All') // All, Today, Tomorrow, Week, Custom
@@ -22,43 +24,69 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
     setOrders(newOrders)
   }
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = () => {
     if (orderToDelete) {
       const idToDelete = orderToDelete.id;
+      const order = { ...orderToDelete };
 
-      // Restore inventory if order had internal materials
-      if (orderToDelete.sourceOfMaterial === 'Internal' && orderToDelete.internalItems?.length > 0) {
-        let updatedInventory = [...inventory];
-        orderToDelete.internalItems.forEach(mat => {
-          updatedInventory = updatedInventory.map(invItem => {
-            if (invItem.id === mat.inventoryId || (mat.productId && invItem.productId === mat.productId)) {
-              const currentQty = parseFloat(invItem.quantity) || 0;
-              const restoreQty = parseFloat(mat.quantity) || 0;
-              return { ...invItem, quantity: currentQty + restoreQty };
-            }
-            return invItem;
+      setRecentlyDeletedOrder(order);
+      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+
+      undoTimeoutRef.current = setTimeout(async () => {
+        // Restore inventory if order had internal materials
+        if (order.sourceOfMaterial === 'Internal' && order.internalItems?.length > 0) {
+          let updatedInventory = [...inventory];
+          order.internalItems.forEach(mat => {
+            updatedInventory = updatedInventory.map(invItem => {
+              if (invItem.id === mat.inventoryId || (mat.productId && invItem.productId === mat.productId)) {
+                const currentQty = parseFloat(invItem.quantity) || 0;
+                const restoreQty = parseFloat(mat.quantity) || 0;
+                return { ...invItem, quantity: currentQty + restoreQty };
+              }
+              return invItem;
+            });
           });
-        });
-        setInventory(updatedInventory);
-      }
+          setInventory(updatedInventory);
+
+          // Sync restored inventory to Supabase
+          const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+          updatedInventory.forEach(invItem => {
+            const orig = inventory.find(i => i.id === invItem.id);
+            if (orig && orig.quantity !== invItem.quantity) {
+              supabase.from('erp_inventory').upsert([{ id: invItem.id.toString(), data: clean(invItem) }]).then(({ error }) => {
+                if (error) console.error("Inventory sync failed:", error);
+              });
+            }
+          });
+        }
+
+        try {
+          if (deleteOrder) {
+            await deleteOrder(idToDelete);
+          } else {
+            await supabase.from('erp_orders').delete().eq('id', idToDelete);
+          }
+        } catch (err) {
+          console.error("Cloud delete failed:", err);
+        }
+        setRecentlyDeletedOrder(null);
+      }, 8000);
 
       // 1. Optimistic UI update (Instant)
       const updated = orders.filter(o => o.id !== idToDelete)
       saveOrders(updated)
       setOrderToDelete(null)
-      if (showGlobalToast) showGlobalToast('Deleted', `Order for ${orderToDelete.clientName} removed successfully.`)
-
-      // 2. Background Cloud Sync
-      try {
-        if (deleteOrder) {
-          await deleteOrder(idToDelete);
-        } else {
-          await supabase.from('erp_orders').delete().eq('id', idToDelete);
-        }
-      } catch (err) {
-        console.error("Cloud delete failed:", err);
-      }
+      if (showGlobalToast) showGlobalToast('Deleted', `Order #${order.id} for ${order.clientName} removed.`)
     }
+  }
+
+  const handleUndoDelete = () => {
+    if (!recentlyDeletedOrder) return;
+    const updated = [...orders, recentlyDeletedOrder];
+    saveOrders(updated);
+    if (showGlobalToast) showGlobalToast('Restored', `Order #${recentlyDeletedOrder.id} has been restored.`);
+    setRecentlyDeletedOrder(null);
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
   }
 
   const handleStatusChange = (id, newStatus) => {
@@ -227,6 +255,24 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
   return (
     <div style={themeStyle} className="relative">
 
+      {/* Undo Popup */}
+      {recentlyDeletedOrder && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[3000] animate-in slide-in-from-bottom-5 duration-300">
+          <div className="flex items-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-5 py-3.5 text-sm font-medium text-[var(--text)] shadow-2xl backdrop-blur-md">
+            <span>Deleted Order <strong className="text-[var(--accent)]">#{recentlyDeletedOrder.id}</strong></span>
+            <button
+              onClick={handleUndoDelete}
+              className="rounded-lg bg-[var(--accent)] px-4 py-1.5 font-bold text-white transition hover:opacity-90 active:scale-95 shadow-sm"
+            >
+              Undo
+            </button>
+            <button onClick={() => { setRecentlyDeletedOrder(null); if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current); }} className="text-[var(--muted)] hover:text-[var(--text)] transition ml-2">
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {viewOrder && (
         <div className="fixed inset-0 z-[2000] grid place-items-center bg-black/50 px-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto">
@@ -263,19 +309,25 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                 <p className="text-sm font-medium text-[var(--muted)] mb-1">Material Details</p>
                 <p className="text-sm text-[var(--text)] font-medium mb-2">{viewOrder.sourceOfMaterial || 'Outside'}</p>
                 {viewOrder.sourceOfMaterial === 'Internal' && viewOrder.internalItems && viewOrder.internalItems.length > 0 && (
-                  <div className="space-y-2 rounded-xl bg-[var(--soft)] p-3">
-                    {viewOrder.internalItems.map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-center text-xs border-b border-[var(--border)] last:border-0 pb-1.5 last:pb-0">
-                        <div>
-                          <p className="font-bold text-[var(--text)]">{item.productName}</p>
-                          <p className="text-[10px] text-[var(--muted)]">Qty: {item.quantity} {item.unit}</p>
+                  <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] overflow-hidden flex flex-col">
+                    <div className="bg-[var(--soft)] px-3 py-2 border-b border-[var(--border)] flex justify-between items-center">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">Internal Materials</span>
+                      <span className="text-[10px] font-bold bg-[var(--accent-soft)] text-[var(--accent)] px-2 py-0.5 rounded-full">{viewOrder.internalItems.length} Items</span>
+                    </div>
+                    <div className="max-h-40 overflow-y-auto custom-scrollbar p-3 space-y-2">
+                      {viewOrder.internalItems.map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-start text-xs bg-[var(--surface)] p-2.5 rounded-lg border border-[var(--border)] transition hover:border-[var(--accent)]">
+                          <div>
+                            <p className="font-bold text-[var(--text)]">{item.productName}</p>
+                            <p className="text-[10px] font-medium text-[var(--muted)] mt-0.5">Qty: {item.quantity} {item.unit}</p>
+                          </div>
+                          <p className="font-black text-[var(--accent)]">₹{(item.totalPrice || 0).toFixed(2)}</p>
                         </div>
-                        <p className="font-semibold text-[var(--accent)]">₹{(item.totalPrice || 0).toFixed(2)}</p>
-                      </div>
-                    ))}
-                    <div className="flex justify-between items-center pt-1 mt-1 border-t border-[var(--border)] font-bold text-[var(--accent)]">
-                      <span className="text-[10px] uppercase">Material Total</span>
-                      <span>₹{viewOrder.internalItems.reduce((sum, i) => sum + (i.totalPrice || 0), 0).toFixed(2)}</span>
+                      ))}
+                    </div>
+                    <div className="bg-[var(--soft)] px-3 py-2.5 border-t border-[var(--border)] flex justify-between items-center">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">Material Total</span>
+                      <span className="text-sm font-black text-[var(--text)]">₹{viewOrder.internalItems.reduce((sum, i) => sum + (i.totalPrice || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 )}
@@ -389,13 +441,16 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
               </div>
 
               {editOrder.sourceOfMaterial === 'Internal' && editOrder.internalItems && (
-                <div className="rounded-xl bg-[var(--soft)] p-3">
-                  <p className="text-[10px] font-bold uppercase text-[var(--muted)] mb-2">Internal Materials Summary</p>
-                  <div className="space-y-1">
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] overflow-hidden mb-4">
+                  <div className="bg-[var(--soft)] px-3 py-2 border-b border-[var(--border)] flex justify-between items-center">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">Internal Materials</span>
+                    <span className="text-[10px] font-bold bg-[var(--accent-soft)] text-[var(--accent)] px-2 py-0.5 rounded-full">{editOrder.internalItems.length} Items</span>
+                  </div>
+                  <div className="max-h-32 overflow-y-auto custom-scrollbar p-2 space-y-1">
                     {editOrder.internalItems.map((item, idx) => (
-                      <div key={idx} className="flex justify-between text-xs">
-                        <span>{item.productName} (x{item.quantity})</span>
-                        <span className="font-semibold">₹{(item.totalPrice || 0).toFixed(2)}</span>
+                      <div key={idx} className="flex justify-between items-center text-[11px] bg-[var(--surface)] p-2 rounded-lg border border-[var(--border)]">
+                        <span className="font-semibold text-[var(--text)] truncate mr-2">{item.productName} <span className="text-[var(--muted)] font-normal">(x{item.quantity})</span></span>
+                        <span className="font-bold text-[var(--accent)] whitespace-nowrap">₹{(item.totalPrice || 0).toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
