@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 import { formatDateDDMMYY } from '../utils/constants'
 
-function CustomDatePicker({ value, onChange, placeholder, minDate }) {
+function CustomDatePicker({ value, onChange, placeholder, minDate, maxDate, position = 'bottom' }) {
   const [isOpen, setIsOpen] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(value ? new Date(value) : new Date())
 
@@ -23,7 +23,7 @@ function CustomDatePicker({ value, onChange, placeholder, minDate }) {
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 bottom-full z-50 mt-2 w-72 rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-4 shadow-2xl backdrop-blur">
+        <div className={`absolute left-0 z-50 w-72 rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-4 shadow-2xl backdrop-blur ${position === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
           <div className="flex items-center justify-between mb-4">
             <button
               type="button"
@@ -54,7 +54,7 @@ function CustomDatePicker({ value, onChange, placeholder, minDate }) {
               const dateStr = d.toISOString().split('T')[0]
               const isSelected = value === dateStr
               const isToday = new Date().toISOString().split('T')[0] === dateStr
-              const isDisabled = minDate && dateStr < minDate
+              const isDisabled = (minDate && dateStr < minDate) || (maxDate && dateStr > maxDate)
 
               return (
                 <button

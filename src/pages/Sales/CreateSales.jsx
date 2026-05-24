@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Package, Search, TrendingUp, UsersRound, Trash2, Download, ShoppingCart, CheckCircle, Plus, Eye, Info } from 'lucide-react'
+import { Package, Search, TrendingUp, UsersRound, Trash2, Download, ShoppingCart, CheckCircle, Plus, Eye, Info, Calendar } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
 import supabase from '../../supabase'
 import { orders } from '../../utils/constants'
+import CustomDatePicker from '../../components/CustomDatePicker'
 
 function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventory, setInventory, clients, setClients, orders, setOrders, sales, setSales, saveSale, saveOrder }) {
   const [cart, setCart] = useState([]);
@@ -13,6 +14,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
   const [isSearchingProduct, setIsSearchingProduct] = useState(false);
   const [isSearchingClient, setIsSearchingClient] = useState(false);
   const [selectionMode, setSelectionMode] = useState('inventory');
+  const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentMode, setPaymentMode] = useState('Cash');
   const [showReceipt, setShowReceipt] = useState(null);
   const [cartAlert, setCartAlert] = useState(null); // { title: '', message: '', type: 'warning'|'error' }
   const [isSendingPdf, setIsSendingPdf] = useState(false);
@@ -322,7 +325,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
         };
       }),
       total: Number(Math.max(0, calculateTotals().subtotal - calculateTotals().discount).toFixed(2)),
-      timestamp: new Date().toISOString()
+      timestamp: saleDate === new Date().toISOString().split('T')[0] ? new Date().toISOString() : new Date(`${saleDate}T12:00:00Z`).toISOString(),
+      paymentMode: paymentMode
     };
     // Instant Cloud Save
     if (saveSale) saveSale(newSale);
@@ -366,7 +370,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
          <p style="margin: 2px 0; font-size: 10px;">Ph : 8606154015</p>
         <div style="margin-top: 8px; font-size: 9px; color: #333;">
           <p style="margin: 2px 0;">ID: ${showReceipt.saleId}</p>
-          <p style="margin: 2px 0;">Date: ${new Date(showReceipt.timestamp).toLocaleString()}</p>
+          <p style="margin: 2px 0;">Date: ${new Date(showReceipt.timestamp).toDateString() === new Date().toDateString() ? new Date(showReceipt.timestamp).toLocaleString() : new Date(showReceipt.timestamp).toLocaleDateString()}</p>
         </div>
       </div>
 
@@ -394,6 +398,12 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
           <span>Grand Total:</span>
           <span>₹${parseFloat(showReceipt.total).toFixed(2)}</span>
         </div>
+        ${showReceipt.paymentMode ? `
+        <div style="display: flex; justify-content: space-between; font-weight: bold; color: #555; font-size: 11px;">
+          <span>Payment Mode:</span>
+          <span style="text-transform: uppercase;">${showReceipt.paymentMode}</span>
+        </div>
+        ` : ''}
       </div>
 
       <div style="text-align: center; margin-top: 20px; font-size: 9px; border-top: 1px dashed #eee; padding-top: 10px;">
@@ -994,7 +1004,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                 <p style={{ margin: '2px 0', fontSize: '12px' }}>Ph : 8606154015</p>
                 <div className="mt-2 text-gray-500">
                   <p className="!text-[10px]">Order ID: {showReceipt.saleId}</p>
-                  <p className="!text-[10px]">{new Date(showReceipt.timestamp).toLocaleString()}</p>
+                  <p className="!text-[10px]">{new Date(showReceipt.timestamp).toDateString() === new Date().toDateString() ? new Date(showReceipt.timestamp).toLocaleString() : new Date(showReceipt.timestamp).toLocaleDateString()}</p>
                 </div>
               </div>
 
@@ -1034,6 +1044,12 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                   <span>Grand Total</span>
                   <span>₹{showReceipt.total}</span>
                 </div>
+                {showReceipt.paymentMode && (
+                  <div className="flex justify-between text-[11px] font-bold text-gray-500 mt-1">
+                    <span>Payment Mode</span>
+                    <span className="uppercase">{showReceipt.paymentMode}</span>
+                  </div>
+                )}
               </div>
 
               <div className="text-center mt-6 text-[9px] text-gray-500 italic border-t border-dashed border-gray-200 pt-4">
@@ -1351,6 +1367,19 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
         </div>
 
         <div className="space-y-6 min-w-0">
+          {/* Sale Date Selection */}
+          <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur z-20 relative">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <Calendar size={20} className="text-[var(--accent)]" /> Sale Date
+            </h3>
+            <CustomDatePicker
+              value={saleDate}
+              onChange={(date) => setSaleDate(date)}
+              placeholder="Select sale date"
+              maxDate={new Date().toISOString().split('T')[0]}
+            />
+          </section>
+
           {/* Client Selection */}
           <section className="rounded-[24px] relative z-8 border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
@@ -1438,9 +1467,24 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
             )}
           </section>
 
-          {/* Summary */}
+          {/* Payment Summary & Mode */}
           <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-8 shadow-[var(--shadow)] backdrop-blur">
             <h3 className="text-lg font-bold mb-6">Payment Summary</h3>
+            <div className="mb-6">
+              <span className="text-sm font-medium text-[var(--text)] block mb-3">Payment Mode</span>
+              <div className="flex overflow-x-auto gap-2 pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                {['Cash', 'Bank Transfer', 'UPI', 'Card', 'Cheque'].map(mode => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setPaymentMode(mode)}
+                    className={`shrink-0 px-5 py-2.5 rounded-xl text-sm font-bold transition border ${paymentMode === mode ? 'bg-[var(--accent)] border-[var(--accent)] text-white shadow-md shadow-[var(--accent)]/20' : 'bg-[var(--surface-strong)] border-[var(--border)] text-[var(--muted)] hover:bg-[var(--soft)] hover:text-[var(--text)]'}`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="space-y-4">
               <div className="flex justify-between text-sm">
                 <span className="text-[var(--muted)]">Total Items</span>

@@ -179,7 +179,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                 >
                   <td>
                     <p className="font-bold text-[var(--text)]">{sale.saleId}</p>
-                    <p className="text-[10px] text-[var(--muted)] uppercase font-semibold">{new Date(sale.timestamp).toLocaleString()}</p>
+                    <p className="text-[10px] text-[var(--muted)] uppercase font-semibold">{new Date(sale.timestamp).toDateString() === new Date().toDateString() ? new Date(sale.timestamp).toLocaleString() : new Date(sale.timestamp).toLocaleDateString()}</p>
                   </td>
                   <td>
                     <p className="font-semibold text-[var(--text)]">{sale.client?.name || 'Guest'}</p>
@@ -197,6 +197,9 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                     <p className="text-lg font-black text-[var(--accent)]">
                       ₹{sale.items.reduce((sum, item) => sum + ((parseFloat(item.rate) || parseFloat(item.price) || 0) * (item.qty || 0)) - (parseFloat(item.discount) || 0), 0).toFixed(2)}
                     </p>
+                    {sale.paymentMode && (
+                      <span className="inline-block mt-1 rounded bg-[var(--soft)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--muted)] uppercase">{sale.paymentMode}</span>
+                    )}
                   </td>
                   <td>
                     <div className="flex justify-center gap-2">
@@ -254,7 +257,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                 <img src="/logo-black.png" alt="Logo" className="w-16 h-16 object-contain" />
                 <div>
                   <h3 className="text-2xl font-bold text-[var(--text)]">Sale Details</h3>
-                  <p className="text-sm text-[var(--muted)]">{viewSale.saleId} • {new Date(viewSale.timestamp).toLocaleString()}</p>
+                  <p className="text-sm text-[var(--muted)]">{viewSale.saleId} • {new Date(viewSale.timestamp).toDateString() === new Date().toDateString() ? new Date(viewSale.timestamp).toLocaleString() : new Date(viewSale.timestamp).toLocaleDateString()}</p>
                 </div>
               </div>
               <button 
@@ -276,7 +279,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                   <p style={{ margin: '2px 0', fontSize: '12px' }}>Ph : 8606154015</p>
                   <div className="mt-2 text-gray-500">
                     <p className='!text-[10px]'>Order ID: {viewSale.saleId}</p>
-                    <p className='!text-[10px]'>{new Date(viewSale.timestamp).toLocaleString()}</p>
+                    <p className='!text-[10px]'>{new Date(viewSale.timestamp).toDateString() === new Date().toDateString() ? new Date(viewSale.timestamp).toLocaleString() : new Date(viewSale.timestamp).toLocaleDateString()}</p>
                   </div>
                 </div>
 
@@ -322,6 +325,12 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                     <span>Grand Total</span>
                     <span>₹{((viewSale.items || []).reduce((s, i) => s + (i.rate * i.qty), 0) - (viewSale.items?.reduce((s, i) => s + (parseFloat(i.discount) || 0), 0) || 0)).toFixed(2)}</span>
                   </div>
+                  {viewSale.paymentMode && (
+                    <div className="flex justify-between text-[11px] font-bold text-gray-500 mt-1">
+                      <span>Payment Mode</span>
+                      <span className="uppercase">{viewSale.paymentMode}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="text-center mt-6 text-[9px] text-gray-500 italic border-t border-dashed border-gray-200 pt-4">
@@ -373,7 +382,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                         <p style="margin: 2px 0; font-size: 12px;">Ph : 8606154015</p>
                         <div style="margin-top: 8px; font-size: 10px; color: #333;">
                           <p style="margin: 2px 0;">ID: ${viewSale.saleId}</p>
-                          <p style="margin: 2px 0;">Date: ${new Date(viewSale.timestamp).toLocaleString()}</p>
+                          <p style="margin: 2px 0;">Date: ${new Date(viewSale.timestamp).toDateString() === new Date().toDateString() ? new Date(viewSale.timestamp).toLocaleString() : new Date(viewSale.timestamp).toLocaleDateString()}</p>
                         </div>
                       </div>
 
@@ -401,6 +410,12 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                           <span>Grand Total</span>
                           <span>₹${(subtotal - totDisc).toFixed(2)}</span>
                         </div>
+                        ${viewSale.paymentMode ? `
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; color: #555; margin-top: 5px;">
+                          <span>Payment Mode</span>
+                          <span style="text-transform: uppercase;">${viewSale.paymentMode}</span>
+                        </div>
+                        ` : ''}
                       </div>
 
                       <div style="text-align: center; margin-top: 30px; font-size: 10px; border-top: 1px dashed #ccc; padding-top: 15px; font-style: italic; color: #555; line-height:1.2">

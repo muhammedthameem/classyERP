@@ -176,7 +176,12 @@ function InventoryDetailPage({ themeStyle, item, setCurrentPage, setSelectedInve
               <div>
                 <p className="text-xs font-bold uppercase text-[var(--muted)] mb-1">Unit Price (Decided)</p>
                 {mode === 'view' ? (
-                  <p className="text-2xl font-black text-[var(--accent)]">₹{formData.finalPrice}</p>
+                  <div>
+                    <p className="text-2xl font-black text-[var(--accent)]">
+                      ₹{formData.finalPrice} <span className="text-sm text-[var(--muted)] font-bold">/ {formData.unit}</span>
+                    </p>
+                    <p className="text-sm font-semibold text-[var(--muted)] mt-1 uppercase tracking-wide">Total: ₹{(parseFloat(formData.finalPrice || 0) * parseFloat(formData.quantity || 0)).toFixed(2)}</p>
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     <div className="flex gap-1 rounded-lg bg-[var(--soft)] p-0.5 w-fit">

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
-import { ChevronLeft, ChevronRight, Search, CircleDollarSign, TrendingDown, Trash2, Plus, Wallet, TrendingUp, Lightbulb, Book, Filter, X, Save, Edit3, Download, Eye } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Search, CircleDollarSign, TrendingDown, Trash2, Plus, Wallet, TrendingUp, Lightbulb, Book, Filter, X, Save, Edit3, Download, Eye, Layers } from 'lucide-react'
 import supabase from '../../supabase'
 import { formatDateDDMMYY } from '../../utils/constants'
 import html2pdf from 'html2pdf.js'
+import CustomDatePicker from '../../components/CustomDatePicker'
 
 function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightAccountId, setHighlightAccountId }) {
   const rowRefs = useRef({})
+  const tabsContainerRef = useRef(null)
   const [activeTab, setActiveTab] = useState('All') // 'All', 'Income', 'Expense', 'Cashbook'
   const [cashbookMode, setCashbookMode] = useState('All') // 'All' or 'Cash'
   const [accounts, setAccounts] = useState([])
@@ -15,6 +17,8 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
   const [initialBalance, setInitialBalance] = useState(0)
   const [showBalanceModal, setShowBalanceModal] = useState(false)
   const [balanceInput, setBalanceInput] = useState('')
+  const [initialBalanceDate, setInitialBalanceDate] = useState('')
+  const [balanceDateInput, setBalanceDateInput] = useState('')
   const [isSavingBalance, setIsSavingBalance] = useState(false)
   const [deleteModalId, setDeleteModalId] = useState(null)
   const [showDeleteOpeningBalanceModal, setShowDeleteOpeningBalanceModal] = useState(false)
@@ -41,6 +45,10 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
       const { data: configData } = await supabase.from('erp_config').select('data').eq('id', 'initialCashBalance').maybeSingle()
       if (configData && configData.data !== undefined) {
         setInitialBalance(parseFloat(configData.data) || 0)
+      }
+      const { data: dateData } = await supabase.from('erp_config').select('data').eq('id', 'initialCashBalanceDate').maybeSingle()
+      if (dateData && dateData.data) {
+        setInitialBalanceDate(dateData.data)
       }
 
     } catch (err) {
@@ -223,10 +231,27 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
   const paginatedAccounts = filteredAccounts.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage)
   const paginatedCashbook = cashbookData.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage)
 
-  const handleTabChange = (tab) => {
+  const handleTabChange = (tab, e) => {
     setActiveTab(tab)
     setCurrentPageNum(1)
     setSearchQuery('')
+    
+    // Auto-scroll the tab container so the clicked tab is fully visible horizontally
+    if (tabsContainerRef.current && e && e.currentTarget) {
+      const container = tabsContainerRef.current;
+      const button = e.currentTarget;
+      const scrollLeft = button.offsetLeft - (container.offsetWidth / 2) + (button.offsetWidth / 2);
+      container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+    }
+    
+    // Auto-scroll to the table area so it's fully visible
+    setTimeout(() => {
+      const el = document.getElementById('accounts-table-container');
+      if (el) {
+        const topOffset = el.getBoundingClientRect().top + window.scrollY - 100; // 100px padding from top
+        window.scrollTo({ top: topOffset, behavior: 'smooth' });
+      }
+    }, 100);
   }
 
   const exportToPDF = () => {
@@ -244,6 +269,7 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
 
   const handleSetInitialBalance = () => {
     setBalanceInput(initialBalance.toString())
+    setBalanceDateInput(initialBalanceDate || new Date().toISOString().split('T')[0])
     setShowBalanceModal(true)
   }
 
@@ -254,7 +280,13 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
     setIsSavingBalance(true)
     try {
       await supabase.from('erp_config').upsert([{ id: 'initialCashBalance', data: parsed }]);
+      if (balanceDateInput) {
+        await supabase.from('erp_config').upsert([{ id: 'initialCashBalanceDate', data: balanceDateInput }]);
+      } else {
+        await supabase.from('erp_config').delete().eq('id', 'initialCashBalanceDate');
+      }
       setInitialBalance(parsed);
+      setInitialBalanceDate(balanceDateInput);
       setShowBalanceModal(false);
       if (showGlobalToast) showGlobalToast('Success', 'Opening balance updated!');
     } catch (err) {
@@ -267,8 +299,9 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
 
   const deleteInitialBalance = async () => {
     try {
-      await supabase.from('erp_config').delete().eq('id', 'initialCashBalance');
+      await supabase.from('erp_config').delete().in('id', ['initialCashBalance', 'initialCashBalanceDate']);
       setInitialBalance(0);
+      setInitialBalanceDate('');
       setShowDeleteOpeningBalanceModal(false);
       if (showGlobalToast) showGlobalToast('Success', 'Opening balance removed!');
     } catch (err) {
@@ -344,30 +377,38 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
 
       {/* Tabs & Search */}
       <div className="flex flex-col xl:flex-row items-center justify-between gap-4">
-        <div className="flex p-1 space-x-1 bg-[var(--surface-strong)] rounded-xl border border-[var(--border)] w-full xl:w-auto overflow-x-auto whitespace-nowrap">
+        <div ref={tabsContainerRef} className="flex p-1 space-x-1 bg-[var(--surface-strong)] rounded-xl border border-[var(--border)] w-full overflow-x-auto whitespace-nowrap [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <button
-            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'All' ? 'bg-[var(--surface)] text-[var(--text)] shadow-sm' : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--soft)]'}`}
-            onClick={() => handleTabChange('All')}
+            title="All"
+            className={`flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all duration-300 overflow-hidden ${activeTab === 'All' ? 'flex-1 bg-[var(--surface)] text-[var(--text)] shadow-sm px-6' : 'w-12 sm:w-16 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--soft)]'}`}
+            onClick={(e) => handleTabChange('All', e)}
           >
-            All
+            <Layers size={18} className="shrink-0" /> 
+            {activeTab === 'All' && <span className="whitespace-nowrap animate-in fade-in duration-300">All</span>}
           </button>
           <button
-            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'Income' ? 'bg-[var(--surface)] text-green-500 shadow-sm' : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--soft)]'}`}
-            onClick={() => handleTabChange('Income')}
+            title="Income"
+            className={`flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all duration-300 overflow-hidden ${activeTab === 'Income' ? 'flex-1 bg-[var(--surface)] text-green-500 shadow-sm px-6' : 'w-12 sm:w-16 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--soft)]'}`}
+            onClick={(e) => handleTabChange('Income', e)}
           >
-            <CircleDollarSign size={16} /> Income
+            <CircleDollarSign size={18} className="shrink-0" /> 
+            {activeTab === 'Income' && <span className="whitespace-nowrap animate-in fade-in duration-300">Income</span>}
           </button>
           <button
-            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'Expense' ? 'bg-[var(--surface)] text-red-500 shadow-sm' : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--soft)]'}`}
-            onClick={() => handleTabChange('Expense')}
+            title="Expense"
+            className={`flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all duration-300 overflow-hidden ${activeTab === 'Expense' ? 'flex-1 bg-[var(--surface)] text-red-500 shadow-sm px-6' : 'w-12 sm:w-16 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--soft)]'}`}
+            onClick={(e) => handleTabChange('Expense', e)}
           >
-            <TrendingDown size={16} /> Expense
+            <TrendingDown size={18} className="shrink-0" /> 
+            {activeTab === 'Expense' && <span className="whitespace-nowrap animate-in fade-in duration-300">Expense</span>}
           </button>
           <button
-            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'Cashbook' ? 'bg-[var(--accent)] text-white shadow-sm' : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--soft)]'}`}
-            onClick={() => handleTabChange('Cashbook')}
+            title="Cashbook"
+            className={`flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all duration-300 overflow-hidden ${activeTab === 'Cashbook' ? 'flex-1 bg-[var(--accent)] text-white shadow-sm px-6' : 'w-12 sm:w-16 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--soft)]'}`}
+            onClick={(e) => handleTabChange('Cashbook', e)}
           >
-            <Book size={16} /> Cashbook
+            <Book size={18} className="shrink-0" /> 
+            {activeTab === 'Cashbook' && <span className="whitespace-nowrap animate-in fade-in duration-300">Cashbook</span>}
           </button>
         </div>
 
@@ -440,7 +481,10 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
             </div>
             <div>
               <p className="text-sm font-medium text-[var(--muted)]">Opening Balance</p>
-              <p className="text-2xl font-black text-[var(--text)] tracking-tight">₹{initialBalance.toLocaleString()}</p>
+              <p className="text-2xl font-black text-[var(--text)] tracking-tight">
+                ₹{initialBalance.toLocaleString()}
+                {initialBalanceDate && <span className="ml-2 text-xs font-semibold text-[var(--muted)]">as of {new Date(initialBalanceDate).toLocaleDateString()}</span>}
+              </p>
             </div>
           </div>
           <div className="relative z-10 flex items-center gap-2">
@@ -639,6 +683,19 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
                   />
                 </div>
                 <p className="mt-2 text-xs text-[var(--muted)]">This sets the baseline for your cashbook before any transactions are added.</p>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-[var(--muted)]">As of Date (Optional)</label>
+                <div className="relative z-50">
+                  <CustomDatePicker
+                    value={balanceDateInput}
+                    onChange={(date) => setBalanceDateInput(date)}
+                    placeholder="Select Date"
+                    maxDate={new Date().toISOString().split('T')[0]}
+                    position="top"
+                  />
+                </div>
               </div>
 
               <button

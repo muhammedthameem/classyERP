@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { CircleDollarSign, Calendar, CreditCard, Tag, FileText, FileSignature, ChevronDown, Trash2, Link } from 'lucide-react'
 import supabase from '../../supabase'
 import { getIndianDate } from '../../utils/constants'
+import CustomDatePicker from '../../components/CustomDatePicker'
 
 function AddIncomePage({ themeStyle, setCurrentPage, showGlobalToast, incomeCategories = [], setIncomeCategories, saveConfig, sales = [] }) {
   const [formData, setFormData] = useState({
@@ -20,7 +21,7 @@ function AddIncomePage({ themeStyle, setCurrentPage, showGlobalToast, incomeCate
   const [categorySearch, setCategorySearch] = useState('')
 
   const paymentModes = ['Cash', 'Bank Transfer', 'UPI', 'Card', 'Cheque']
-  const completedSales = sales.filter(s => s.status === 'Completed' || s.status === 'Delivered' || s.status === 'Billed' || s.totalAmount > 0)
+  const completedSales = sales.filter(s => s.status === 'Completed' || s.status === 'Delivered' || s.status === 'Billed' || s.totalAmount > 0 || s.total > 0)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -66,8 +67,15 @@ function AddIncomePage({ themeStyle, setCurrentPage, showGlobalToast, incomeCate
     setFormData(prev => ({ ...prev, linked_sale_id: val }));
     if (val) {
       const sale = sales.find(s => s.saleId?.toString() === val || s.id?.toString() === val);
-      if (sale && sale.totalAmount) {
-        setFormData(prev => ({ ...prev, amount: sale.totalAmount.toString(), category: 'Sales', reference: sale.client?.name || sale.client || '' }));
+      if (sale && (sale.totalAmount || sale.total)) {
+        setFormData(prev => ({ 
+          ...prev, 
+          amount: (sale.totalAmount || sale.total).toString(), 
+          category: 'Sales', 
+          reference: sale.client?.name || sale.client || '',
+          date: sale.timestamp ? sale.timestamp.split('T')[0] : prev.date,
+          mode: sale.paymentMode || prev.mode
+        }));
         setCategorySearch('Sales');
       }
     }
@@ -86,7 +94,7 @@ function AddIncomePage({ themeStyle, setCurrentPage, showGlobalToast, incomeCate
         <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
           <div className="grid gap-6 sm:grid-cols-2">
 
-            <div className="relative sm:col-span-2">
+            <div className="relative z-30 sm:col-span-2">
               <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1 mb-2"><Tag size={16}/> Income Type / Category</span>
               <input
                 className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
@@ -103,7 +111,7 @@ function AddIncomePage({ themeStyle, setCurrentPage, showGlobalToast, incomeCate
                 required
               />
               {showCategoryDropdown && (
-                <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] shadow-lg">
+                <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] shadow-lg">
                   {incomeCategories
                     .filter(c => c.toLowerCase().includes(categorySearch.toLowerCase()))
                     .map((c) => (
@@ -165,21 +173,20 @@ function AddIncomePage({ themeStyle, setCurrentPage, showGlobalToast, incomeCate
                   <option value="">-- Select a completed sale --</option>
                   {completedSales.map(s => (
                     <option key={s.saleId || s.id} value={s.saleId || s.id}>
-                      Sale #{s.saleId || s.id} - {s.client?.name || s.client || 'Walk-in'} (₹{s.totalAmount})
+                      Sale #{s.saleId || s.id} - {s.client?.name || s.client || 'Walk-in'} (₹{s.totalAmount || s.total})
                     </option>
                   ))}
                 </select>
               </label>
             )}
 
-            <label className="block pt-2">
-              <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><Calendar size={16}/> Date</span>
-              <input
-                className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
-                type="date"
+            <label className="block pt-2 z-20 relative">
+              <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1 mb-2"><Calendar size={16}/> Date</span>
+              <CustomDatePicker
                 value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                required
+                onChange={(date) => setFormData({ ...formData, date })}
+                placeholder="Select date"
+                maxDate={new Date().toISOString().split('T')[0]}
               />
             </label>
 
