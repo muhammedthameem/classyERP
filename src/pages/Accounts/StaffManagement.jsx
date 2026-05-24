@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Users, Pencil, Trash2, Search, Plus, Save, X } from 'lucide-react'
+import { Users, Pencil, Trash2, Search, Plus, Save, X, Download } from 'lucide-react'
+import html2pdf from 'html2pdf.js'
 
-function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staffList = [], setStaffList, saveConfig, highlightStaffId, setHighlightStaffId }) {
+function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staffList = [], setStaffList, saveConfig, highlightStaffId, setHighlightStaffId, allAccounts = [] }) {
   const rowRefs = useRef({})
   const [formData, setFormData] = useState({
     id: '',
@@ -15,7 +16,107 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
 
   const [isEditing, setIsEditing] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [tableMonthFilter, setTableMonthFilter] = useState(new Date().toISOString().slice(0, 7)) // Default to current month
   const [staffToDelete, setStaffToDelete] = useState(null)
+  const [activeStaffForPdf, setActiveStaffForPdf] = useState(null)
+
+  const [payslipData, setPayslipData] = useState({
+    type: 'Monthly', // or 'Custom'
+    staffId: '',
+    month: new Date().toISOString().slice(0, 7), // YYYY-MM
+    startDate: '',
+    endDate: '',
+    amount: '',
+    overtime: ''
+  })
+
+  const handlePayslipStaffChange = (e) => {
+    const id = e.target.value;
+    const staff = staffList.find(s => s.id === id);
+    setPayslipData(prev => ({ ...prev, staffId: id, amount: '', overtime: '' }));
+  }
+
+  // Calculate total overtime & salary logged for selected staff in selected period
+  let monthlyOvertimeSum = 0;
+  let monthlySalarySum = 0;
+  if (payslipData.staffId && allAccounts.length > 0) {
+    const staff = staffList.find(s => s.id === payslipData.staffId);
+    if (staff) {
+      const overtimeExpenses = allAccounts.filter(acc => {
+        if (acc.type !== 'Expense' || acc.category !== 'Overtime Payment' || acc.reference !== `Overtime - ${staff.name}` || !acc.date) return false;
+        if (payslipData.type === 'Monthly') {
+          return payslipData.month && acc.date.startsWith(payslipData.month);
+        } else {
+          return payslipData.startDate && payslipData.endDate && acc.date >= payslipData.startDate && acc.date <= payslipData.endDate;
+        }
+      });
+      monthlyOvertimeSum = overtimeExpenses.reduce((sum, acc) => sum + parseFloat(acc.amount || 0), 0);
+
+      const salaryExpenses = allAccounts.filter(acc => {
+        if (acc.type !== 'Expense' || acc.reference !== `Salary - ${staff.name}` || !acc.date) return false;
+        if (payslipData.type === 'Monthly') {
+          return payslipData.month && acc.date.startsWith(payslipData.month);
+        } else {
+          return payslipData.startDate && payslipData.endDate && acc.date >= payslipData.startDate && acc.date <= payslipData.endDate;
+        }
+      });
+      monthlySalarySum = salaryExpenses.reduce((sum, acc) => sum + parseFloat(acc.amount || 0), 0);
+    }
+  }
+
+  const generatePayslip = () => {
+    if (!payslipData.staffId) {
+      if (showGlobalToast) showGlobalToast('Error', 'Please select a staff member.');
+      return;
+    }
+    if (!payslipData.amount && !payslipData.overtime) {
+      if (showGlobalToast) showGlobalToast('Error', 'No salary or overtime logged for this staff in the selected period. You must log the expense first to generate a payslip.');
+      return;
+    }
+    const staff = staffList.find(s => s.id === payslipData.staffId);
+    if (!staff) return;
+
+    if (payslipData.type === 'Custom' && (!payslipData.startDate || !payslipData.endDate)) {
+      if (showGlobalToast) showGlobalToast('Error', 'Please select both start and end dates.');
+      return;
+    }
+
+    setActiveStaffForPdf({ 
+      ...staff, 
+      payslipType: payslipData.type,
+      payslipMonth: payslipData.month, 
+      payslipStartDate: payslipData.startDate,
+      payslipEndDate: payslipData.endDate,
+      payslipAmount: payslipData.amount, 
+      payslipOvertime: payslipData.overtime 
+    });
+    if (showGlobalToast) showGlobalToast('Generating', 'Preparing payslip for download...');
+    setTimeout(() => {
+      const element = document.getElementById('payslip-template');
+      if (!element) return;
+      const opt = {
+        margin: 0.5,
+        filename: `Payslip_${staff.name.replace(/\s+/g, '_')}_${payslipData.month}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save().then(() => {
+        setActiveStaffForPdf(null);
+        if (showGlobalToast) showGlobalToast('Success', 'Payslip downloaded successfully.');
+        
+        // Open WhatsApp
+        const phone = staff.phone.replace(/\D/g, '');
+        if (phone) {
+          const periodStr = payslipData.type === 'Monthly' 
+            ? new Date(payslipData.month + '-01').toLocaleString('default', { month: 'long', year: 'numeric' })
+            : `${payslipData.startDate} to ${payslipData.endDate}`;
+          const text = encodeURIComponent(`Hello ${staff.name},\n\nYour payslip for ${periodStr} has been generated. Please find the PDF document attached below.\n\nTotal Paid: ₹${(parseFloat(payslipData.amount || 0) + parseFloat(payslipData.overtime || 0)).toLocaleString()}`);
+          window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
+        }
+      });
+    }, 500);
+  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -87,6 +188,30 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
     s.phone.includes(searchQuery)
   )
 
+  const getDynamicTotalPaid = (staff) => {
+    if (!allAccounts || allAccounts.length === 0) return parseFloat(staff.totalPaid || 0);
+
+    const payments = allAccounts.filter(acc => {
+      if (acc.type !== 'Expense') return false;
+      const isSalaryOrOvertime = acc.reference === `Salary - ${staff.name}` || acc.reference === `Overtime - ${staff.name}`;
+      if (!isSalaryOrOvertime) return false;
+
+      if (tableMonthFilter) {
+        return acc.date && acc.date.startsWith(tableMonthFilter);
+      }
+      return true;
+    });
+
+    const sumFromLedger = payments.reduce((sum, acc) => sum + parseFloat(acc.amount || 0), 0);
+    
+    // If 'All Time' and ledger is 0 but legacy totalPaid exists, show legacy.
+    if (!tableMonthFilter && sumFromLedger === 0 && parseFloat(staff.totalPaid || 0) > 0) {
+      return parseFloat(staff.totalPaid || 0);
+    }
+    
+    return sumFromLedger;
+  }
+
   useEffect(() => {
     if (highlightStaffId) {
       setTimeout(() => {
@@ -141,98 +266,220 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
         </div>
       </div>
 
-      {/* Add / Edit Form */}
-      <form onSubmit={handleSubmit} className="mb-10 space-y-6 max-w-4xl">
-        <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
+      <div className="grid gap-6 lg:grid-cols-2 mb-10">
+
+        {/* Add / Edit Form */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <section className="h-full rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur flex flex-col">
+            <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold">
+              {isEditing ? <><Pencil size={20} /> Edit Staff Member</> : <><Plus size={20} /> Add New Staff</>}
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="text-sm font-medium text-[var(--text)]">Full Name <span className="text-red-500">*</span></span>
+                <input
+                  name="name"
+                  className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                  type="text"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g., Jane Doe"
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-medium text-[var(--text)]">Designation <span className="text-red-500">*</span></span>
+                <input
+                  name="designation"
+                  className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                  type="text"
+                  value={formData.designation}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g., Master Tailor"
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-medium text-[var(--text)]">Phone Number <span className="text-red-500">*</span></span>
+                <input
+                  name="phone"
+                  className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g., +91 9876543210"
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-medium text-[var(--text)]">Salary (₹) <span className="text-red-500">*</span></span>
+                <input
+                  name="salary"
+                  className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                  type="number"
+                  min="0"
+                  value={formData.salary}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g., 5000"
+                />
+              </label>
+            </div>
+
+            <div className="mt-auto pt-6 flex justify-end gap-3">
+              {isEditing && (
+                <button
+                  type="button"
+                  className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-6 py-3 font-semibold transition hover:bg-[var(--soft)] cursor-pointer"
+                  onClick={cancelEdit}
+                >
+                  <X size={18} /> Cancel
+                </button>
+              )}
+              <button
+                type="submit"
+                className="flex items-center gap-2 rounded-xl bg-[var(--accent)] px-8 py-3.5 font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:bg-[var(--accent)]/90 cursor-pointer"
+              >
+                <Save size={18} /> {isEditing ? 'Save Changes' : 'Add Staff'}
+              </button>
+            </div>
+          </section>
+        </form>
+
+        {/* Generate Payslip Card */}
+        <section className="h-full rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur flex flex-col">
           <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold">
-            {isEditing ? <><Pencil size={20} /> Edit Staff Member</> : <><Plus size={20} /> Add New Staff</>}
+            <Download size={20} className="text-[var(--accent)]" /> Generate Monthly Payslip
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 items-start">
             <label className="block">
-              <span className="text-sm font-medium text-[var(--text)]">Full Name <span className="text-red-500">*</span></span>
-              <input
-                name="name"
+              <span className="text-sm font-medium text-[var(--text)]">Payslip Type</span>
+              <select
                 className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
-                type="text"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-                placeholder="e.g., Jane Doe"
-              />
+                value={payslipData.type}
+                onChange={e => setPayslipData(prev => ({ ...prev, type: e.target.value, overtime: '' }))}
+              >
+                <option value="Monthly">Monthly</option>
+                <option value="Custom">Weekly / Custom Period</option>
+              </select>
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-[var(--text)]">Designation <span className="text-red-500">*</span></span>
-              <input
-                name="designation"
+              <span className="text-sm font-medium text-[var(--text)]">Select Staff</span>
+              <select
                 className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
-                type="text"
-                value={formData.designation}
-                onChange={handleInputChange}
-                required
-                placeholder="e.g., Master Tailor"
-              />
+                value={payslipData.staffId}
+                onChange={handlePayslipStaffChange}
+              >
+                <option value="">-- Select Staff --</option>
+                {staffList.map(s => <option key={s.id} value={s.id}>{s.name} ({s.designation})</option>)}
+              </select>
+            </label>
+            {payslipData.type === 'Monthly' ? (
+              <label className="block">
+                <span className="text-sm font-medium text-[var(--text)]">Payslip Month</span>
+                <input
+                  type="month"
+                  className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                  value={payslipData.month}
+                  onChange={e => setPayslipData(prev => ({ ...prev, month: e.target.value, overtime: '' }))}
+                />
+              </label>
+            ) : (
+              <>
+                <label className="block">
+                  <span className="text-sm font-medium text-[var(--text)]">Start Date</span>
+                  <input
+                    type="date"
+                    className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                    value={payslipData.startDate}
+                    onChange={e => setPayslipData(prev => ({ ...prev, startDate: e.target.value, overtime: '' }))}
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-medium text-[var(--text)]">End Date</span>
+                  <input
+                    type="date"
+                    className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                    value={payslipData.endDate}
+                    onChange={e => setPayslipData(prev => ({ ...prev, endDate: e.target.value, overtime: '' }))}
+                  />
+                </label>
+              </>
+            )}
+            <label className="block">
+              <span className="text-sm font-medium text-[var(--text)]">Amount to Pay (₹)</span>
+              <select
+                className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                value={payslipData.amount}
+                onChange={e => setPayslipData(prev => ({ ...prev, amount: e.target.value }))}
+                disabled={!payslipData.staffId}
+              >
+                <option value="">0 (No Salary)</option>
+                {monthlySalarySum > 0 && (
+                  <option value={monthlySalarySum}>₹{monthlySalarySum} (Logged Salary)</option>
+                )}
+              </select>
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-[var(--text)]">Phone Number <span className="text-red-500">*</span></span>
-              <input
-                name="phone"
+              <span className="text-sm font-medium text-[var(--text)]">Overtime (₹) <span className="text-[11px] text-[var(--muted)]">- Optional</span></span>
+              <select
                 className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
-                type="tel"
-                value={formData.phone}
-                onChange={handleInputChange}
-                required
-                placeholder="e.g., +91 9876543210"
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium text-[var(--text)]">Salary (₹) <span className="text-red-500">*</span></span>
-              <input
-                name="salary"
-                className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
-                type="number"
-                min="0"
-                value={formData.salary}
-                onChange={handleInputChange}
-                required
-                placeholder="e.g., 5000"
-              />
+                value={payslipData.overtime}
+                onChange={e => setPayslipData(prev => ({ ...prev, overtime: e.target.value }))}
+                disabled={!payslipData.staffId}
+              >
+                <option value="">0 (No Overtime)</option>
+                {monthlyOvertimeSum > 0 && (
+                  <option value={monthlyOvertimeSum}>₹{monthlyOvertimeSum} (Logged Overtime)</option>
+                )}
+              </select>
             </label>
           </div>
-
-          <div className="mt-6 flex justify-end gap-3">
-            {isEditing && (
-              <button
-                type="button"
-                className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-6 py-3 font-semibold transition hover:bg-[var(--soft)] cursor-pointer"
-                onClick={cancelEdit}
-              >
-                <X size={18} /> Cancel
-              </button>
-            )}
+          <div className="mt-auto pt-6 flex justify-end">
             <button
-              className="flex items-center gap-2 rounded-xl bg-[var(--accent)] px-6 py-3 font-semibold text-white shadow-lg shadow-[var(--accent)]/25 transition hover:brightness-110 cursor-pointer"
-              type="submit"
+              type="button"
+              className="flex items-center gap-2 rounded-xl bg-[var(--accent)] px-8 py-3.5 font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:bg-[var(--accent)]/90 cursor-pointer disabled:opacity-50"
+              onClick={generatePayslip}
+              disabled={!payslipData.staffId}
             >
-              <Save size={18} /> {isEditing ? 'Update Staff' : 'Save Staff'}
+              <Download size={18} /> Download PDF
             </button>
           </div>
         </section>
-      </form>
+
+      </div>
 
       {/* Data Table */}
       <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur overflow-hidden">
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h2 className="text-xl font-semibold flex items-center gap-2"><Users size={20} /> Added Staff ({staffList.length})</h2>
-          <label className="flex h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm focus-within:border-[var(--accent)] transition-colors w-full sm:max-w-xs">
-            <Search size={18} />
-            <input
-              className="w-full bg-transparent outline-none placeholder:text-stone-400 font-medium text-[var(--text)]"
-              placeholder="Search staff..."
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </label>
+        <div className="mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <h2 className="text-xl font-semibold flex items-center gap-2 shrink-0"><Users size={20} /> Added Staff ({staffList.length})</h2>
+          <div className="flex flex-wrap sm:flex-nowrap w-full lg:w-auto items-center gap-3 justify-start lg:justify-end">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <input
+                type="month"
+                className="h-11 w-full sm:w-auto rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm font-medium outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                value={tableMonthFilter}
+                onChange={(e) => setTableMonthFilter(e.target.value)}
+                title="Filter Total Paid by Month"
+              />
+              <button
+                onClick={() => setTableMonthFilter('')}
+                className={`h-11 whitespace-nowrap rounded-xl border border-[var(--border)] px-4 text-sm font-semibold transition ${!tableMonthFilter ? 'bg-[var(--accent)] text-white' : 'bg-[var(--surface-strong)] hover:bg-[var(--soft)]'}`}
+              >
+                All Time
+              </button>
+            </div>
+            <label className="flex h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm focus-within:border-[var(--accent)] transition-colors w-full sm:max-w-xs">
+              <Search size={18} />
+              <input
+                className="w-full bg-transparent outline-none placeholder:text-stone-400 font-medium text-[var(--text)]"
+                placeholder="Search staff..."
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </label>
+          </div>
         </div>
 
         <div className="erp-table-container">
@@ -250,8 +497,8 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
             <tbody>
               {filteredStaff.length > 0 ? (
                 filteredStaff.map((staff) => (
-                  <tr 
-                    key={staff.id} 
+                  <tr
+                    key={staff.id}
                     ref={el => rowRefs.current[staff.id] = el}
                     className={`group transition-all duration-1000 ${highlightStaffId === staff.id ? 'bg-[var(--accent-soft)]/50 ring-2 ring-[var(--accent)] ring-inset' : 'hover:bg-[var(--soft)]'}`}
                   >
@@ -264,7 +511,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
                     <td className="text-[var(--text)]">{staff.phone}</td>
                     <td className="font-semibold text-[var(--text)]">₹{parseFloat(staff.salary || 0).toLocaleString()}</td>
                     <td className="font-bold text-green-600">
-                      ₹{parseFloat(staff.totalPaid || 0).toLocaleString()}
+                      ₹{getDynamicTotalPaid(staff).toLocaleString()}
                     </td>
                     <td className="text-right">
                       <div className="flex justify-end gap-2">
@@ -297,6 +544,82 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
           </table>
         </div>
       </section>
+
+
+      {/* Hidden Payslip Template for PDF Generation */}
+      {activeStaffForPdf && (
+        <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
+          <div id="payslip-template" style={{ width: '700px', padding: '40px', boxSizing: 'border-box', background: '#fff', color: '#000', fontFamily: 'sans-serif' }}>
+            <div style={{ textAlign: 'center', borderBottom: '2px solid #eee', paddingBottom: '20px', marginBottom: '30px' }}>
+              <h1 style={{ margin: 0, fontSize: '28px', color: '#111' }}>Classy Couture</h1>
+              <p style={{ margin: '5px 0 0', color: '#666', fontSize: '14px' }}>Official Payslip Record</p>
+            </div>
+
+            <table style={{ width: '100%', marginBottom: '40px', fontSize: '16px', tableLayout: 'fixed', wordWrap: 'break-word' }}>
+              <tbody>
+                <tr>
+                  <td style={{ padding: '8px 0', fontWeight: 'bold', width: '25%' }}>Staff Name:</td>
+                  <td style={{ padding: '8px 0', width: '25%' }}>{activeStaffForPdf.name}</td>
+                  <td style={{ padding: '8px 0', fontWeight: 'bold', width: '25%' }}>Date Issued:</td>
+                  <td style={{ padding: '8px 0', width: '25%' }}>{new Date().toLocaleDateString()}</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '8px 0', fontWeight: 'bold' }}>Designation:</td>
+                  <td style={{ padding: '8px 0' }}>{activeStaffForPdf.designation}</td>
+                  <td style={{ padding: '8px 0', fontWeight: 'bold' }}>Payslip Period:</td>
+                  <td style={{ padding: '8px 0' }}>
+                    {activeStaffForPdf.payslipType === 'Monthly' 
+                      ? new Date(activeStaffForPdf.payslipMonth + '-01').toLocaleString('default', { month: 'long', year: 'numeric' })
+                      : `${activeStaffForPdf.payslipStartDate} to ${activeStaffForPdf.payslipEndDate}`}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden', marginBottom: '40px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '16px', tableLayout: 'fixed', wordWrap: 'break-word' }}>
+                <thead>
+                  <tr style={{ background: '#f8f9fa', borderBottom: '2px solid #ddd' }}>
+                    <th style={{ padding: '12px 20px', textAlign: 'left', width: '60%' }}>Description</th>
+                    <th style={{ padding: '12px 20px', textAlign: 'right', width: '40%' }}>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ padding: '16px 20px' }}>Basic Salary</td>
+                    <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 'bold' }}>₹{parseFloat(activeStaffForPdf.salary || 0).toLocaleString()}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ padding: '16px 20px' }}>Salary Paid for {activeStaffForPdf.payslipType === 'Monthly' ? new Date(activeStaffForPdf.payslipMonth + '-01').toLocaleString('default', { month: 'long' }) : 'Selected Period'}</td>
+                    <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 'bold' }}>₹{parseFloat(activeStaffForPdf.payslipAmount || 0).toLocaleString()}</td>
+                  </tr>
+                  {parseFloat(activeStaffForPdf.payslipOvertime || 0) > 0 && (
+                    <tr style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '16px 20px' }}>Overtime Pay</td>
+                      <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 'bold' }}>₹{parseFloat(activeStaffForPdf.payslipOvertime || 0).toLocaleString()}</td>
+                    </tr>
+                  )}
+                  <tr style={{ borderBottom: '1px solid #eee', background: '#f8f9fa' }}>
+                    <td style={{ padding: '16px 20px', fontWeight: 'bold', fontSize: '18px' }}>Total Gross Pay</td>
+                    <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 'bold', color: 'green', fontSize: '18px' }}>
+                      ₹{(parseFloat(activeStaffForPdf.payslipAmount || 0) + parseFloat(activeStaffForPdf.payslipOvertime || 0)).toLocaleString()}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '60px', paddingTop: '20px', borderTop: '1px solid #eee' }}>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ marginTop: '40px', borderTop: '1px solid #000', paddingTop: '10px', width: '200px', fontWeight: 'bold' }}>Employer Signature</p>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ marginTop: '40px', borderTop: '1px solid #000', paddingTop: '10px', width: '200px', fontWeight: 'bold' }}>Employee Signature</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
