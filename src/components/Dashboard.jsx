@@ -57,7 +57,7 @@ function Dashboard({
   const [showAllNotifications, setShowAllNotifications] = useState(false)
   const [notificationsPage, setNotificationsPage] = useState(1)
   const notificationsPerPage = 10
-  
+
   const [isHeaderVisible, setIsHeaderVisible] = useState(true)
 
   useEffect(() => {
@@ -68,7 +68,7 @@ function Dashboard({
       if (!ticking) {
         window.requestAnimationFrame(() => {
           const currentScrollY = window.scrollY;
-          
+
           if (currentScrollY < 60) {
             setIsHeaderVisible(true);
           } else if (currentScrollY > lastScrollY && currentScrollY - lastScrollY > 5) {
@@ -76,14 +76,14 @@ function Dashboard({
           } else if (currentScrollY < lastScrollY && lastScrollY - currentScrollY > 5) {
             setIsHeaderVisible(true); // scrolling up
           }
-          
+
           lastScrollY = currentScrollY;
           ticking = false;
         });
         ticking = true;
       }
     };
-    
+
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -1178,7 +1178,7 @@ function Dashboard({
                               <div className="grid gap-3 border-b border-[var(--border)] px-4 py-4 last:border-b-0 md:grid-cols-[1fr_1fr_150px_90px]" key={o.id}>
                                 <span className="font-semibold">{o.clientName}</span>
                                 <span className="text-[var(--muted)]">{o.product}</span>
-                                <span className="w-fit rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">{o.status}</span>
+                                <span className="w-fit rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)] max-h-[26px]">{o.status}</span>
                                 <span className="font-semibold md:text-right">{o.price}</span>
                               </div>
                             ))}
@@ -1565,7 +1565,7 @@ function Dashboard({
       {flyoutMenu && (
         <>
           <div className="fixed inset-0 z-[190]" onClick={() => setFlyoutMenu(null)} />
-          <div 
+          <div
             className="fixed z-[200] w-48 rounded-2xl bg-[var(--surface-strong)] shadow-2xl shadow-black/20 border border-[var(--border)] overflow-hidden py-2 animate-in fade-in slide-in-from-left-2"
             style={{ top: flyoutMenu.top, left: '5.5rem' }}
           >
