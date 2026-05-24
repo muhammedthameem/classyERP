@@ -50,7 +50,28 @@ function App() {
         if (o.data) setOrders(o.data.map(item => item.data || item));
         if (s.data) setSales(s.data.map(item => item.data || item));
         if (i.data) setInventory(i.data.map(item => item.data || item));
-        if (a.data) setActivities(a.data.map(item => item.data || item));
+        if (a.data) {
+          const fetchedActivities = a.data.map(item => item.data || item);
+          
+          const idsToDelete = [];
+          const now = new Date();
+          const oneDayAgo = new Date(now.getTime() - (1 * 24 * 60 * 60 * 1000));
+          
+          fetchedActivities.forEach((act, index) => {
+             const isOld = new Date(act.timestamp) < oneDayAgo;
+             const isBeyond10 = index >= 10;
+             if (isOld && isBeyond10) {
+                 idsToDelete.push(act.id);
+             }
+          });
+          
+          if (idsToDelete.length > 0) {
+             supabase.from('erp_activities').delete().in('id', idsToDelete.map(String)).then(() => {});
+          }
+
+          const activeActivities = fetchedActivities.filter(act => !idsToDelete.includes(act.id));
+          setActivities(activeActivities);
+        }
 
         if (cfg.data) {
           cfg.data.forEach(item => {

@@ -773,6 +773,7 @@ function Dashboard({
                           onClick={() => {
                             setActivities([])
                             localStorage.setItem('activities', '[]')
+                            supabase.from('erp_activities').delete().neq('id', '0').then()
                           }}
                         >
                           Clear
@@ -1392,6 +1393,7 @@ function Dashboard({
                       setActivities([])
                       localStorage.setItem('activities', '[]')
                       setNotificationsPage(1)
+                      supabase.from('erp_activities').delete().neq('id', '0').then()
                     }}
                   >
                     Clear All
