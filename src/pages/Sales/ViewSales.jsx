@@ -78,14 +78,16 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
 
   const handleUndoDelete = () => {
     if (!recentlyDeletedSale) return;
-    setSales(prev => [...prev, recentlyDeletedSale]);
+    setSales(prev => prev.some(s => s.id === recentlyDeletedSale.id) ? prev : [...prev, recentlyDeletedSale]);
     if (showGlobalToast) showGlobalToast('Restored', `Sales record #${recentlyDeletedSale.saleId || recentlyDeletedSale.id} has been restored.`);
     setRecentlyDeletedSale(null);
     if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
   }
 
+  const displaySales = sales.filter(s => s.id !== recentlyDeletedSale?.id);
+
   const filteredSales = useMemo(() => {
-    return sales.filter(s => {
+    return displaySales.filter(s => {
       const sId = (s.saleId || '').toString().toLowerCase();
       const cName = (s.client?.name || s.client || '').toString().toLowerCase();
       const query = searchQuery.toLowerCase();

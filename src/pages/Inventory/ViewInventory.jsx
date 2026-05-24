@@ -11,8 +11,10 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
 
   const isDataLoading = !cloudLoaded || !inventory;
 
+  const displayInventory = (inventory || []).filter(inv => inv.id !== recentlyDeletedInventory?.id);
+
   const filteredInventory = useMemo(() => {
-    return [...inventory]
+    return [...displayInventory]
       .sort((a, b) => (b.id || 0) - (a.id || 0))
       .filter(item =>
         (item.productId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -88,7 +90,7 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
 
   const handleUndoDelete = () => {
     if (!recentlyDeletedInventory) return;
-    setInventory(prev => [...prev, recentlyDeletedInventory]);
+    setInventory(prev => prev.some(i => i.id === recentlyDeletedInventory.id) ? prev : [...prev, recentlyDeletedInventory]);
     if (showGlobalToast) showGlobalToast('Restored', `Stock item "${recentlyDeletedInventory.productName}" has been restored.`);
     setRecentlyDeletedInventory(null);
     if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);

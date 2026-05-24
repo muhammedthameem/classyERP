@@ -82,7 +82,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
 
   const handleUndoDelete = () => {
     if (!recentlyDeletedOrder) return;
-    const updated = [...orders, recentlyDeletedOrder];
+    const updated = orders.some(o => o.id === recentlyDeletedOrder.id) ? orders : [...orders, recentlyDeletedOrder];
     saveOrders(updated);
     if (showGlobalToast) showGlobalToast('Restored', `Order #${recentlyDeletedOrder.id} has been restored.`);
     setRecentlyDeletedOrder(null);
@@ -120,7 +120,9 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
 
   const [activeFilter, setActiveFilter] = useState('All')
 
-  const filteredOrders = orders.filter(o => {
+  const displayOrders = orders.filter(o => o.id !== recentlyDeletedOrder?.id);
+
+  const filteredOrders = displayOrders.filter(o => {
     const matchesSearch = (o.clientName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (o.product || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (o.id || '').toString().includes(searchQuery)
@@ -243,14 +245,14 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
     }
   }
 
-  const totalOrders = orders.length
+  const totalOrders = displayOrders.length
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
-  const upcomingDeliveries = orders.filter(o => o.status !== 'Closed' && o.status !== 'Sold' && o.deliveryDate && new Date(o.deliveryDate) >= todayStart).length
-  const pendingCount = orders.filter(o => o.status === 'Not Ready' || o.status === 'Pending').length
-  const progressCount = orders.filter(o => o.status === 'In Progress' || o.status === 'Start').length
-  const holdCount = orders.filter(o => o.status === 'Hold').length
-  const closedCount = orders.filter(o => o.status === 'Completed' || o.status === 'Sold').length
+  const upcomingDeliveries = displayOrders.filter(o => o.status !== 'Closed' && o.status !== 'Sold' && o.deliveryDate && new Date(o.deliveryDate) >= todayStart).length
+  const pendingCount = displayOrders.filter(o => o.status === 'Not Ready' || o.status === 'Pending').length
+  const progressCount = displayOrders.filter(o => o.status === 'In Progress' || o.status === 'Start').length
+  const holdCount = displayOrders.filter(o => o.status === 'Hold').length
+  const closedCount = displayOrders.filter(o => o.status === 'Completed' || o.status === 'Sold').length
 
   return (
     <div style={themeStyle} className="relative">
@@ -588,8 +590,8 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
           { id: 'Not Ready', label: 'Not Ready', value: pendingCount, icon: Clock, color: 'text-orange-600', bgColor: 'bg-orange-50' },
           { id: 'In Progress', label: 'Progress', value: progressCount, icon: Play, color: 'text-indigo-600', bgColor: 'bg-indigo-50' },
           { id: 'Hold', label: 'Hold', value: holdCount, icon: Pause, color: 'text-red-600', bgColor: 'bg-red-50' },
-          { id: 'Completed', label: 'Completed', value: orders.filter(o => o.status === 'Completed').length, icon: CheckCircle2, color: 'text-green-600', bgColor: 'bg-green-50' },
-          { id: 'Sold', label: 'Sold', value: orders.filter(o => o.status === 'Sold').length, icon: CircleDollarSign, color: 'text-emerald-700', bgColor: 'bg-emerald-50' },
+          { id: 'Completed', label: 'Completed', value: displayOrders.filter(o => o.status === 'Completed').length, icon: CheckCircle2, color: 'text-green-600', bgColor: 'bg-green-50' },
+          { id: 'Sold', label: 'Sold', value: displayOrders.filter(o => o.status === 'Sold').length, icon: CircleDollarSign, color: 'text-emerald-700', bgColor: 'bg-emerald-50' },
         ].map((stat) => (
           <button
             key={stat.id}
