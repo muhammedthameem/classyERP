@@ -3,7 +3,7 @@ import { TrendingDown, Calendar, CreditCard, Tag, FileText, FileSignature, Chevr
 import supabase from '../../supabase'
 import { getIndianDate } from '../../utils/constants'
 
-function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCategories = [], setExpenseCategories, saveConfig, inventory = [], staffList = [], setStaffList }) {
+function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCategories = [], setExpenseCategories, saveConfig, inventory = [], staffList = [], setStaffList, refreshAccounts }) {
   const [formData, setFormData] = useState({
     date: getIndianDate(),
     category: '',
@@ -84,6 +84,8 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
         if (setStaffList) setStaffList(updatedStaffList);
         saveConfig('staffList', updatedStaffList);
       }
+
+      if (refreshAccounts) refreshAccounts();
 
       if (showGlobalToast) showGlobalToast('Success!', 'Expense recorded successfully.');
       setCurrentPage('view-accounts')
@@ -178,7 +180,8 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
                       <div key={c} className="flex items-center group w-full px-4 py-1 hover:bg-[var(--soft)]">
                         <button
                           className="flex-1 py-1.5 text-left text-sm text-[var(--text)] transition"
-                          onClick={() => {
+                          onMouseDown={(e) => {
+                            e.preventDefault();
                             setCategorySearch(c)
                             setFormData({ ...formData, category: c })
                             setShowCategoryDropdown(false)
@@ -189,12 +192,13 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
+                          onMouseDown={(e) => {
+                            e.preventDefault();
                             const updated = expenseCategories.filter(item => item !== c);
                             if (setExpenseCategories) setExpenseCategories(updated);
                             if (saveConfig) saveConfig('expenseCategories', updated);
                           }}
-                          className="p-1.5 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="p-1.5 text-red-400 hover:text-red-600 opacity-60 hover:opacity-100 transition-opacity"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -203,7 +207,8 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
                   {categorySearch && !expenseCategories.some(c => c.toLowerCase() === categorySearch.toLowerCase()) && (
                     <button
                       className="w-full px-4 py-2 text-left text-sm font-semibold text-[var(--accent)] transition hover:bg-[var(--soft)]"
-                      onClick={() => {
+                      onMouseDown={(e) => {
+                        e.preventDefault();
                         const newCat = categorySearch.trim()
                         if (newCat) {
                           const updated = [...expenseCategories, newCat]

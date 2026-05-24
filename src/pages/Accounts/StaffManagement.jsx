@@ -286,7 +286,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
       {/* Ledger Modal */}
       {ledgerStaff && (
         <div className="fixed inset-0 z-[2000] grid place-items-center bg-black/60 px-4 backdrop-blur-sm overflow-y-auto py-10">
-          <div className="w-full max-w-2xl rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-8 shadow-2xl relative">
+          <div className="w-full max-w-2xl rounded-[28px] border border-[var(--border)] bg-[var(--surface-strong)] p-8 shadow-2xl relative">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-2xl font-bold text-[var(--text)]">Payment History</h3>
@@ -299,7 +299,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
             
             <div className="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
               <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 bg-[var(--surface)] z-10">
+                <thead className="sticky top-0 bg-[var(--soft)] z-10">
                   <tr className="border-b border-[var(--border)] text-[var(--muted)]">
                     <th className="py-3 px-2 font-medium">Date</th>
                     <th className="py-3 px-2 font-medium">Category</th>

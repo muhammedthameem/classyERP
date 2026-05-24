@@ -5,7 +5,7 @@ import { formatDateDDMMYY } from '../../utils/constants'
 import html2pdf from 'html2pdf.js'
 import CustomDatePicker from '../../components/CustomDatePicker'
 
-function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightAccountId, setHighlightAccountId }) {
+function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightAccountId, setHighlightAccountId, refreshAccounts }) {
   const rowRefs = useRef({})
   const tabsContainerRef = useRef(null)
   const [activeTab, setActiveTab] = useState('All') // 'All', 'Income', 'Expense', 'Cashbook'
@@ -78,6 +78,7 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
       if (error) throw error;
       
       setAccounts(prev => prev.filter(acc => acc.id !== deleteModalId))
+      if (refreshAccounts) refreshAccounts();
       if (showGlobalToast) showGlobalToast('Success', 'Record deleted successfully.')
     } catch (err) {
       console.error("Error deleting account:", err)
@@ -114,6 +115,7 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
       if (error) throw error;
 
       setAccounts(prev => prev.map(acc => acc.id === id ? { ...acc, type, date, category, amount: parseFloat(amount), payment_mode, reference, notes } : acc));
+      if (refreshAccounts) refreshAccounts();
       if (showGlobalToast) showGlobalToast('Success', 'Record updated successfully!');
       setEditModalData(null);
     } catch (err) {
@@ -601,7 +603,7 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
                           >
                             <Eye size={18} />
                           </button>
-                          {!(item.reference?.startsWith('Sale #') || item.reference?.startsWith('Inventory #')) && (
+                          {!(item.reference?.startsWith('Sale #') || item.reference?.startsWith('Inventory #') || item.reference?.startsWith('Order Advance #')) && (
                             <button
                               className="rounded-lg p-2 text-[var(--muted)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
                               title="Edit Record"

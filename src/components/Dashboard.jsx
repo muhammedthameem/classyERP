@@ -181,28 +181,27 @@ function Dashboard({
   const [highlightAccountId, setHighlightAccountId] = useState(null)
 
   const [allAccounts, setAllAccounts] = useState([])
+  const fetchAllAccountsData = () => {
+    if (user?.role === 'Admin' || user?.role === 'Owner') {
+      supabase.from('erp_accounts').select('*').then(({ data }) => {
+        if (data) setAllAccounts(data)
+      })
+    }
+  }
+
   useEffect(() => {
-    let isMounted = true;
-    const fetchAccounts = () => {
-      if (user?.role === 'Admin' || user?.role === 'Owner') {
-        supabase.from('erp_accounts').select('*').then(({ data }) => {
-          if (isMounted && data) setAllAccounts(data)
-        })
-      }
-    };
-    fetchAccounts();
+    fetchAllAccountsData();
 
     const channel = supabase.channel('erp_accounts_sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'erp_accounts' }, () => {
-        fetchAccounts();
+        fetchAllAccountsData();
       })
       .subscribe();
 
     return () => {
-      isMounted = false;
       supabase.removeChannel(channel);
     };
-  }, [user])
+  }, [user?.role])
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -1350,10 +1349,10 @@ function Dashboard({
               {currentPage === 'inventory-detail' && <InventoryDetailPage themeStyle={themeStyle} item={selectedInventoryItem} setCurrentPage={setCurrentPage} setSelectedInventoryItem={setSelectedInventoryItem} initialMode={inventoryDetailMode} setInventoryDetailMode={setInventoryDetailMode} showGlobalToast={showGlobalToast} currentUser={user} inventory={inventory} setInventory={setInventory} cloudLoaded={cloudLoaded} />}
               {currentPage === 'create-sales' && <CreateSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} sales={sales} setSales={setSales} clients={clients} setClients={setClients} orders={orders} setOrders={setOrders} inventory={inventory} setInventory={setInventory} saveSale={saveSale} saveOrder={saveOrder} cloudLoaded={cloudLoaded} />}
               {currentPage === 'view-sales' && <ViewSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightSaleId={highlightSaleId} setHighlightSaleId={setHighlightSaleId} sales={sales} setSales={setSales} inventory={inventory} setInventory={setInventory} orders={orders} setOrders={setOrders} cloudLoaded={cloudLoaded} />}
-              {currentPage === 'add-income' && <AddIncomePage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} incomeCategories={incomeCategories} setIncomeCategories={setIncomeCategories} saveConfig={saveConfig} sales={sales} />}
-              {currentPage === 'add-expense' && <AddExpensePage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} expenseCategories={expenseCategories} setExpenseCategories={setExpenseCategories} saveConfig={saveConfig} inventory={inventory} staffList={staffList} setStaffList={setStaffList} />}
+              {currentPage === 'add-income' && <AddIncomePage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} incomeCategories={incomeCategories} setIncomeCategories={setIncomeCategories} saveConfig={saveConfig} sales={sales} orders={orders} refreshAccounts={fetchAllAccountsData} />}
+              {currentPage === 'add-expense' && <AddExpensePage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} expenseCategories={expenseCategories} setExpenseCategories={setExpenseCategories} saveConfig={saveConfig} inventory={inventory} staffList={staffList} setStaffList={setStaffList} refreshAccounts={fetchAllAccountsData} />}
               {currentPage === 'staff-management' && <StaffManagementPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} staffList={staffList} setStaffList={setStaffList} saveConfig={saveConfig} highlightStaffId={highlightStaffId} setHighlightStaffId={setHighlightStaffId} allAccounts={allAccounts} />}
-              {currentPage === 'view-accounts' && <ViewAccountsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightAccountId={highlightAccountId} setHighlightAccountId={setHighlightAccountId} />}
+              {currentPage === 'view-accounts' && <ViewAccountsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightAccountId={highlightAccountId} setHighlightAccountId={setHighlightAccountId} refreshAccounts={fetchAllAccountsData} />}
               {currentPage === 'reports' && <ReportsPage themeStyle={themeStyle} showGlobalToast={showGlobalToast} currentUser={user} sales={sales} orders={orders} clients={clients} inventory={inventory} cloudLoaded={cloudLoaded} />}
               {currentPage === 'create-user' && <CreateUserPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} users={users} setUsers={setUsers} designations={designations} setDesignations={setDesignations} currentUser={user} saveUser={saveUser} cloudLoaded={cloudLoaded} />}
               {currentPage === 'view-users' && <ViewUsersPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} users={users} setUsers={setUsers} designations={designations} setDesignations={setDesignations} currentUser={user} cloudLoaded={cloudLoaded} />}
