@@ -601,13 +601,15 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
                           >
                             <Eye size={18} />
                           </button>
-                          <button
-                            className="rounded-lg p-2 text-[var(--muted)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
-                            title="Edit Record"
-                            onClick={() => handleEditClick(item)}
-                          >
-                            <Edit3 size={18} />
-                          </button>
+                          {!(item.reference?.startsWith('Sale #') || item.reference?.startsWith('Inventory #')) && (
+                            <button
+                              className="rounded-lg p-2 text-[var(--muted)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
+                              title="Edit Record"
+                              onClick={() => handleEditClick(item)}
+                            >
+                              <Edit3 size={18} />
+                            </button>
+                          )}
                           <button
                             className="rounded-lg p-2 text-[var(--muted)] transition hover:bg-red-500/10 hover:text-red-500"
                             title="Delete Record"

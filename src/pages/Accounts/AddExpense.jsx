@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { TrendingDown, Calendar, CreditCard, Tag, FileText, FileSignature, ChevronDown, Trash2, Link } from 'lucide-react'
 import supabase from '../../supabase'
 import { getIndianDate } from '../../utils/constants'
@@ -21,8 +21,29 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
   // Dynamic Category State
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   const [categorySearch, setCategorySearch] = useState('')
+  const [linkedInventoryIds, setLinkedInventoryIds] = useState([])
 
   const paymentModes = ['Cash', 'Bank Transfer', 'UPI', 'Card', 'Cheque']
+
+  useEffect(() => {
+    const fetchLinkedAccounts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('erp_accounts')
+          .select('reference')
+          .eq('type', 'Expense')
+          .like('reference', 'Inventory #%');
+
+        if (!error && data) {
+          const ids = data.map(d => d.reference.replace('Inventory #', ''));
+          setLinkedInventoryIds(ids);
+        }
+      } catch (err) {
+        console.error("Error fetching linked inventory:", err);
+      }
+    };
+    fetchLinkedAccounts();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -210,7 +231,9 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
                   onChange={handleInventorySelect}
                 >
                   <option value="">-- No linked inventory --</option>
-                  {inventory.map(i => (
+                  {inventory
+                    .filter(i => !linkedInventoryIds.includes((i.productId || i.id)?.toString()))
+                    .map(i => (
                     <option key={i.productId || i.id} value={i.productId || i.id}>
                       Item #{i.productId || i.id} - {i.productName} (Qty: {i.initialQuantity || i.quantity} {i.unit} @ ₹{i.purchasePrice || 0})
                     </option>

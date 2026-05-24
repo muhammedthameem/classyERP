@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { CircleDollarSign, Calendar, CreditCard, Tag, FileText, FileSignature, ChevronDown, Trash2, Link } from 'lucide-react'
 import supabase from '../../supabase'
 import { getIndianDate } from '../../utils/constants'
@@ -16,12 +16,32 @@ function AddIncomePage({ themeStyle, setCurrentPage, showGlobalToast, incomeCate
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Dynamic Category State
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   const [categorySearch, setCategorySearch] = useState('')
+  const [linkedSaleIds, setLinkedSaleIds] = useState([])
 
   const paymentModes = ['Cash', 'Bank Transfer', 'UPI', 'Card', 'Cheque']
   const completedSales = sales.filter(s => s.status === 'Completed' || s.status === 'Delivered' || s.status === 'Billed' || s.totalAmount > 0 || s.total > 0)
+
+  useEffect(() => {
+    const fetchLinkedSales = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('erp_accounts')
+          .select('reference')
+          .eq('type', 'Income')
+          .like('reference', 'Sale #%');
+
+        if (!error && data) {
+          const ids = data.map(d => d.reference.replace('Sale #', ''));
+          setLinkedSaleIds(ids);
+        }
+      } catch (err) {
+        console.error("Error fetching linked sales:", err);
+      }
+    };
+    fetchLinkedSales();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -171,7 +191,9 @@ function AddIncomePage({ themeStyle, setCurrentPage, showGlobalToast, incomeCate
                   onChange={handleSaleSelect}
                 >
                   <option value="">-- Select a completed sale --</option>
-                  {completedSales.map(s => (
+                  {completedSales
+                    .filter(s => !linkedSaleIds.includes((s.saleId || s.id)?.toString()))
+                    .map(s => (
                     <option key={s.saleId || s.id} value={s.saleId || s.id}>
                       Sale #{s.saleId || s.id} - {s.client?.name || s.client || 'Walk-in'} (₹{s.totalAmount || s.total})
                     </option>
