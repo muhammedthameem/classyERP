@@ -182,11 +182,26 @@ function Dashboard({
 
   const [allAccounts, setAllAccounts] = useState([])
   useEffect(() => {
-    if (user?.role === 'Admin' || user?.role === 'Owner') {
-      supabase.from('erp_accounts').select('*').then(({ data }) => {
-        if (data) setAllAccounts(data)
+    let isMounted = true;
+    const fetchAccounts = () => {
+      if (user?.role === 'Admin' || user?.role === 'Owner') {
+        supabase.from('erp_accounts').select('*').then(({ data }) => {
+          if (isMounted && data) setAllAccounts(data)
+        })
+      }
+    };
+    fetchAccounts();
+
+    const channel = supabase.channel('erp_accounts_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'erp_accounts' }, () => {
+        fetchAccounts();
       })
-    }
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
   }, [user])
 
   useEffect(() => {

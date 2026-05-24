@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Users, Pencil, Trash2, Search, Plus, Save, X, Download } from 'lucide-react'
+import { Users, Pencil, Trash2, Search, Plus, Save, X, Download, FileText, ChevronUp, ChevronDown } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
 
 function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staffList = [], setStaffList, saveConfig, highlightStaffId, setHighlightStaffId, allAccounts = [] }) {
@@ -16,8 +16,10 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
 
   const [isEditing, setIsEditing] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' })
   const [tableMonthFilter, setTableMonthFilter] = useState(new Date().toISOString().slice(0, 7)) // Default to current month
   const [staffToDelete, setStaffToDelete] = useState(null)
+  const [ledgerStaff, setLedgerStaff] = useState(null)
   const [activeStaffForPdf, setActiveStaffForPdf] = useState(null)
 
   const [payslipData, setPayslipData] = useState({
@@ -188,8 +190,26 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
     s.phone.includes(searchQuery)
   )
 
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedStaff = [...filteredStaff].sort((a, b) => {
+    if (sortConfig.key === 'name') {
+      return sortConfig.direction === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+    }
+    if (sortConfig.key === 'designation') {
+      return sortConfig.direction === 'asc' ? a.designation.localeCompare(b.designation) : b.designation.localeCompare(a.designation);
+    }
+    return 0;
+  });
+
   const getDynamicTotalPaid = (staff) => {
-    if (!allAccounts || allAccounts.length === 0) return parseFloat(staff.totalPaid || 0);
+    if (!allAccounts || allAccounts.length === 0) return 0;
 
     const payments = allAccounts.filter(acc => {
       if (acc.type !== 'Expense') return false;
@@ -202,14 +222,19 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
       return true;
     });
 
-    const sumFromLedger = payments.reduce((sum, acc) => sum + parseFloat(acc.amount || 0), 0);
-    
-    // If 'All Time' and ledger is 0 but legacy totalPaid exists, show legacy.
-    if (!tableMonthFilter && sumFromLedger === 0 && parseFloat(staff.totalPaid || 0) > 0) {
-      return parseFloat(staff.totalPaid || 0);
-    }
-    
-    return sumFromLedger;
+    return payments.reduce((sum, acc) => sum + parseFloat(acc.amount || 0), 0);
+  }
+
+  const checkPaidStatus = (staff) => {
+    if (!allAccounts || allAccounts.length === 0) return false;
+    const monthToCheck = tableMonthFilter || new Date().toISOString().slice(0, 7);
+    const payments = allAccounts.filter(acc => {
+      if (acc.type !== 'Expense') return false;
+      const isSalaryOrOvertime = acc.reference === `Salary - ${staff.name}` || acc.reference === `Overtime - ${staff.name}`;
+      if (!isSalaryOrOvertime) return false;
+      return acc.date && acc.date.startsWith(monthToCheck);
+    });
+    return payments.reduce((sum, acc) => sum + parseFloat(acc.amount || 0), 0) > 0;
   }
 
   useEffect(() => {
@@ -253,6 +278,57 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
               >
                 Delete Now
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ledger Modal */}
+      {ledgerStaff && (
+        <div className="fixed inset-0 z-[2000] grid place-items-center bg-black/60 px-4 backdrop-blur-sm overflow-y-auto py-10">
+          <div className="w-full max-w-2xl rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-8 shadow-2xl relative">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-2xl font-bold text-[var(--text)]">Payment History</h3>
+                <p className="mt-1 text-[var(--muted)] text-sm">Showing all salary and overtime records for <span className="font-bold text-[var(--text)]">{ledgerStaff.name}</span>.</p>
+              </div>
+              <button onClick={() => setLedgerStaff(null)} className="rounded-full p-2 hover:bg-[var(--soft)] transition text-[var(--text)]">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+              <table className="w-full text-left text-sm">
+                <thead className="sticky top-0 bg-[var(--surface)] z-10">
+                  <tr className="border-b border-[var(--border)] text-[var(--muted)]">
+                    <th className="py-3 px-2 font-medium">Date</th>
+                    <th className="py-3 px-2 font-medium">Category</th>
+                    <th className="py-3 px-2 font-medium">Notes</th>
+                    <th className="py-3 px-2 text-right font-medium">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allAccounts.filter(acc => acc.type === 'Expense' && (acc.reference === `Salary - ${ledgerStaff.name}` || acc.reference === `Overtime - ${ledgerStaff.name}`))
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                    .map((acc, idx) => (
+                      <tr key={idx} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--soft)] transition">
+                        <td className="py-3 px-2 text-[var(--text)] whitespace-nowrap">{new Date(acc.date).toLocaleDateString()}</td>
+                        <td className="py-3 px-2">
+                          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${acc.category === 'Overtime Payment' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                            {acc.category === 'Overtime Payment' ? 'Overtime' : 'Salary'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-[var(--muted)] max-w-[250px] truncate" title={acc.notes}>{acc.notes || '-'}</td>
+                        <td className="py-3 px-2 text-right font-bold text-green-600">₹{parseFloat(acc.amount || 0).toLocaleString()}</td>
+                      </tr>
+                  ))}
+                  {allAccounts.filter(acc => acc.type === 'Expense' && (acc.reference === `Salary - ${ledgerStaff.name}` || acc.reference === `Overtime - ${ledgerStaff.name}`)).length === 0 && (
+                    <tr>
+                      <td colSpan="4" className="py-8 text-center text-[var(--muted)]">No payment history found for this staff.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -486,8 +562,22 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
           <table className="erp-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Designation</th>
+                <th onClick={() => handleSort('name')} className="cursor-pointer select-none hover:text-[var(--text)] transition group">
+                  <div className="flex items-center gap-1">
+                    Name
+                    <span className="text-[var(--muted)] group-hover:text-[var(--accent)] transition-colors">
+                      {sortConfig.key === 'name' ? (sortConfig.direction === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />) : <ChevronUp size={14} className="opacity-0 group-hover:opacity-50" />}
+                    </span>
+                  </div>
+                </th>
+                <th onClick={() => handleSort('designation')} className="cursor-pointer select-none hover:text-[var(--text)] transition group">
+                  <div className="flex items-center gap-1">
+                    Designation
+                    <span className="text-[var(--muted)] group-hover:text-[var(--accent)] transition-colors">
+                      {sortConfig.key === 'designation' ? (sortConfig.direction === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />) : <ChevronUp size={14} className="opacity-0 group-hover:opacity-50" />}
+                    </span>
+                  </div>
+                </th>
                 <th>Phone</th>
                 <th>Salary</th>
                 <th>Total Paid (₹)</th>
@@ -495,8 +585,8 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
               </tr>
             </thead>
             <tbody>
-              {filteredStaff.length > 0 ? (
-                filteredStaff.map((staff) => (
+              {sortedStaff.length > 0 ? (
+                sortedStaff.map((staff) => (
                   <tr
                     key={staff.id}
                     ref={el => rowRefs.current[staff.id] = el}
@@ -510,11 +600,25 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
                     </td>
                     <td className="text-[var(--text)]">{staff.phone}</td>
                     <td className="font-semibold text-[var(--text)]">₹{parseFloat(staff.salary || 0).toLocaleString()}</td>
-                    <td className="font-bold text-green-600">
-                      ₹{getDynamicTotalPaid(staff).toLocaleString()}
+                    <td className="font-bold">
+                      <div className="flex flex-col gap-1 items-start">
+                        <span className="text-green-600">₹{getDynamicTotalPaid(staff).toLocaleString()}</span>
+                        {checkPaidStatus(staff) ? (
+                           <span className="w-fit rounded bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">Paid {tableMonthFilter ? '' : '(This Month)'}</span>
+                        ) : (
+                           <span className="w-fit rounded bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">Unpaid {tableMonthFilter ? '' : '(This Month)'}</span>
+                        )}
+                      </div>
                     </td>
                     <td className="text-right">
                       <div className="flex justify-end gap-2">
+                        <button
+                          className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white"
+                          title="View Payment History"
+                          onClick={() => setLedgerStaff(staff)}
+                        >
+                          <FileText size={16} />
+                        </button>
                         <button
                           className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white"
                           title="Edit"
