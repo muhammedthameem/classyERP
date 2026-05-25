@@ -425,82 +425,12 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                 <button
                   onClick={() => {
                     if (showGlobalToast) showGlobalToast('Preparing Receipt', 'Generating your professional bill...');
-
-                    const container = document.createElement('div');
-                    container.style.width = '97mm';
-                    container.style.padding = '5mm';
-                    container.style.color = '#000';
-                    container.style.fontFamily = 'monospace';
-
-                    let itemsHtml = viewSale.items.map(item => {
-                      const finalTotal = item.rowTotal !== undefined 
-                        ? item.rowTotal 
-                        : (item.qty * (item.price || item.rate)) * (1 - (item.discount || 0) / 100);
-                      const discDisplay = item.rowTotal !== undefined 
-                        ? `₹${parseFloat(item.discount || 0).toFixed(0)}` 
-                        : `${item.discount || 0}%`;
-
-                      return `
-                      <tr>
-                        <td style="padding: 4px 8px 4px 0; border-bottom: 1px dashed #eee;">
-                          <div style="font-weight: bold; font-size: 11px;">${item.productName.replace(/\s*\(Order #[^)]+\)/g, '')}</div>
-                          <div style="font-size: 12px; font-weight: 700; color: #666; margin-top: 1px;">Rate: ₹${item.price || item.rate}</div>
-                        </td>
-                        <td style="text-align: center; font-size: 11px; padding: 4px 10px;">${item.qty}</td>
-                        <td style="text-align: right; font-size: 11px; padding: 4px 10px;">${discDisplay}</td>
-                        <td style="text-align: right; font-size: 11px; font-weight: bold; padding: 4px 0 4px 10px;">₹${parseFloat(finalTotal).toFixed(2)}</td>
-                      </tr>
-                    `}).join('');
                     
-                    const subtotal = viewSale.items.reduce((s, i) => s + (i.rate * i.qty), 0);
-                    const totDisc = viewSale.items.reduce((s, i) => s + (parseFloat(i.discount) || 0), 0);
-
-                    container.innerHTML = `
-                      <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
-                        <img src="/logo-black.png" style="width: 80px; height: auto; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;" />
-                        <h2 style="margin: 0; font-size: 24px; text-transform: uppercase; font-weight: 900; letter-spacing: -0.5px;">Classy Couture</h2>
-                        <p style="margin: 2px 0; font-size: 10px;">Be Unique, Be Classy</p>
-                        <p style="margin: 2px 0; font-size: 12px;">Ph : 8606154015</p>
-                        <div style="margin-top: 8px; font-size: 10px; color: #333;">
-                          <p style="margin: 2px 0;">ID: ${viewSale.saleId}</p>
-                          <p style="margin: 2px 0;">Date: ${new Date(viewSale.timestamp).toDateString() === new Date().toDateString() ? new Date(viewSale.timestamp).toLocaleString() : new Date(viewSale.timestamp).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-
-                      <div style="margin-bottom: 15px; font-size: 11px;">
-                        <p style="margin: 2px 0;"><strong>Customer:</strong> ${viewSale.client?.name || 'Guest'}</p>
-                        ${viewSale.client?.phone ? `<p style="margin: 2px 0;"><strong>Tel:</strong> ${viewSale.client.phone}</p>` : ''}
-                      </div>
-
-                      <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
-                        <thead>
-                          <tr style="border-bottom: 1px dashed #000; font-size: 10px; text-align: left;">
-                            <th style="padding: 5px 8px 5px 0; min-width: 30mm;">Item</th>
-                            <th style="text-align: center; padding: 5px 10px; white-space: nowrap;">Qty</th>
-                            <th style="text-align: right; padding: 5px 10px; white-space: nowrap;">Disc (%)</th>
-                            <th style="text-align: right; padding: 5px 0 5px 10px; white-space: nowrap;">Total</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          ${itemsHtml}
-                        </tbody>
-                      </table>
-
-                      <div style="border-top: 2px dashed #000; padding-top: 10px; margin-bottom: 20px;">
-                        <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 900;">
-                          <span>Grand Total</span>
-                          <span>₹${(subtotal - totDisc).toFixed(2)}</span>
-                        </div>
-                      </div>
-
-                      <div style="text-align: center; margin-top: 30px; font-size: 10px; border-top: 1px dashed #ccc; padding-top: 15px; font-style: italic; color: #555; line-height:1.2">
-                        <p style="margin: 2px 0; font-weight: bold; color: #000;">Thank you for shopping!</p>
-                        <p style="margin: 2px 0; font-size:10px">Your elegance is our priority.</p>
-                        <p style="margin: 2px 0; font-size:10px">Please visit again for more unique designs.</p>
-                        <p style="margin: 8px 0 0 0; font-size:9px">This is a computer generated receipt.</p>
-                      </div>
-                    </div>
-                  `;
+                    const visualBill = document.getElementById('printable-bill-view');
+                    if (!visualBill) {
+                      if (showGlobalToast) showGlobalToast('Error', 'Receipt container not found.');
+                      return;
+                    }
 
                     const opt = {
                       margin: 0,
@@ -510,7 +440,8 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       jsPDF: { unit: 'mm', format: [97, 200], orientation: 'portrait' }
                     };
 
-                    html2pdf().set(opt).from(container.outerHTML).save().then(() => {
+                    // Pass the DOM element directly to preserve all Tailwind CSS styles
+                    html2pdf().set(opt).from(visualBill).save().then(() => {
                       if (showGlobalToast) showGlobalToast('Success', 'Receipt downloaded successfully.');
                     });
                   }}
@@ -541,7 +472,8 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
 
                       const fileName = `receipts/${viewSale.saleId}.pdf`;
                       
-                      const pdfBlob = await html2pdf().set(opt).from(visualBill.outerHTML).output('blob');
+                      // Use .from(visualBill) directly instead of .outerHTML to preserve Tailwind CSS styling
+                      const pdfBlob = await html2pdf().set(opt).from(visualBill).output('blob');
 
                       const { data, error: uploadError } = await supabase.storage
                         .from('receipts')

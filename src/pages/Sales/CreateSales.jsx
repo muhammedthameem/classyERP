@@ -356,72 +356,11 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     if (!showReceipt) return;
     if (showGlobalToast) showGlobalToast('Preparing Receipt', 'Generating your professional bill...');
 
-    const container = document.createElement('div');
-    container.style.width = '80mm';
-    container.style.padding = '5mm';
-    container.style.color = '#000';
-    container.style.fontFamily = 'monospace';
-
-    let itemsHtml = showReceipt.items.map(item => `
-      <tr>
-        <td style="padding: 4px 8px 4px 0; border-bottom: 1px dashed #eee;">
-          <div style="font-weight: bold; font-size: 11px;">${item.productName.replace(/\s*\(Order #[^)]+\)/g, '')}</div>
-          <div style="font-size: 12px; font-weight: 700; color: #666; margin-top: 1px;">Rate: ₹${item.rate}</div>
-        </td>
-        <td style="text-align: center; font-size: 11px; padding: 4px 8px;">${item.qty}</td>
-        <td style="text-align: right; font-size: 11px; padding: 4px 8px;">₹${parseFloat(item.discount || 0).toFixed(0)}</td>
-        <td style="text-align: right; font-size: 11px; font-weight: bold; padding: 4px 0 4px 8px;">₹${parseFloat(item.rowTotal || (item.qty * item.price) - (item.discount || 0)).toFixed(2)}</td>
-      </tr>
-    `).join('');
-
-    container.innerHTML = `
-      <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
-        <h2 style="margin: 0; font-size: 20px; text-transform: uppercase;">Classy Couture</h2>
-        <p style="margin: 2px 0; font-size: 10px;">Be Unique, Be Classy</p>
-         <p style="margin: 2px 0; font-size: 10px;">Ph : 8606154015</p>
-        <div style="margin-top: 8px; font-size: 9px; color: #333;">
-          <p style="margin: 2px 0;">ID: ${showReceipt.saleId}</p>
-          <p style="margin: 2px 0;">Date: ${new Date(showReceipt.timestamp).toDateString() === new Date().toDateString() ? new Date(showReceipt.timestamp).toLocaleString() : new Date(showReceipt.timestamp).toLocaleDateString()}</p>
-        </div>
-      </div>
-
-      <div style="margin-bottom: 15px; font-size: 11px;">
-        <p style="margin: 2px 0;"><strong>Customer:</strong> ${showReceipt.client.name}</p>
-        ${showReceipt.client.phone ? `<p style="margin: 2px 0;"><strong>Tel:</strong> ${showReceipt.client.phone}</p>` : ''}
-      </div>
-
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
-        <thead>
-          <tr style="border-bottom: 1px dashed #000; font-size: 10px; text-align: left;">
-            <th style="padding: 5px 8px 5px 0;">Item</th>
-            <th style="text-align: center; padding: 5px 8px;">Qty</th>
-            <th style="text-align: right; padding: 5px 8px;">Disc</th>
-            <th style="text-align: right; padding: 5px 0 5px 8px;">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${itemsHtml}
-        </tbody>
-      </table>
-
-      <div style="border-top: 2px dashed #000; padding-top: 10px; font-size: 12px;">
-        <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 5px;">
-          <span>Grand Total:</span>
-          <span>₹${parseFloat(showReceipt.total).toFixed(2)}</span>
-        </div>
-        ${showReceipt.paymentMode ? `
-        <div style="display: flex; justify-content: space-between; font-weight: bold; color: #555; font-size: 11px;">
-          <span>Payment Mode:</span>
-          <span style="text-transform: uppercase;">${showReceipt.paymentMode}</span>
-        </div>
-        ` : ''}
-      </div>
-
-      <div style="text-align: center; margin-top: 20px; font-size: 9px; border-top: 1px dashed #eee; padding-top: 10px;">
-        <p style="margin: 2px 0; font-weight: bold;">Thank You for Shopping!</p>
-        <p style="margin: 2px 0;">Please visit again.</p>
-      </div>
-    `;
+    const visualBill = document.getElementById('printable-bill');
+    if (!visualBill) {
+      if (showGlobalToast) showGlobalToast('Error', 'Receipt container not found.');
+      return;
+    }
 
     const opt = {
       margin: 0,
@@ -431,7 +370,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       jsPDF: { unit: 'mm', format: [97, 200], orientation: 'portrait' }
     };
 
-    html2pdf().set(opt).from(container).save().then(() => {
+    // Pass the DOM element directly to preserve all Tailwind CSS styles
+    html2pdf().set(opt).from(visualBill).save().then(() => {
       if (showGlobalToast) showGlobalToast('Success', 'Receipt downloaded successfully.');
     }).catch(err => {
       console.error('PDF Error:', err);
@@ -462,7 +402,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
 
       const fileName = `receipts/${showReceipt.saleId}.pdf`;
 
-      const pdfBlob = await html2pdf().set(opt).from(visualBill.outerHTML).output('blob');
+      // Pass the DOM element directly to preserve all Tailwind CSS styles
+      const pdfBlob = await html2pdf().set(opt).from(visualBill).output('blob');
 
       const { error: uploadError } = await supabase.storage
         .from('receipts')
