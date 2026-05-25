@@ -178,7 +178,7 @@ function PublicReceipt({ billId, onClear }) {
                   <td className="py-3 pr-2">
                     <p className="font-bold">{item.productName.replace(/\s*\(Order #[^)]+\)/g, '')}</p>
                     <div className="flex flex-col mt-0.5">
-                      <p style={{ fontSize: '12px', fontWeight: 700 }} className="opacity-60">Rate: ₹{item.rate}</p>
+                      <p style={{ fontSize: '12px', fontWeight: 700 }} className="opacity-60">Rate: ₹{item.price || item.rate}</p>
                     </div>
                   </td>
                   <td className="py-3 px-3 text-center">{item.qty}</td>
@@ -193,7 +193,7 @@ function PublicReceipt({ billId, onClear }) {
         <div className="border-t-2 border-dashed border-gray-300 pt-4 mb-6">
           <div className="flex justify-between text-base font-black">
             <span>GRAND TOTAL</span>
-            <span>₹{(sale.items || []).reduce((sum, item) => sum + ((parseFloat(item.rate) || parseFloat(item.price) || 0) * (item.qty || 0)) - (parseFloat(item.discount) || 0), 0).toFixed(2)}</span>
+            <span>₹{(sale.items || []).reduce((sum, item) => sum + ((parseFloat(item.price) || parseFloat(item.rate) || 0) * (item.qty || 0)) - (parseFloat(item.discount) || 0), 0).toFixed(2)}</span>
           </div>
         </div>
 
