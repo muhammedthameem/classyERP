@@ -76,7 +76,23 @@ function PublicReceipt({ billId, onClear }) {
         jsPDF: { unit: 'mm', format: [97, 200], orientation: 'portrait' }
       };
       
-      await html2pdf().set(opt).from(element.outerHTML).save();
+      // Using element directly instead of outerHTML prevents CSS/iframe rendering bugs
+      const worker = html2pdf().set(opt).from(element);
+      
+      // Try native save first
+      await worker.save().catch(async (e) => {
+        console.warn("Native save failed, attempting blob fallback...", e);
+        const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = `Receipt_${sale.saleId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+      });
+      
     } catch (err) {
       console.error("PDF Generation Error:", err);
       alert("Could not generate PDF on this device. Please take a screenshot of the receipt instead.");
