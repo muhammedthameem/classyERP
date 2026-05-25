@@ -389,7 +389,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                         <td className="py-2 pr-2">
                           <p className="font-bold">{item.productName.replace(/\s*\(Order #[^)]+\)/g, '')}</p>
                           <div className="flex flex-col mt-0.5">
-                            <p style={{ fontSize: '12px', fontWeight: 700 }} className="opacity-70">Rate: ₹{item.rate}</p>
+                            <p style={{ fontSize: '12px', fontWeight: 700 }} className="opacity-70">Rate: ₹{item.price || item.rate}</p>
                           </div>
                         </td>
                         <td className="py-2 text-center px-3">{item.qty}</td>
@@ -399,7 +399,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                         <td className="py-2 text-right pl-3 font-bold">
                           ₹{(item.rowTotal !== undefined 
                             ? item.rowTotal 
-                            : (item.qty * item.price) * (1 - (item.discount || 0) / 100)).toFixed(2)}
+                            : (item.qty * (item.price || item.rate)) * (1 - (item.discount || 0) / 100)).toFixed(2)}
                         </td>
                       </tr>
                     ))}
@@ -409,7 +409,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                 <div className="border-t-2 border-dashed border-gray-300 pt-3 space-y-1">
                   <div className="flex justify-between text-sm font-black">
                     <span>Grand Total</span>
-                    <span>₹{((viewSale.items || []).reduce((s, i) => s + (i.rate * i.qty), 0) - (viewSale.items?.reduce((s, i) => s + (parseFloat(i.discount) || 0), 0) || 0)).toFixed(2)}</span>
+                    <span>₹{((viewSale.items || []).reduce((s, i) => s + ((i.price || i.rate) * i.qty), 0) - (viewSale.items?.reduce((s, i) => s + (parseFloat(i.discount) || 0), 0) || 0)).toFixed(2)}</span>
                   </div>
                   {viewSale.paymentMode && (
                     <div className="flex justify-between text-[11px] font-bold text-gray-500 mt-1">
@@ -440,7 +440,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                     let itemsHtml = viewSale.items.map(item => {
                       const finalTotal = item.rowTotal !== undefined 
                         ? item.rowTotal 
-                        : (item.qty * item.price) * (1 - (item.discount || 0) / 100);
+                        : (item.qty * (item.price || item.rate)) * (1 - (item.discount || 0) / 100);
                       const discDisplay = item.rowTotal !== undefined 
                         ? `₹${parseFloat(item.discount || 0).toFixed(0)}` 
                         : `${item.discount || 0}%`;
@@ -449,7 +449,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       <tr>
                         <td style="padding: 4px 8px 4px 0; border-bottom: 1px dashed #eee;">
                           <div style="font-weight: bold; font-size: 11px;">${item.productName.replace(/\s*\(Order #[^)]+\)/g, '')}</div>
-                          <div style="font-size: 12px; font-weight: 700; color: #666; margin-top: 1px;">Rate: ₹${item.rate}</div>
+                          <div style="font-size: 12px; font-weight: 700; color: #666; margin-top: 1px;">Rate: ₹${item.price || item.rate}</div>
                         </td>
                         <td style="text-align: center; font-size: 11px; padding: 4px 10px;">${item.qty}</td>
                         <td style="text-align: right; font-size: 11px; padding: 4px 10px;">${discDisplay}</td>

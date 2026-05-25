@@ -326,11 +326,11 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
           productName: item.productName,
           qty: item.qty,
           unit: item.unit || 'nos',
-          rate: parseFloat(item.rate) || 0,
+          rate: itemPrice,
           discount: discountAmount,
           advancePaid: advanceAmount,
           price: itemPrice,
-          rowTotal: finalLineTotal, // STORE PRE-CALCULATED TOTAL
+          rowTotal: finalLineTotal,
           type: item.type,
           clientName: item.clientName || null
         };
