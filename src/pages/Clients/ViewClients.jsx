@@ -16,7 +16,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
 
   const isDataLoading = !cloudLoaded || !currentUser || !clients;
 
-  const displayClients = (clients || []).filter(c => c.id !== recentlyDeletedClient?.id);
+  const displayClients = (clients || []).filter(c => String(c.id) !== String(recentlyDeletedClient?.id));
 
   const filteredClients = useMemo(() => {
     return displayClients.filter(client =>

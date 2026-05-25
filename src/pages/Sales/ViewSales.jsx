@@ -84,7 +84,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
     if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
   }
 
-  const displaySales = sales.filter(s => s.id !== recentlyDeletedSale?.id);
+  const displaySales = sales.filter(s => String(s.id) !== String(recentlyDeletedSale?.id));
 
   const filteredSales = useMemo(() => {
     return displaySales.filter(s => {

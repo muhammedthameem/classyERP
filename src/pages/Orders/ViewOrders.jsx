@@ -120,7 +120,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
 
   const [activeFilter, setActiveFilter] = useState('All')
 
-  const displayOrders = orders.filter(o => o.id !== recentlyDeletedOrder?.id);
+  const displayOrders = orders.filter(o => String(o.id) !== String(recentlyDeletedOrder?.id));
 
   const filteredOrders = displayOrders.filter(o => {
     const matchesSearch = (o.clientName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
