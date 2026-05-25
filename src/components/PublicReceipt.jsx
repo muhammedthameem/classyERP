@@ -231,23 +231,6 @@ function PublicReceipt({ billId, onClear }) {
           </div>
         </div>
 
-      <button
-        onClick={handleDownload}
-        disabled={isGenerating}
-        className={`flex items-center gap-3 px-10 py-5 text-white rounded-3xl font-bold shadow-2xl transition-all ${isGenerating ? 'bg-stone-400 cursor-not-allowed' : 'bg-stone-900 hover:scale-105 active:scale-95'}`}
-      >
-        {isGenerating ? (
-          <>
-            <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            Generating PDF...
-          </>
-        ) : (
-          <>
-            <Download size={20} /> Download PDF Receipt
-          </>
-        )}
-      </button>
-
       <p className="mt-8 text-[10px] font-bold text-stone-400 uppercase tracking-widest">
         Powered by Classy ERP
       </p>
