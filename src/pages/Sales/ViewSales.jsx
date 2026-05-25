@@ -411,12 +411,6 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                     <span>Grand Total</span>
                     <span>₹{((viewSale.items || []).reduce((s, i) => s + ((i.price || i.rate) * i.qty), 0) - (viewSale.items?.reduce((s, i) => s + (parseFloat(i.discount) || 0), 0) || 0)).toFixed(2)}</span>
                   </div>
-                  {viewSale.paymentMode && (
-                    <div className="flex justify-between text-[11px] font-bold text-gray-500 mt-1">
-                      <span>Payment Mode</span>
-                      <span className="uppercase">{viewSale.paymentMode}</span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="text-center mt-6 text-[10px] text-gray-500 italic border-t border-dashed border-gray-200 pt-4">
@@ -497,12 +491,6 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                           <span>Grand Total</span>
                           <span>₹${(subtotal - totDisc).toFixed(2)}</span>
                         </div>
-                        ${viewSale.paymentMode ? `
-                        <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; color: #555; margin-top: 5px;">
-                          <span>Payment Mode</span>
-                          <span style="text-transform: uppercase;">${viewSale.paymentMode}</span>
-                        </div>
-                        ` : ''}
                       </div>
 
                       <div style="text-align: center; margin-top: 30px; font-size: 10px; border-top: 1px dashed #ccc; padding-top: 15px; font-style: italic; color: #555; line-height:1.2">

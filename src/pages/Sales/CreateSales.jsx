@@ -1059,12 +1059,6 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                   <span>Grand Total</span>
                   <span>₹{showReceipt.total}</span>
                 </div>
-                {showReceipt.paymentMode && (
-                  <div className="flex justify-between text-[11px] font-bold text-gray-500 mt-1">
-                    <span>Payment Mode</span>
-                    <span className="uppercase">{showReceipt.paymentMode}</span>
-                  </div>
-                )}
               </div>
 
               <div className="text-center mt-6 text-[10px] text-gray-500 italic border-t border-dashed border-gray-200 pt-4">
