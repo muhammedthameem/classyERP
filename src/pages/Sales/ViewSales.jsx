@@ -281,7 +281,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                   </td>
                   <td className="text-right">
                     <p className="text-lg font-black text-[var(--accent)]">
-                      ₹{sale.items.reduce((sum, item) => sum + ((parseFloat(item.rate) || parseFloat(item.price) || 0) * (item.qty || 0)) - (parseFloat(item.discount) || 0), 0).toFixed(2)}
+                      ₹{sale.items.reduce((sum, item) => sum + ((parseFloat(item.price) || parseFloat(item.rate) || 0) * (item.qty || 0)) - (parseFloat(item.discount) || 0), 0).toFixed(2)}
                     </p>
                     {sale.paymentMode && (
                       <span className="inline-block mt-1 rounded bg-[var(--soft)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--muted)] uppercase">{sale.paymentMode}</span>
