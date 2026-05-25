@@ -17,7 +17,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
   const isDataLoading = !cloudLoaded || !sales;
 
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!saleToDelete) return;
 
     const idToDelete = saleToDelete.id;
@@ -26,58 +26,87 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
     setRecentlyDeletedSale(sale);
     if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
 
-    undoTimeoutRef.current = setTimeout(async () => {
-      // 1. Restore Stock/Orders Logic
-      let updatedInventory = [...inventory];
-      let updatedOrders = [...orders];
+    // 1. Restore Stock/Orders Logic Locally
+    let updatedInventory = [...inventory];
+    let updatedOrders = [...orders];
 
-      sale.items.forEach(soldItem => {
+    sale.items.forEach(soldItem => {
+      if (soldItem.type === 'order') {
+        updatedOrders = updatedOrders.map(o => o.id === soldItem.orderId ? { ...o, status: 'Completed' } : o);
+      } else {
+        updatedInventory = updatedInventory.map(p => p.id === soldItem.id ? { ...p, quantity: (p.quantity || 0) + soldItem.qty } : p);
+      }
+    });
+
+    setInventory(updatedInventory);
+    setOrders(updatedOrders);
+
+    // 2. Immediate Background Cloud Sync
+    try {
+      await supabase.from('erp_sales').delete().eq('id', idToDelete);
+      
+      const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+      
+      for (const soldItem of sale.items) {
         if (soldItem.type === 'order') {
-          updatedOrders = updatedOrders.map(o => o.id === soldItem.orderId ? { ...o, status: 'Completed' } : o);
+          const orderToUpdate = updatedOrders.find(o => o.id === soldItem.orderId);
+          if (orderToUpdate) {
+            await supabase.from('erp_orders').upsert([{ id: orderToUpdate.id.toString(), data: clean(orderToUpdate) }]);
+          }
         } else {
-          updatedInventory = updatedInventory.map(p => p.id === soldItem.id ? { ...p, quantity: (p.quantity || 0) + soldItem.qty } : p);
-        }
-      });
-
-      setInventory(updatedInventory);
-      setOrders(updatedOrders);
-
-      // 2. Background Cloud Sync
-      try {
-        await supabase.from('erp_sales').delete().eq('id', idToDelete);
-        
-        const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
-        
-        // Sync restored inventory & orders
-        for (const soldItem of sale.items) {
-          if (soldItem.type === 'order') {
-            const orderToUpdate = updatedOrders.find(o => o.id === soldItem.orderId);
-            if (orderToUpdate) {
-              await supabase.from('erp_orders').upsert([{ id: orderToUpdate.id.toString(), data: clean(orderToUpdate) }]);
-            }
-          } else {
-            const inventoryToUpdate = updatedInventory.find(p => p.id === soldItem.id);
-            if (inventoryToUpdate) {
-              await supabase.from('erp_inventory').upsert([{ id: inventoryToUpdate.id.toString(), data: clean(inventoryToUpdate) }]);
-            }
+          const inventoryToUpdate = updatedInventory.find(p => p.id === soldItem.id);
+          if (inventoryToUpdate) {
+            await supabase.from('erp_inventory').upsert([{ id: inventoryToUpdate.id.toString(), data: clean(inventoryToUpdate) }]);
           }
         }
-        
-      } catch (err) {
-        console.error("Cloud delete failed:", err);
       }
-      setRecentlyDeletedSale(null);
-    }, 8000);
+    } catch (err) {
+      console.error("Cloud delete failed:", err);
+    }
 
     // 3. Optimistic UI update (Instant)
     const updatedSales = sales.filter(s => s.id !== idToDelete);
     setSales(updatedSales);
     setSaleToDelete(null);
     if (showGlobalToast) showGlobalToast('Sale Deleted', `Sales record #${sale.saleId || sale.id} removed.`);
+
+    undoTimeoutRef.current = setTimeout(() => {
+      setRecentlyDeletedSale(null);
+    }, 8000);
   };
 
-  const handleUndoDelete = () => {
+  const handleUndoDelete = async () => {
     if (!recentlyDeletedSale) return;
+    
+    // 1. Re-insert sale to DB
+    const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+    await supabase.from('erp_sales').upsert([{ id: recentlyDeletedSale.id.toString(), data: clean(recentlyDeletedSale) }]);
+
+    // 2. Reverse Stock/Orders locally
+    let updatedInventory = [...inventory];
+    let updatedOrders = [...orders];
+
+    recentlyDeletedSale.items.forEach(soldItem => {
+        if (soldItem.type === 'order') {
+          updatedOrders = updatedOrders.map(o => o.id === soldItem.orderId ? { ...o, status: 'Ready' } : o);
+        } else {
+          updatedInventory = updatedInventory.map(p => p.id === soldItem.id ? { ...p, quantity: (p.quantity || 0) - soldItem.qty } : p);
+        }
+    });
+    setInventory(updatedInventory);
+    setOrders(updatedOrders);
+
+    // 3. Re-Sync Reversed stock to DB
+    for (const soldItem of recentlyDeletedSale.items) {
+        if (soldItem.type === 'order') {
+            const orderToUpdate = updatedOrders.find(o => o.id === soldItem.orderId);
+            if (orderToUpdate) await supabase.from('erp_orders').upsert([{ id: orderToUpdate.id.toString(), data: clean(orderToUpdate) }]);
+        } else {
+            const inventoryToUpdate = updatedInventory.find(p => p.id === soldItem.id);
+            if (inventoryToUpdate) await supabase.from('erp_inventory').upsert([{ id: inventoryToUpdate.id.toString(), data: clean(inventoryToUpdate) }]);
+        }
+    }
+
     setSales(prev => prev.some(s => s.id === recentlyDeletedSale.id) ? prev : [...prev, recentlyDeletedSale]);
     if (showGlobalToast) showGlobalToast('Restored', `Sales record #${recentlyDeletedSale.saleId || recentlyDeletedSale.id} has been restored.`);
     setRecentlyDeletedSale(null);

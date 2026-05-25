@@ -24,7 +24,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
     setOrders(newOrders)
   }
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (orderToDelete) {
       const idToDelete = orderToDelete.id;
       const order = { ...orderToDelete };
@@ -32,23 +32,32 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
       setRecentlyDeletedOrder(order);
       if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
 
-      undoTimeoutRef.current = setTimeout(async () => {
-        // Restore inventory if order had internal materials
-        if (order.sourceOfMaterial === 'Internal' && order.internalItems?.length > 0) {
-          let updatedInventory = [...inventory];
-          order.internalItems.forEach(mat => {
-            updatedInventory = updatedInventory.map(invItem => {
-              if (invItem.id === mat.inventoryId || (mat.productId && invItem.productId === mat.productId)) {
-                const currentQty = parseFloat(invItem.quantity) || 0;
-                const restoreQty = parseFloat(mat.quantity) || 0;
-                return { ...invItem, quantity: currentQty + restoreQty };
-              }
-              return invItem;
-            });
+      // 1. Restore Inventory Locally (Instant)
+      let updatedInventory = [...inventory];
+      if (order.sourceOfMaterial === 'Internal' && order.internalItems?.length > 0) {
+        order.internalItems.forEach(mat => {
+          updatedInventory = updatedInventory.map(invItem => {
+            if (invItem.id === mat.inventoryId || (mat.productId && invItem.productId === mat.productId)) {
+              const currentQty = parseFloat(invItem.quantity) || 0;
+              const restoreQty = parseFloat(mat.quantity) || 0;
+              return { ...invItem, quantity: currentQty + restoreQty };
+            }
+            return invItem;
           });
-          setInventory(updatedInventory);
+        });
+        setInventory(updatedInventory);
+      }
 
-          // Sync restored inventory to Supabase
+      // 2. Immediate Background Cloud Sync
+      try {
+        if (deleteOrder) {
+          await deleteOrder(idToDelete);
+        } else {
+          await supabase.from('erp_orders').delete().eq('id', idToDelete);
+        }
+
+        // Sync restored inventory to Supabase
+        if (order.sourceOfMaterial === 'Internal' && order.internalItems?.length > 0) {
           const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
           updatedInventory.forEach(invItem => {
             const orig = inventory.find(i => i.id === invItem.id);
@@ -59,32 +68,59 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
             }
           });
         }
+      } catch (err) {
+        console.error("Cloud delete failed:", err);
+      }
 
-        try {
-          if (deleteOrder) {
-            await deleteOrder(idToDelete);
-          } else {
-            await supabase.from('erp_orders').delete().eq('id', idToDelete);
-          }
-        } catch (err) {
-          console.error("Cloud delete failed:", err);
-        }
+      // 3. Optimistic UI update (Instant)
+      const updated = orders.filter(o => o.id !== idToDelete)
+      if (saveOrders) saveOrders(updated)
+      setOrderToDelete(null)
+      if (showGlobalToast) showGlobalToast('Order Deleted', `Order #${order.orderId || order.id} has been removed.`)
+
+      undoTimeoutRef.current = setTimeout(() => {
         setRecentlyDeletedOrder(null);
       }, 8000);
-
-      // 1. Optimistic UI update (Instant)
-      const updated = orders.filter(o => o.id !== idToDelete)
-      saveOrders(updated)
-      setOrderToDelete(null)
-      if (showGlobalToast) showGlobalToast('Deleted', `Order #${order.id} for ${order.clientName} removed.`)
     }
   }
 
-  const handleUndoDelete = () => {
+  const handleUndoDelete = async () => {
     if (!recentlyDeletedOrder) return;
-    const updated = orders.some(o => o.id === recentlyDeletedOrder.id) ? orders : [...orders, recentlyDeletedOrder];
-    saveOrders(updated);
-    if (showGlobalToast) showGlobalToast('Restored', `Order #${recentlyDeletedOrder.id} has been restored.`);
+
+    // 1. Re-insert order to DB
+    const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+    await supabase.from('erp_orders').upsert([{ id: recentlyDeletedOrder.id.toString(), data: clean(recentlyDeletedOrder) }]);
+
+    // 2. Reverse Inventory Locally
+    let updatedInventory = [...inventory];
+    if (recentlyDeletedOrder.sourceOfMaterial === 'Internal' && recentlyDeletedOrder.internalItems?.length > 0) {
+      recentlyDeletedOrder.internalItems.forEach(mat => {
+        updatedInventory = updatedInventory.map(invItem => {
+          if (invItem.id === mat.inventoryId || (mat.productId && invItem.productId === mat.productId)) {
+            const currentQty = parseFloat(invItem.quantity) || 0;
+            const restoreQty = parseFloat(mat.quantity) || 0;
+            return { ...invItem, quantity: currentQty - restoreQty }; // Deduct it again
+          }
+          return invItem;
+        });
+      });
+      setInventory(updatedInventory);
+
+      // 3. Re-Sync Reversed inventory to DB
+      updatedInventory.forEach(invItem => {
+        const orig = inventory.find(i => i.id === invItem.id);
+        if (orig && orig.quantity !== invItem.quantity) {
+          supabase.from('erp_inventory').upsert([{ id: invItem.id.toString(), data: clean(invItem) }]).then(({ error }) => {
+            if (error) console.error("Inventory sync failed:", error);
+          });
+        }
+      });
+    }
+
+    if (saveOrders) {
+      saveOrders(prev => prev.some(o => o.id === recentlyDeletedOrder.id) ? prev : [...prev, recentlyDeletedOrder]);
+    }
+    if (showGlobalToast) showGlobalToast('Restored', `Order #${recentlyDeletedOrder.orderId || recentlyDeletedOrder.id} has been restored.`);
     setRecentlyDeletedOrder(null);
     if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
   }

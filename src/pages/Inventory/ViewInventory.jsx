@@ -63,7 +63,7 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
 
   const paginatedInventory = filteredInventory.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage);
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (itemToDelete) {
       const idToDelete = itemToDelete.id;
       const item = { ...itemToDelete };
@@ -71,25 +71,30 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
       setRecentlyDeletedInventory(item);
       if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
 
-      undoTimeoutRef.current = setTimeout(async () => {
-        try {
-          await supabase.from('erp_inventory').delete().eq('id', idToDelete);
-        } catch (err) {
-          console.error("Cloud delete failed:", err);
-        }
-        setRecentlyDeletedInventory(null);
-      }, 8000);
+      try {
+        await supabase.from('erp_inventory').delete().eq('id', idToDelete);
+      } catch (err) {
+        console.error("Cloud delete failed:", err);
+      }
 
       // 1. Optimistic UI Update (Instant)
       const updated = inventory.filter(inv => inv.id !== idToDelete);
       setInventory(updated);
       setItemToDelete(null);
       if (showGlobalToast) showGlobalToast('Deleted!', `Stock item "${item.productName}" removed.`);
+
+      undoTimeoutRef.current = setTimeout(() => {
+        setRecentlyDeletedInventory(null);
+      }, 8000);
     }
   };
 
-  const handleUndoDelete = () => {
+  const handleUndoDelete = async () => {
     if (!recentlyDeletedInventory) return;
+
+    const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+    await supabase.from('erp_inventory').upsert([{ id: recentlyDeletedInventory.id.toString(), data: clean(recentlyDeletedInventory) }]);
+
     setInventory(prev => prev.some(i => i.id === recentlyDeletedInventory.id) ? prev : [...prev, recentlyDeletedInventory]);
     if (showGlobalToast) showGlobalToast('Restored', `Stock item "${recentlyDeletedInventory.productName}" has been restored.`);
     setRecentlyDeletedInventory(null);

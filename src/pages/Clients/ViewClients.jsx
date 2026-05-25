@@ -64,7 +64,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
 
   const paginatedClients = sortedClients.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage)
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!clientToDelete) return;
     const idToDelete = clientToDelete.id;
     const client = { ...clientToDelete };
@@ -72,27 +72,32 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
     setRecentlyDeletedClient(client);
     if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
     
-    undoTimeoutRef.current = setTimeout(async () => {
-      try {
-        if (deleteClient) {
-          await deleteClient(idToDelete);
-        } else {
-          await supabase.from('erp_clients').delete().eq('id', idToDelete);
-        }
-      } catch (err) {
-        console.error("Cloud delete failed:", err);
+    try {
+      if (deleteClient) {
+        await deleteClient(idToDelete);
+      } else {
+        await supabase.from('erp_clients').delete().eq('id', idToDelete);
       }
-      setRecentlyDeletedClient(null);
-    }, 8000);
+    } catch (err) {
+      console.error("Cloud delete failed:", err);
+    }
 
     const updatedClients = clients.filter(c => c.id !== idToDelete);
     setClients(updatedClients);
     setClientToDelete(null);
     if (showGlobalToast) showGlobalToast('Client Deleted', `Client "${client.name}" removed.`);
+
+    undoTimeoutRef.current = setTimeout(() => {
+      setRecentlyDeletedClient(null);
+    }, 8000);
   };
 
-  const handleUndoDelete = () => {
+  const handleUndoDelete = async () => {
     if (!recentlyDeletedClient) return;
+    
+    const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+    await supabase.from('erp_clients').upsert([{ id: recentlyDeletedClient.id.toString(), data: clean(recentlyDeletedClient) }]);
+
     setClients(prev => prev.some(c => c.id === recentlyDeletedClient.id) ? prev : [...prev, recentlyDeletedClient]);
     if (showGlobalToast) showGlobalToast('Restored', `Client "${recentlyDeletedClient.name}" has been restored.`);
     setRecentlyDeletedClient(null);
