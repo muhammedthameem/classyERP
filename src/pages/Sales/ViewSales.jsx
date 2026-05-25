@@ -419,10 +419,11 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                   )}
                 </div>
 
-                <div className="text-center mt-6 text-[9px] text-gray-500 italic border-t border-dashed border-gray-200 pt-4">
+                <div className="text-center mt-6 text-[10px] text-gray-500 italic border-t border-dashed border-gray-200 pt-4">
                   <p className="font-bold text-black mb-1">Thank you for shopping!</p>
                   <p>Your elegance is our priority.</p>
                   <p>Please visit again for more unique designs.</p>
+                  <p className="mt-2 text-[9px]">This is a computer generated receipt.</p>
                 </div>
               </div>
 
@@ -508,8 +509,10 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                         <p style="margin: 2px 0; font-weight: bold; color: #000;">Thank you for shopping!</p>
                         <p style="margin: 2px 0; font-size:10px">Your elegance is our priority.</p>
                         <p style="margin: 2px 0; font-size:10px">Please visit again for more unique designs.</p>
+                        <p style="margin: 8px 0 0 0; font-size:9px">This is a computer generated receipt.</p>
                       </div>
-                    `;
+                    </div>
+                  `;
 
                     const opt = {
                       margin: 0,

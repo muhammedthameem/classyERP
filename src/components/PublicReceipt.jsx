@@ -138,70 +138,77 @@ function PublicReceipt({ billId, onClear }) {
         <p className="text-stone-500 text-sm">Thank you for your purchase!</p>
       </div>
 
-      <div id="printable-bill" className="mb-8 bg-white p-6 text-black shadow-2xl rounded-sm overflow-hidden mx-auto" style={{ width: '97mm', minHeight: '120mm', fontFamily: 'monospace' }}>
-        <div className="text-center mb-6 border-b-2 border-dashed border-gray-300 pb-6">
-          <img src="/logo-black.png" alt="Logo" className="w-24 h-24 mx-auto mb-4 object-contain" />
-          <h3 className="text-lg font-bold uppercase tracking-tight">Classy Couture</h3>
-          <p className="text-[9px] font-medium">Be Unique, Be Classy</p>
-          <p style={{ margin: '2px 0', fontSize: '9px' }}>Ph : 8606154015</p>
-          <div className="mt-4 text-[9px] text-gray-500">
-            <p>Order ID: {sale.saleId}</p>
-            <p>{new Date(sale.timestamp).toLocaleString()}</p>
+        <div id="printable-bill" className="mb-8 bg-white p-4 text-black shadow-inner overflow-hidden mx-auto" style={{ width: '97mm', minHeight: '120mm', fontFamily: 'monospace' }}>
+          <div className="text-center mb-4 border-b-2 border-dashed border-gray-300 pb-4">
+            <img src="/logo-black.png" alt="Logo" className="w-28 h-32 mx-auto mb-4 object-contain" />
+            <h3 className="uppercase tracking-tight !text-[24px] !font-extrabold">Classy Couture</h3>
+            <p className="text-[10px] font-medium">Be Unique, Be Classy</p>
+            <p style={{ margin: '2px 0', fontSize: '12px' }}>Ph : 8606154015</p>
+            <div className="mt-2 text-gray-500">
+              <p className='!text-[10px]'>Order ID: {sale.saleId}</p>
+              <p className='!text-[10px]'>{new Date(sale.timestamp).toDateString() === new Date().toDateString() ? new Date(sale.timestamp).toLocaleString() : new Date(sale.timestamp).toLocaleDateString()}</p>
+            </div>
+          </div>
+
+          <div className="mb-4 text-[11px]">
+            <p className="font-bold">Customer: {sale.client?.name || 'Guest'}</p>
+            {sale.client?.phone && <p>Tel: {sale.client.phone}</p>}
+          </div>
+
+          <table className="w-full text-[10px] mb-4">
+            <thead>
+              <tr className="border-b border-dashed border-gray-300 text-left">
+                <th className="py-1 min-w-[100px] pr-2">Item</th>
+                <th className="py-1 text-center px-3">Qty</th>
+                <th className="py-1 text-right px-3 whitespace-nowrap">Disc (₹/%)</th>
+                <th className="py-1 text-right pl-3 whitespace-nowrap">Total</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-dashed divide-gray-200">
+              {(sale.items || []).map((item, idx) => {
+                const rowTotal = item.rowTotal !== undefined
+                  ? item.rowTotal
+                  : (item.qty * (item.price || item.rate)) * (1 - (item.discount || 0) / 100);
+                
+                return (
+                  <tr key={idx}>
+                    <td className="py-2 pr-2">
+                      <p className="font-bold">{item.productName.replace(/\s*\(Order #[^)]+\)/g, '')}</p>
+                      <div className="flex flex-col mt-0.5">
+                        <p style={{ fontSize: '12px', fontWeight: 700 }} className="opacity-70">Rate: ₹{item.price || item.rate}</p>
+                      </div>
+                    </td>
+                    <td className="py-2 text-center px-3">{item.qty}</td>
+                    <td className="py-2 text-right px-3">
+                      {item.rowTotal !== undefined ? '₹' : ''}{item.discount || 0}{item.rowTotal !== undefined ? '' : '%'}
+                    </td>
+                    <td className="py-2 text-right pl-3 font-bold">₹{parseFloat(rowTotal).toFixed(2)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          <div className="border-t-2 border-dashed border-gray-300 pt-3 space-y-1">
+            <div className="flex justify-between text-sm font-black">
+              <span>Grand Total</span>
+              <span>₹{((sale.items || []).reduce((s, i) => s + ((i.price || i.rate) * i.qty), 0) - (sale.items?.reduce((s, i) => s + (parseFloat(i.discount) || 0), 0) || 0)).toFixed(2)}</span>
+            </div>
+            {sale.paymentMode && (
+              <div className="flex justify-between text-[11px] font-bold text-gray-500 mt-1">
+                <span>Payment Mode</span>
+                <span className="uppercase">{sale.paymentMode}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="text-center mt-6 text-[10px] text-gray-500 italic border-t border-dashed border-gray-200 pt-4">
+            <p className="font-bold text-black mb-1">Thank you for shopping!</p>
+            <p>Your elegance is our priority.</p>
+            <p>Please visit again for more unique designs.</p>
+            <p className="mt-2 text-[9px]">This is a computer generated receipt.</p>
           </div>
         </div>
-
-        <div className="mb-6 text-[11px]">
-          <p className="font-bold">Customer: {sale.client?.name || 'Guest'}</p>
-          {sale.client?.phone && <p>Tel: {sale.client.phone}</p>}
-        </div>
-
-        <table className="w-full text-[10px] mb-6">
-          <thead>
-            <tr className="border-b border-dashed border-gray-300 text-left uppercase">
-              <th className="py-2 pr-2">Item</th>
-              <th className="py-2 px-3 text-center">Qty</th>
-              <th className="py-2 px-3 text-right">Disc</th>
-              <th className="py-2 pl-3 text-right">Total</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-dashed divide-gray-200">
-            {(sale.items || []).map((item, idx) => {
-              const rowTotal = item.rowTotal !== undefined
-                ? item.rowTotal
-                : (item.qty * item.price) * (1 - (item.discount || 0) / 100);
-              const discDisplay = item.rowTotal !== undefined
-                ? `₹${parseFloat(item.discount || 0).toFixed(0)}`
-                : `${item.discount || 0}%`;
-
-              return (
-                <tr key={idx}>
-                  <td className="py-3 pr-2">
-                    <p className="font-bold">{item.productName.replace(/\s*\(Order #[^)]+\)/g, '')}</p>
-                    <div className="flex flex-col mt-0.5">
-                      <p style={{ fontSize: '12px', fontWeight: 700 }} className="opacity-60">Rate: ₹{item.price || item.rate}</p>
-                    </div>
-                  </td>
-                  <td className="py-3 px-3 text-center">{item.qty}</td>
-                  <td className="py-3 px-3 text-right text-[9px]">{discDisplay}</td>
-                  <td className="py-3 pl-3 text-right font-bold">₹{parseFloat(rowTotal).toFixed(2)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-
-        <div className="border-t-2 border-dashed border-gray-300 pt-4 mb-6">
-          <div className="flex justify-between text-base font-black">
-            <span>GRAND TOTAL</span>
-            <span>₹{(sale.items || []).reduce((sum, item) => sum + ((parseFloat(item.price) || parseFloat(item.rate) || 0) * (item.qty || 0)) - (parseFloat(item.discount) || 0), 0).toFixed(2)}</span>
-          </div>
-        </div>
-
-        <div className="text-center mt-6 text-[9px] text-gray-500 italic border-t border-dashed border-gray-200 pt-6">
-          <p>This is a computer generated receipt.</p>
-          <p>No signature required.</p>
-        </div>
-      </div>
 
       <button
         onClick={handleDownload}

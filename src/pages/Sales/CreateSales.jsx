@@ -1027,24 +1027,28 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
               <table className="w-full text-[10px] mb-4">
                 <thead>
                   <tr className="border-b border-dashed border-gray-300 text-left">
-                    <th className="py-1 min-w-[100px]">Item</th>
-                    <th className="py-1 text-center px-2">Qty</th>
-                    <th className="py-1 text-right px-2">Disc (₹)</th>
-                    <th className="py-1 text-right px-2">Total</th>
+                    <th className="py-1 min-w-[100px] pr-2">Item</th>
+                    <th className="py-1 text-center px-3">Qty</th>
+                    <th className="py-1 text-right px-3 whitespace-nowrap">Disc (₹/%)</th>
+                    <th className="py-1 text-right pl-3 whitespace-nowrap">Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-dashed divide-gray-200">
                   {showReceipt.items.map((item, idx) => (
                     <tr key={idx}>
-                      <td className="py-2 pr-1">
+                      <td className="py-2 pr-2">
                         <p className="font-bold">{item.productName.replace(/\s*\(Order #[^)]+\)/g, '')}</p>
                         <div className="flex flex-col mt-0.5">
-                          <p style={{ fontSize: '12px', fontWeight: 700 }} className="opacity-70">Rate: ₹{item.rate}</p>
+                          <p style={{ fontSize: '12px', fontWeight: 700 }} className="opacity-70">Rate: ₹{item.price || item.rate}</p>
                         </div>
                       </td>
-                      <td className="py-2 text-center px-2">{item.qty}</td>
-                      <td className="py-2 text-right px-2">₹{item.discount}</td>
-                      <td className="py-2 text-right px-2 font-bold">₹{parseFloat(item.rowTotal || (item.qty * item.price) - (item.discount || 0)).toFixed(2)}</td>
+                      <td className="py-2 text-center px-3">{item.qty}</td>
+                      <td className="py-2 text-right px-3">
+                        {item.rowTotal !== undefined ? '₹' : ''}{item.discount || 0}{item.rowTotal !== undefined ? '' : '%'}
+                      </td>
+                      <td className="py-2 text-right pl-3 font-bold">
+                        ₹{parseFloat(item.rowTotal || (item.qty * (item.price || item.rate)) - (item.discount || 0)).toFixed(2)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -1063,10 +1067,11 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                 )}
               </div>
 
-              <div className="text-center mt-6 text-[9px] text-gray-500 italic border-t border-dashed border-gray-200 pt-4">
+              <div className="text-center mt-6 text-[10px] text-gray-500 italic border-t border-dashed border-gray-200 pt-4">
                 <p className="font-bold text-black mb-1">Thank you for shopping!</p>
                 <p>Your elegance is our priority.</p>
                 <p>Please visit again for more unique designs.</p>
+                <p className="mt-2 text-[9px]">This is a computer generated receipt.</p>
               </div>
             </div>
 
