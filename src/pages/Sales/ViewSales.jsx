@@ -427,13 +427,6 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                   onClick={async () => {
                     if (showGlobalToast) showGlobalToast('Preparing Receipt', 'Generating your professional bill...');
                     
-                    const htmlString = generateReceiptHtmlString(viewSale);
-                      const container = document.createElement('div');
-                      container.innerHTML = htmlString;
-                      document.body.appendChild(container);
-                      container.style.position = 'absolute';
-                      container.style.left = '-9999px';
-
                     const opt = {
                       margin: 0,
                       filename: `Receipt_${viewSale.saleId}.pdf`,
@@ -484,10 +477,6 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
 
                       const fileName = `receipts/${viewSale.saleId}.pdf`;
                       
-                      // Use .outerHTML to prevent html2canvas from crashing on live React DOM nodes
-                      const pdfBlob = await html2pdf().set(opt).from(container).output('blob');
-                        document.body.removeChild(container);
-
                       const { data, error: uploadError } = await supabase.storage
                         .from('receipts')
                         .upload(fileName, pdfBlob, {
