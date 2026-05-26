@@ -4,6 +4,7 @@ import html2pdf from 'html2pdf.js'
 import { formatDateDDMMYY } from '../../utils/constants'
 
 import supabase from '../../supabase'
+import UndoToast from '../../components/UndoToast'
 
 function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setClientDetailMode, showGlobalToast, currentUser, highlightClientId, setHighlightClientId, clients, setClients, deleteClient, cloudLoaded }) {
   const rowRefs = useRef({})
@@ -458,18 +459,12 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
 
       {/* Undo Toast */}
       {recentlyDeletedClient && (
-        <div className="fixed bottom-6 left-1/2 z-[100] flex -translate-x-1/2 items-center gap-4 rounded-2xl bg-[var(--surface-strong)] px-6 py-4 shadow-2xl border border-[var(--border)]">
-          <div>
-            <p className="font-bold text-[var(--text)]">Client Deleted</p>
-            <p className="text-xs text-[var(--muted)]">Permanently removing in 8 seconds</p>
-          </div>
-          <button
-            onClick={handleUndoDelete}
-            className="rounded-xl bg-[var(--accent)] px-4 py-2 font-bold text-white transition hover:brightness-95 active:scale-95"
-          >
-            Undo
-          </button>
-        </div>
+        <UndoToast
+          message="Deleted Client"
+          highlight={recentlyDeletedClient.name}
+          onUndo={handleUndoDelete}
+          onClose={() => { setRecentlyDeletedClient(null); if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current); }}
+        />
       )}
     </div>
   )

@@ -3,6 +3,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, CircleDollarSign,
 import { formatDateDDMMYY, getIndianDate, orders } from '../../utils/constants'
 import { sendWhatsApp } from "../../utils/whatsapp";
 import supabase from '../../supabase'
+import UndoToast from '../../components/UndoToast'
 
 function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory, clients, saveOrder, deleteOrder, cloudLoaded }) {
   const rowRefs = useRef({});
@@ -316,22 +317,13 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
   return (
     <div style={themeStyle} className="relative">
 
-      {/* Undo Popup */}
       {recentlyDeletedOrder && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[3000] animate-in slide-in-from-bottom-5 duration-300">
-          <div className="flex items-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-5 py-3.5 text-sm font-medium text-[var(--text)] shadow-2xl backdrop-blur-md">
-            <span>Deleted Order <strong className="text-[var(--accent)]">#{recentlyDeletedOrder.id}</strong></span>
-            <button
-              onClick={handleUndoDelete}
-              className="rounded-lg bg-[var(--accent)] px-4 py-1.5 font-bold text-white transition hover:opacity-90 active:scale-95 shadow-sm"
-            >
-              Undo
-            </button>
-            <button onClick={() => { setRecentlyDeletedOrder(null); if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current); }} className="text-[var(--muted)] hover:text-[var(--text)] transition ml-2">
-              <X size={18} />
-            </button>
-          </div>
-        </div>
+        <UndoToast
+          message="Deleted Order"
+          highlight={`#${recentlyDeletedOrder.id}`}
+          onUndo={handleUndoDelete}
+          onClose={() => { setRecentlyDeletedOrder(null); if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current); }}
+        />
       )}
 
       {viewOrder && (

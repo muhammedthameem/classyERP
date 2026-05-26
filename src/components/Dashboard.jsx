@@ -1548,9 +1548,9 @@ function Dashboard({
       </div>
 
       {/* Global Toast Notification */}
-      <div className={`fixed bottom-24 left-1/2 z-[2000] -translate-x-1/2 transition-all duration-500 ${globalToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'}`}>
+      <div className={`fixed bottom-24 left-0 right-0 z-[2000] mx-auto flex justify-center px-4 transition-all duration-500 ${globalToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'}`}>
         {globalToast && (
-          <div className="flex items-center gap-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-4 pr-6 shadow-2xl backdrop-blur-xl">
+          <div className="flex w-full max-w-md items-center gap-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-4 pr-6 shadow-2xl backdrop-blur-xl">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] shadow-inner">
               <Bell size={20} className="animate-bounce" />
             </div>

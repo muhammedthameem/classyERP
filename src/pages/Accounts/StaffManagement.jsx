@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Users, Pencil, Trash2, Search, Plus, Save, X, Download, FileText, ChevronUp, ChevronDown } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
+import UndoToast from '../../components/UndoToast'
 
 function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staffList = [], setStaffList, saveConfig, highlightStaffId, setHighlightStaffId, allAccounts = [] }) {
   const rowRefs = useRef({})
@@ -305,20 +306,12 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
 
       {/* Undo Popup */}
       {recentlyDeletedStaff && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[3000] animate-in slide-in-from-bottom-5 duration-300">
-          <div className="flex items-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-5 py-3.5 text-sm font-medium text-[var(--text)] shadow-2xl backdrop-blur-md">
-            <span>Deleted <strong className="text-[var(--accent)]">{recentlyDeletedStaff.name}</strong></span>
-            <button
-              onClick={handleUndoDelete}
-              className="rounded-lg bg-[var(--accent)] px-4 py-1.5 font-bold text-white transition hover:opacity-90 active:scale-95 shadow-sm"
-            >
-              Undo
-            </button>
-            <button onClick={() => { setRecentlyDeletedStaff(null); if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current); }} className="text-[var(--muted)] hover:text-[var(--text)] transition ml-2">
-              <X size={18} />
-            </button>
-          </div>
-        </div>
+        <UndoToast
+          message="Deleted"
+          highlight={recentlyDeletedStaff.name}
+          onUndo={handleUndoDelete}
+          onClose={() => { setRecentlyDeletedStaff(null); if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current); }}
+        />
       )}
 
       {/* Ledger Modal */}

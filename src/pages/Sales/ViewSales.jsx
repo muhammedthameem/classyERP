@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Search, TrendingUp, Eye, Trash2, Download, P
 import html2pdf from 'html2pdf.js'
 import { generateReceiptHtmlString } from '../../utils/pdfHelper'
 import { orders } from '../../utils/constants'
+import UndoToast from '../../components/UndoToast'
 
 import supabase from '../../supabase'
 
@@ -179,20 +180,12 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
 
       {/* Undo Popup */}
       {recentlyDeletedSale && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[3000] animate-in slide-in-from-bottom-5 duration-300">
-          <div className="flex items-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-5 py-3.5 text-sm font-medium text-[var(--text)] shadow-2xl backdrop-blur-md">
-            <span>Deleted Sale <strong className="text-[var(--accent)]">#{recentlyDeletedSale.saleId || recentlyDeletedSale.id}</strong></span>
-            <button
-              onClick={handleUndoDelete}
-              className="rounded-lg bg-[var(--accent)] px-4 py-1.5 font-bold text-white transition hover:opacity-90 active:scale-95 shadow-sm"
-            >
-              Undo
-            </button>
-            <button onClick={() => { setRecentlyDeletedSale(null); if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current); }} className="text-[var(--muted)] hover:text-[var(--text)] transition ml-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-          </div>
-        </div>
+        <UndoToast
+          message="Deleted Sale"
+          highlight={`#${recentlyDeletedSale.saleId || recentlyDeletedSale.id}`}
+          onUndo={handleUndoDelete}
+          onClose={() => { setRecentlyDeletedSale(null); if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current); }}
+        />
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-4">
