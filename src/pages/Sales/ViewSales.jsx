@@ -443,6 +443,14 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                     // Pass the DOM element directly to preserve all Tailwind CSS styles
                     html2pdf().set(opt).from(visualBill).save().then(() => {
                       if (showGlobalToast) showGlobalToast('Success', 'Receipt downloaded successfully.');
+                    }).catch(err => {
+                      console.error('PDF Generation Error:', err);
+                      if (showGlobalToast) showGlobalToast('Error', 'Could not download receipt. Please try taking a screenshot.');
+                    }).finally(() => {
+                      // CLEANUP stuck html2pdf overlays that freeze the app
+                      setTimeout(() => {
+                        document.querySelectorAll('.html2pdf__overlay, .html2pdf__container').forEach(o => o.remove());
+                      }, 500);
                     });
                   }}
                   className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--border)] py-3 text-sm font-bold transition hover:bg-[var(--soft)]"

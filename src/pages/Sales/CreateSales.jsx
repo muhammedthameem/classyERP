@@ -376,6 +376,11 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     }).catch(err => {
       console.error('PDF Error:', err);
       if (showGlobalToast) showGlobalToast('Export Failed', 'Please try again or contact support.');
+    }).finally(() => {
+      // CLEANUP stuck html2pdf overlays that freeze the app
+      setTimeout(() => {
+        document.querySelectorAll('.html2pdf__overlay, .html2pdf__container').forEach(o => o.remove());
+      }, 500);
     });
   };
 
