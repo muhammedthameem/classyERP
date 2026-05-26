@@ -1,5 +1,5 @@
 export async function sendWhatsApp(phone, customerName, orderId) {
-    const accessToken = "EAAYcDaZCDKysBRnbRglxZBZBn5SKxlTyCnZBnPKdmKpuxsqzhIqUgoRtdE4aZBeOC5hDhufPn3ImHTBvRD6PMPpAwRNYINPXpGLje5kmaaJaQxC3eWqXoUvhygZC0EwhPnCBaTnyWGMiKFpJDmPpbwCEgJcgBp8oJ0fFCL0UDj0MD2uGXVZBrUzKogjhoZBXGsisYHJivKBg9OSkxa9ii6WZAKvbkvppm9DECKVzpkhiDaPETyRZAuWBymX0uu3nIHblvkImKNm5ZBy3DHlR0kmABjObV0l";
+    const accessToken = "EAAYcDaZCDKysBRhYKqN60k0OIZCyPgwio6s16ULfyPbI80vI2YFk8NfQchoadcyo4qd7iDbKZBEfCQcWN5ZBHkU0vM0PZA5UPC1QVdZC5tsm587cnW63HkBWdfLYBYkXUoSCr4rXj7WQ8pONuAZASL6RWvuC9IXqbvLA4uO526DPTajlZBWe6JzhJG3PM2K8VPyosh7hfXgKrcUqSpHJ60F8zlOzWGXAL8Rv0CHWOGcze6YxlVh5MTPYoBNaq7z1NOpHoeaMsIrGeMLVw6AvCGLEfvkVbQZDZD";
     const phoneNumberId = "1119127341285536";
 
     // Format phone number: remove non-digits, ensure country code 91 if exactly 10 digits
@@ -36,11 +36,11 @@ export async function sendWhatsApp(phone, customerName, orderId) {
 
         const data = await response.json();
         console.log("WhatsApp API Response:", data);
-        
+
         if (data.error) {
             throw new Error(data.error.message || "Unknown WhatsApp API error");
         }
-        
+
         return data;
     } catch (err) {
         console.error("WhatsApp API Error:", err);
