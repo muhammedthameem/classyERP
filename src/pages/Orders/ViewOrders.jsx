@@ -156,7 +156,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
     // Send WhatsApp notification when order is completed
     if (newStatus === 'Completed' && changedOrder) {
       const client = (clients || []).find(c => c.name === changedOrder.clientName);
-      const phoneToUse = client?.phone || changedOrder.clientPhone;
+      const phoneToUse = client?.mobile || changedOrder.clientPhone;
       
       if (phoneToUse) {
         if (showGlobalToast) showGlobalToast('Sending', `Sending WhatsApp notification...`);
