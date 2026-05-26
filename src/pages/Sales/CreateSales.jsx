@@ -369,8 +369,32 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     const container = document.createElement('div');
     container.innerHTML = htmlString;
     
-    html2pdf().set(opt).from(container.outerHTML).save().then(() => {
-      if (showGlobalToast) showGlobalToast('Success', 'Receipt downloaded successfully.');
+    html2pdf().set(opt).from(container.outerHTML).output('blob').then((pdfBlob) => {
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      
+      // 1. Auto-download
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `Receipt_${showReceipt.saleId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // 2. Auto-print
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = blobUrl;
+      document.body.appendChild(iframe);
+      iframe.onload = () => {
+        try {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+        } catch (e) {
+          window.open(blobUrl, '_blank');
+        }
+      };
+
+      if (showGlobalToast) showGlobalToast('Success', 'Receipt downloaded and print view opened.');
     }).catch(err => {
       console.error('PDF Error:', err);
       if (showGlobalToast) showGlobalToast('Export Failed', 'Please try again or contact support.');

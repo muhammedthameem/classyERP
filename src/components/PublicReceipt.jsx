@@ -81,7 +81,31 @@ function PublicReceipt({ billId, onClear }) {
       const container = document.createElement('div');
       container.innerHTML = htmlString;
       
-      html2pdf().set(opt).from(container.outerHTML).save().then(() => {
+      html2pdf().set(opt).from(container.outerHTML).output('blob').then((pdfBlob) => {
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        
+        // 1. Auto-download
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = `Receipt_${sale.saleId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // 2. Auto-print
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = blobUrl;
+        document.body.appendChild(iframe);
+        iframe.onload = () => {
+          try {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          } catch (e) {
+            window.open(blobUrl, '_blank');
+          }
+        };
+
         setIsGenerating(false);
       }).catch(err => {
         console.error('PDF Error:', err);
