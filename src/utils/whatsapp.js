@@ -36,8 +36,14 @@ export async function sendWhatsApp(phone, customerName, orderId) {
 
         const data = await response.json();
         console.log("WhatsApp API Response:", data);
+        
+        if (data.error) {
+            throw new Error(data.error.message || "Unknown WhatsApp API error");
+        }
+        
         return data;
     } catch (err) {
         console.error("WhatsApp API Error:", err);
+        throw err;
     }
 }

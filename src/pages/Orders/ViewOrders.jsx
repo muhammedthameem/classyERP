@@ -155,14 +155,17 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
 
     // Send WhatsApp notification when order is completed
     if (newStatus === 'Completed' && changedOrder && changedOrder.clientPhone) {
+      if (showGlobalToast) showGlobalToast('Sending', `Sending WhatsApp notification...`);
       try {
         await sendWhatsApp(
           changedOrder.clientPhone, 
           changedOrder.clientName || 'Customer', 
           changedOrder.orderId || changedOrder.id
         );
+        if (showGlobalToast) showGlobalToast('Success', `Ready for delivery message sent successfully to ${changedOrder.clientName || 'Customer'}`);
       } catch (err) {
         console.error("WhatsApp sending failed", err);
+        if (showGlobalToast) showGlobalToast('Error', `Failed to send WhatsApp message. (Check console for details)`);
       }
     }
   }
