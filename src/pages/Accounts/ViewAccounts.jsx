@@ -144,9 +144,9 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
   }, [accounts, activeTab, searchQuery, filterStartDate, filterEndDate])
 
   const cashbookData = useMemo(() => {
-    const filteredForCashbook = cashbookMode === 'Cash' 
-      ? accounts.filter(acc => acc.payment_mode?.toLowerCase() === 'cash')
-      : accounts;
+    const filteredForCashbook = cashbookMode === 'All' 
+      ? accounts
+      : accounts.filter(acc => acc.payment_mode?.toLowerCase() === cashbookMode.toLowerCase());
 
     const grouped = {};
     filteredForCashbook.forEach(acc => {
@@ -428,6 +428,11 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
                 >
                   <option value="All">All Modes</option>
                   <option value="Cash">Cash Only</option>
+                  <option value="UPI">UPI</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Card">Card</option>
+                  <option value="Cheque">Cheque</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
           )}
