@@ -537,9 +537,24 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
               {isLoading ? (
-                <tr>
-                  <td colSpan="6" className="p-8 text-center text-[var(--muted)]">Loading accounts data...</td>
-                </tr>
+                // Skeleton Table Rows
+                [...Array(5)].map((_, i) => (
+                  <tr key={i} className="animate-pulse border-b border-[var(--border)]">
+                    <td className="p-4"><div className="skeleton h-5 w-20 rounded" /></td>
+                    <td className="p-4"><div className="skeleton h-6 w-16 rounded-full" /></td>
+                    <td className="p-4"><div className="skeleton h-6 w-24 rounded" /></td>
+                    <td className="p-4 hidden md:table-cell"><div className="skeleton h-5 w-32 rounded" /></td>
+                    <td className="p-4 hidden sm:table-cell"><div className="skeleton h-5 w-16 rounded" /></td>
+                    <td className="p-4 text-right"><div className="skeleton h-5 w-20 rounded ml-auto" /></td>
+                    <td className="p-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <div className="skeleton h-8 w-8 rounded-lg" />
+                        <div className="skeleton h-8 w-8 rounded-lg" />
+                        <div className="skeleton h-8 w-8 rounded-lg" />
+                      </div>
+                    </td>
+                  </tr>
+                ))
               ) : activeTab === 'Cashbook' ? (
                 paginatedCashbook.length === 0 ? (
                   <tr>
