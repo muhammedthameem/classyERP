@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import supabase from '../supabase';
 import { CheckCircle, Download, Package } from 'lucide-react';
-import html2pdf from 'html2pdf.js';
+import html2pdf from 'html2pdf.js'
+import { generateReceiptHtmlString } from '../utils/pdfHelper';
 
 function PublicReceipt({ billId, onClear }) {
   const [sale, setSale] = useState(null);
@@ -239,3 +240,4 @@ function PublicReceipt({ billId, onClear }) {
 }
 
 export default PublicReceipt;
+

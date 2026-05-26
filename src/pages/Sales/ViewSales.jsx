@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, Search, TrendingUp, Eye, Trash2, Download, Plus } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
+import { generateReceiptHtmlString } from '../../utils/pdfHelper'
 import { orders } from '../../utils/constants'
 
 import supabase from '../../supabase'
@@ -426,11 +427,12 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                   onClick={async () => {
                     if (showGlobalToast) showGlobalToast('Preparing Receipt', 'Generating your professional bill...');
                     
-                    const visualBill = document.getElementById('printable-bill-view');
-                    if (!visualBill) {
-                      if (showGlobalToast) showGlobalToast('Error', 'Receipt container not found.');
-                      return;
-                    }
+                    const htmlString = generateReceiptHtmlString(viewSale);
+                      const container = document.createElement('div');
+                      container.innerHTML = htmlString;
+                      document.body.appendChild(container);
+                      container.style.position = 'absolute';
+                      container.style.left = '-9999px';
 
                     const opt = {
                       margin: 0,
@@ -442,7 +444,8 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
 
                     try {
                       // Generate blob instead of calling .save() to prevent iOS blocking
-                      const pdfBlob = await html2pdf().set(opt).from(visualBill.outerHTML).output('blob');
+                      const pdfBlob = await html2pdf().set(opt).from(container).output('blob');
+                        document.body.removeChild(container);
                       
                       // Mobile Fallback: Native Web Share API
                       try {
@@ -490,11 +493,12 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       setIsSendingPdf(true);
                       if (showGlobalToast) showGlobalToast('Generating', 'Uploading receipt PDF to secure server...');
 
-                      const visualBill = document.getElementById('printable-bill-view');
-                      if (!visualBill) {
-                        if (showGlobalToast) showGlobalToast('Error', 'Receipt container not found.');
-                        return;
-                      }
+                      const htmlString = generateReceiptHtmlString(viewSale);
+                      const container = document.createElement('div');
+                      container.innerHTML = htmlString;
+                      document.body.appendChild(container);
+                      container.style.position = 'absolute';
+                      container.style.left = '-9999px';
 
                       const opt = {
                         margin: 0,
@@ -507,7 +511,8 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       const fileName = `receipts/${viewSale.saleId}.pdf`;
                       
                       // Use .outerHTML to prevent html2canvas from crashing on live React DOM nodes
-                      const pdfBlob = await html2pdf().set(opt).from(visualBill.outerHTML).output('blob');
+                      const pdfBlob = await html2pdf().set(opt).from(container).output('blob');
+                        document.body.removeChild(container);
 
                       const { data, error: uploadError } = await supabase.storage
                         .from('receipts')
@@ -630,3 +635,4 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
 }
 
 export default ViewSalesPage;
+
