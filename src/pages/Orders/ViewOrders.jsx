@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2, Plus, X } from 'lucide-react'
 import { formatDateDDMMYY, getIndianDate, orders } from '../../utils/constants'
-import { sendWhatsApp } from "../utils/whatsapp";
+import { sendWhatsApp } from "../../utils/whatsapp";
 import supabase from '../../supabase'
 
 function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory, clients, saveOrder, deleteOrder, cloudLoaded }) {
