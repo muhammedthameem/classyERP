@@ -257,7 +257,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
 
     const updatedOrders = orders.map(o => {
       const cartItem = cart.find(item => item.orderId === o.id);
-      if (cartItem) return { ...o, status: 'Sold', soldDate: new Date().toISOString() };
+      if (cartItem) return { ...o, status: 'Sold', soldDate: new Date().toISOString(), price: cartItem.finalPrice };
       return o;
     });
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, ShoppingBag, TrendingUp, UsersRound, Download, Clock, BarChart3, CircleDollarSign, TrendingDown } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
-import { orders } from '../../utils/constants'
+import { formatDateDDMMYY, orders } from '../../utils/constants'
 import ReportStatCard from '../../components/ReportStatCard'
 import supabase from '../../supabase'
 
@@ -51,7 +51,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
     const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 
     return data.filter(item => {
-      const dateStr = item.date || item.timestamp || item.createdAt;
+      const dateStr = item.date || item.timestamp || item.createdAt || item.orderDate;
       if (!dateStr) return true;
       const itemDate = new Date(dateStr).getTime();
 
@@ -64,8 +64,8 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
       }
       return true;
     }).sort((a, b) => {
-      const dateA = a.date || a.timestamp || a.createdAt;
-      const dateB = b.date || b.timestamp || b.createdAt;
+      const dateA = a.date || a.timestamp || a.createdAt || a.orderDate;
+      const dateB = b.date || b.timestamp || b.createdAt || b.orderDate;
       return new Date(dateB).getTime() - new Date(dateA).getTime();
     });
   };
@@ -77,6 +77,17 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
 
   const filteredIncome = filteredAccounts.filter(a => a.type === 'Income');
   const filteredExpense = filteredAccounts.filter(a => a.type === 'Expense');
+
+  // Build lookup: orderId -> sale price from sales data
+  const saleOrderPrices = {};
+  (sales || []).forEach(s => {
+    (s.items || []).forEach(item => {
+      const orderId = item.orderId || (item.id && item.id.toString().startsWith('ORD-') ? item.id.toString().replace('ORD-', '') : null);
+      if (orderId) {
+        saleOrderPrices[orderId] = parseFloat(item.price ?? item.rate ?? 0);
+      }
+    });
+  });
 
   // Paginated Data
   const paginatedSales = filteredSales.slice((salesPage - 1) * itemsPerPage, salesPage * itemsPerPage);
@@ -197,6 +208,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
         <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
           <thead>
             <tr style="background-color: #f9fafb;">
+              <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb; color: #4b5563;">Date</th>
               <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb; color: #4b5563;">Order ID</th>
               <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb; color: #4b5563;">Product</th>
               <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb; color: #4b5563;">Status</th>
@@ -206,14 +218,15 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
           <tbody>
             ${filteredOrders.length > 0 ? filteredOrders.map(o => `
               <tr>
+                <td style="padding: 12px; border-bottom: 1px solid #f3f4f6; color: #6b7280; font-size: 11px;">${formatDateDDMMYY(o.orderDate)}</td>
                 <td style="padding: 12px; border-bottom: 1px solid #f3f4f6; font-weight: bold;">#${o.id}</td>
                 <td style="padding: 12px; border-bottom: 1px solid #f3f4f6;">${o.product}</td>
                 <td style="padding: 12px; border-bottom: 1px solid #f3f4f6;">
-                  <span style="background: #f3f4f6; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase;">${o.status}</span>
+                  <span style="background: ${o.status === 'Completed' ? '#dcfce7' : o.status === 'Sold' ? '#f3e8ff' : o.status === 'In Progress' ? '#dbeafe' : o.status === 'Hold' ? '#ffedd5' : '#f3f4f6'}; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: ${o.status === 'Completed' ? '#166534' : o.status === 'Sold' ? '#6b21a8' : o.status === 'In Progress' ? '#1e40af' : o.status === 'Hold' ? '#9a3412' : '#4b5563'};">${o.status}</span>
                 </td>
-                <td style="padding: 12px; border-bottom: 1px solid #f3f4f6; text-align: right; font-weight: bold;">${o.price}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #f3f4f6; text-align: right; font-weight: bold;">${o.status === 'Sold' && saleOrderPrices[o.id] ? '₹' + saleOrderPrices[o.id] : o.price}</td>
               </tr>
-            `).join('') : '<tr><td colspan="4" style="padding: 20px; text-align: center; color: #9ca3af;">No order records found</td></tr>'}
+            `).join('') : '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #9ca3af;">No order records found</td></tr>'}
           </tbody>
         </table>
       </div>
@@ -248,7 +261,8 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
     } else if (type === 'orders') {
       csvContent += "Date,Order ID,Customer,Product,Status,Price\n";
       filteredOrders.forEach(o => {
-        csvContent += `${new Date(o.createdAt).toLocaleDateString()},${o.id},${o.clientName},${o.product},${o.status},${o.price}\n`;
+        const soldPrice = o.status === 'Sold' && saleOrderPrices[o.id] ? saleOrderPrices[o.id] : o.price;
+        csvContent += `${o.orderDate},${o.id},${o.clientName},${o.product},${o.status},${soldPrice}\n`;
       });
     } else if (type === 'inventory') {
       csvContent += "Date,Product ID,Product Name,Vendor,Purchase Price,Quantity,Total Purchase\n";
@@ -515,6 +529,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
               <table className="erp-table">
                 <thead>
                   <tr>
+                    <th>Date</th>
                     <th>Order ID</th>
                     <th>Product</th>
                     <th>Status</th>
@@ -525,6 +540,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                   {isDataLoading ? (
                     [1, 2, 3].map(i => (
                       <tr key={i}>
+                        <td><div className="skeleton h-5 w-20 rounded" /></td>
                         <td><div className="skeleton h-5 w-16 rounded" /></td>
                         <td><div className="skeleton h-5 w-32 rounded" /></td>
                         <td><div className="skeleton h-5 w-20 rounded-full" /></td>
@@ -533,19 +549,20 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                     ))
                   ) : paginatedOrders.map(o => (
                     <tr key={o.id}>
+                      <td className="whitespace-nowrap text-xs text-[var(--muted)]">{formatDateDDMMYY(o.orderDate)}</td>
                       <td className="font-bold">#{o.id}</td>
                       <td>{o.product}</td>
                       <td>
-                        <span className={`rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase ${o.status === 'Completed' ? 'bg-green-100 text-green-700' : o.status === 'Sold' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
+                        <span className={`rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase ${o.status === 'Completed' ? 'bg-green-100 text-green-700' : o.status === 'Sold' ? 'bg-purple-100 text-purple-700' : o.status === 'In Progress' ? 'bg-blue-100 text-blue-700' : o.status === 'Hold' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-700'}`}>
                           {o.status}
                         </span>
                       </td>
-                      <td className="text-right font-bold">{o.price}</td>
+                      <td className="text-right font-bold">{o.status === 'Sold' && saleOrderPrices[o.id] ? `₹${saleOrderPrices[o.id]}` : o.price}</td>
                     </tr>
                   ))}
                   {paginatedOrders.length === 0 && !isDataLoading && (
                     <tr>
-                      <td colSpan="4" className="text-center text-[var(--muted)]">No orders found for this period</td>
+                      <td colSpan="5" className="text-center text-[var(--muted)]">No orders found for this period</td>
                     </tr>
                   )}
                 </tbody>
