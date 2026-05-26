@@ -4,7 +4,7 @@ import { formatDateDDMMYY, getIndianDate, orders } from '../../utils/constants'
 import { sendWhatsApp } from "../utils/whatsapp";
 import supabase from '../../supabase'
 
-function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory, saveOrder, deleteOrder, cloudLoaded }) {
+function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory, clients, saveOrder, deleteOrder, cloudLoaded }) {
   const rowRefs = useRef({});
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPageNum, setCurrentPageNum] = useState(1)
@@ -154,18 +154,25 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
     if (showGlobalToast) showGlobalToast('Status Updated', `Order status changed to ${newStatus}`)
 
     // Send WhatsApp notification when order is completed
-    if (newStatus === 'Completed' && changedOrder && changedOrder.clientPhone) {
-      if (showGlobalToast) showGlobalToast('Sending', `Sending WhatsApp notification...`);
-      try {
-        await sendWhatsApp(
-          changedOrder.clientPhone, 
-          changedOrder.clientName || 'Customer', 
-          changedOrder.orderId || changedOrder.id
-        );
-        if (showGlobalToast) showGlobalToast('Success', `Ready for delivery message sent successfully to ${changedOrder.clientName || 'Customer'}`);
-      } catch (err) {
-        console.error("WhatsApp sending failed", err);
-        if (showGlobalToast) showGlobalToast('Error', `Failed to send WhatsApp message. (Check console for details)`);
+    if (newStatus === 'Completed' && changedOrder) {
+      const client = (clients || []).find(c => c.name === changedOrder.clientName);
+      const phoneToUse = client?.phone || changedOrder.clientPhone;
+      
+      if (phoneToUse) {
+        if (showGlobalToast) showGlobalToast('Sending', `Sending WhatsApp notification...`);
+        try {
+          await sendWhatsApp(
+            phoneToUse, 
+            changedOrder.clientName || 'Customer', 
+            changedOrder.orderId || changedOrder.id
+          );
+          if (showGlobalToast) showGlobalToast('Success', `Ready for delivery message sent successfully to ${changedOrder.clientName || 'Customer'}`);
+        } catch (err) {
+          console.error("WhatsApp sending failed", err);
+          if (showGlobalToast) showGlobalToast('Error', `Failed to send WhatsApp message. (Check console for details)`);
+        }
+      } else {
+        if (showGlobalToast) showGlobalToast('Warning', 'No phone number found for this client. WhatsApp message skipped.');
       }
     }
   }
