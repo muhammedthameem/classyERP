@@ -440,9 +440,9 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       jsPDF: { unit: 'mm', format: [97, 200], orientation: 'portrait' }
                     };
 
-                    // Pass the DOM element directly to preserve all Tailwind CSS styles
-                    html2pdf().set(opt).from(visualBill).save().then(() => {
-                      if (showGlobalToast) showGlobalToast('Success', 'Receipt downloaded successfully.');
+                      // Use .outerHTML to prevent html2canvas from crashing on complex live React DOM nodes
+                      html2pdf().set(opt).from(visualBill.outerHTML).save().then(() => {
+                        if (showGlobalToast) showGlobalToast('Success', 'Receipt downloaded successfully.');
                     }).catch(err => {
                       console.error('PDF Generation Error:', err);
                       if (showGlobalToast) showGlobalToast('Error', 'Could not download receipt. Please try taking a screenshot.');
@@ -480,8 +480,8 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
 
                       const fileName = `receipts/${viewSale.saleId}.pdf`;
                       
-                      // Use .from(visualBill) directly instead of .outerHTML to preserve Tailwind CSS styling
-                      const pdfBlob = await html2pdf().set(opt).from(visualBill).output('blob');
+                      // Use .outerHTML to prevent html2canvas from crashing on live React DOM nodes
+                      const pdfBlob = await html2pdf().set(opt).from(visualBill.outerHTML).output('blob');
 
                       const { data, error: uploadError } = await supabase.storage
                         .from('receipts')

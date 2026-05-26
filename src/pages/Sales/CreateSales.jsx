@@ -370,8 +370,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       jsPDF: { unit: 'mm', format: [97, 200], orientation: 'portrait' }
     };
 
-    // Pass the DOM element directly to preserve all Tailwind CSS styles
-    html2pdf().set(opt).from(visualBill).save().then(() => {
+    // Use .outerHTML to prevent html2canvas from crashing on complex live React DOM nodes
+    html2pdf().set(opt).from(visualBill.outerHTML).save().then(() => {
       if (showGlobalToast) showGlobalToast('Success', 'Receipt downloaded successfully.');
     }).catch(err => {
       console.error('PDF Error:', err);
@@ -407,8 +407,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
 
       const fileName = `receipts/${showReceipt.saleId}.pdf`;
 
-      // Pass the DOM element directly to preserve all Tailwind CSS styles
-      const pdfBlob = await html2pdf().set(opt).from(visualBill).output('blob');
+      // Use .outerHTML to prevent html2canvas from crashing on live React DOM nodes
+      const pdfBlob = await html2pdf().set(opt).from(visualBill.outerHTML).output('blob');
 
       const { error: uploadError } = await supabase.storage
         .from('receipts')
