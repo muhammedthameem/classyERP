@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2, Plus, X } from 'lucide-react'
 import { formatDateDDMMYY, getIndianDate, orders } from '../../utils/constants'
+import { sendWhatsApp } from "../utils/whatsapp";
 import supabase from '../../supabase'
 
 function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory, saveOrder, deleteOrder, cloudLoaded }) {
@@ -125,7 +126,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
     if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
   }
 
-  const handleStatusChange = (id, newStatus) => {
+  const handleStatusChange = async (id, newStatus) => {
     const updated = orders.map(o => {
       if (o.id === id) {
         let newData = { ...o, status: newStatus }
@@ -151,8 +152,20 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
     }
 
     if (showGlobalToast) showGlobalToast('Status Updated', `Order status changed to ${newStatus}`)
-  }
 
+    // Send WhatsApp notification when order is completed
+    if (newStatus === 'Completed' && changedOrder && changedOrder.clientPhone) {
+      try {
+        await sendWhatsApp(
+          changedOrder.clientPhone, 
+          changedOrder.clientName || 'Customer', 
+          changedOrder.orderId || changedOrder.id
+        );
+      } catch (err) {
+        console.error("WhatsApp sending failed", err);
+      }
+    }
+  }
 
   const [activeFilter, setActiveFilter] = useState('All')
 
