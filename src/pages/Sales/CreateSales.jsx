@@ -85,7 +85,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     const newClient = {
       id: Date.now(),
       name: isPhone ? `Guest (${clientSearch})` : clientSearch,
-      phone: isPhone ? clientSearch : '',
+      mobile: isPhone ? clientSearch : '',
       address: '',
       measurements: [],
       createdAt: new Date().toISOString()
@@ -298,13 +298,13 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     const combinedName = uniqueClientNames.length > 0 ? uniqueClientNames.join(', ') : (selectedClient ? selectedClient.name : 'Guest');
 
     // 3. Find phone numbers across all involved clients
-    const clientsWithPhone = involvedClients.filter(c => c.phone && c.phone.trim() !== '');
+    const clientsWithPhone = involvedClients.filter(c => c.mobile && c.mobile.trim() !== '');
     let targetPhone = '';
 
-    if (selectedClient && selectedClient.phone && selectedClient.phone.trim() !== '') {
-      targetPhone = selectedClient.phone;
+    if (selectedClient && selectedClient.mobile && selectedClient.mobile.trim() !== '') {
+      targetPhone = selectedClient.mobile;
     } else if (clientsWithPhone.length > 0) {
-      targetPhone = clientsWithPhone[0].phone;
+      targetPhone = clientsWithPhone[0].mobile;
     }
 
     const newSale = {
