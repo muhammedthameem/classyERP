@@ -441,46 +441,21 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       html2canvas: { scale: 3, useCORS: true },
                       jsPDF: { unit: 'mm', format: [97, 200], orientation: 'portrait' }
                     };
-
-                    try {
-                      // Generate blob instead of calling .save() to prevent iOS blocking
-                      const pdfBlob = await html2pdf().set(opt).from(container).output('blob');
-                        document.body.removeChild(container);
-                      
-                      // Mobile Fallback: Native Web Share API
-                      try {
-                        const file = new File([pdfBlob], `Receipt_${viewSale.saleId}.pdf`, { type: 'application/pdf' });
-                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                          await navigator.share({
-                            files: [file],
-                            title: `Receipt - ${viewSale.saleId}`
-                          });
-                          return; // User shared successfully
-                        }
-                      } catch (shareErr) {
-                        console.warn("Share API error:", shareErr);
-                      }
-
-                      // Desktop Fallback
-                      const blobUrl = URL.createObjectURL(pdfBlob);
-                      const link = document.createElement('a');
-                      link.href = blobUrl;
-                      link.download = `Receipt_${viewSale.saleId}.pdf`;
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
-                      
+                    
+                    const htmlString = generateReceiptHtmlString(viewSale);
+                    const container = document.createElement('div');
+                    container.innerHTML = htmlString;
+                    
+                    html2pdf().set(opt).from(container.outerHTML).save().then(() => {
                       if (showGlobalToast) showGlobalToast('Success', 'Receipt downloaded successfully.');
-                    } catch (err) {
+                    }).catch(err => {
                       console.error('PDF Generation Error:', err);
-                      if (showGlobalToast) showGlobalToast('Error', 'Could not download receipt. Please try taking a screenshot.');
-                    } finally {
-                      // CLEANUP stuck html2pdf overlays
+                      if (showGlobalToast) showGlobalToast('Error', 'Could not download receipt.');
+                    }).finally(() => {
                       setTimeout(() => {
                         document.querySelectorAll('.html2pdf__overlay, .html2pdf__container').forEach(o => o.remove());
                       }, 500);
-                    }
+                    });
                   }}
                   className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--border)] py-3 text-sm font-bold transition hover:bg-[var(--soft)]"
                 >
@@ -493,13 +468,6 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       setIsSendingPdf(true);
                       if (showGlobalToast) showGlobalToast('Generating', 'Uploading receipt PDF to secure server...');
 
-                      const htmlString = generateReceiptHtmlString(viewSale);
-                      const container = document.createElement('div');
-                      container.innerHTML = htmlString;
-                      document.body.appendChild(container);
-                      container.style.position = 'absolute';
-                      container.style.left = '-9999px';
-
                       const opt = {
                         margin: 0,
                         filename: `Receipt_${viewSale.saleId}.pdf`,
@@ -507,6 +475,12 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                         html2canvas: { scale: 2, useCORS: true },
                         jsPDF: { unit: 'mm', format: [97, 200], orientation: 'portrait' }
                       };
+
+                      const htmlString = generateReceiptHtmlString(viewSale);
+                      const container = document.createElement('div');
+                      container.innerHTML = htmlString;
+                      
+                      const pdfBlob = await html2pdf().set(opt).from(container.outerHTML).output('blob');
 
                       const fileName = `receipts/${viewSale.saleId}.pdf`;
                       
@@ -635,4 +609,5 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
 }
 
 export default ViewSalesPage;
+
 

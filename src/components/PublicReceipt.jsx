@@ -77,42 +77,26 @@ function PublicReceipt({ billId, onClear }) {
         jsPDF: { unit: 'mm', format: [97, 200], orientation: 'portrait' }
       };
       
-      // Generate Blob instead of forcing .save() immediately
-      const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+      const htmlString = generateReceiptHtmlString(sale);
+      const container = document.createElement('div');
+      container.innerHTML = htmlString;
       
-      // Mobile iOS/Android Fallback: Use Native Web Share API
-      try {
-        const file = new File([pdfBlob], `Receipt_${sale.saleId}.pdf`, { type: 'application/pdf' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: `Receipt - ${sale.saleId}`
-          });
-          setIsGenerating(false);
-          return; // Shared successfully (or user cancelled, either way we are done)
-        }
-      } catch (shareErr) {
-        console.warn("Share API error (often just user cancellation):", shareErr);
-      }
-
-      // Desktop or browsers without Share API fallback
-      const blobUrl = URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = `Receipt_${sale.saleId}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
-      
+      html2pdf().set(opt).from(container.outerHTML).save().then(() => {
+        setIsGenerating(false);
+      }).catch(err => {
+        console.error('PDF Error:', err);
+        alert("Could not generate PDF on this device. Please take a screenshot of the receipt instead.");
+        setIsGenerating(false);
+      });
     } catch (err) {
       console.error("PDF Generation Error:", err);
       alert("Could not generate PDF on this device. Please take a screenshot of the receipt instead.");
+      setIsGenerating(false);
     } finally {
       setIsGenerating(false);
       // Clean up any potential html2pdf overlays
       setTimeout(() => {
-        const overlays = document.querySelectorAll('.html2pdf__overlay');
+        const overlays = document.querySelectorAll('.html2pdf__overlay, .html2pdf__container');
         overlays.forEach(o => o.remove());
       }, 500);
     }
@@ -240,4 +224,5 @@ function PublicReceipt({ billId, onClear }) {
 }
 
 export default PublicReceipt;
+
 
