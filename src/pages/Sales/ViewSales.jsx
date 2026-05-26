@@ -423,7 +423,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
 
               <div className="grid grid-cols-2 gap-4">
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (showGlobalToast) showGlobalToast('Preparing Receipt', 'Generating your professional bill...');
                     
                     const visualBill = document.getElementById('printable-bill-view');
@@ -440,18 +440,44 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       jsPDF: { unit: 'mm', format: [97, 200], orientation: 'portrait' }
                     };
 
-                      // Use .outerHTML to prevent html2canvas from crashing on complex live React DOM nodes
-                      html2pdf().set(opt).from(visualBill.outerHTML).save().then(() => {
-                        if (showGlobalToast) showGlobalToast('Success', 'Receipt downloaded successfully.');
-                    }).catch(err => {
+                    try {
+                      // Generate blob instead of calling .save() to prevent iOS blocking
+                      const pdfBlob = await html2pdf().set(opt).from(visualBill.outerHTML).output('blob');
+                      
+                      // Mobile Fallback: Native Web Share API
+                      try {
+                        const file = new File([pdfBlob], `Receipt_${viewSale.saleId}.pdf`, { type: 'application/pdf' });
+                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                          await navigator.share({
+                            files: [file],
+                            title: `Receipt - ${viewSale.saleId}`
+                          });
+                          return; // User shared successfully
+                        }
+                      } catch (shareErr) {
+                        console.warn("Share API error:", shareErr);
+                      }
+
+                      // Desktop Fallback
+                      const blobUrl = URL.createObjectURL(pdfBlob);
+                      const link = document.createElement('a');
+                      link.href = blobUrl;
+                      link.download = `Receipt_${viewSale.saleId}.pdf`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+                      
+                      if (showGlobalToast) showGlobalToast('Success', 'Receipt downloaded successfully.');
+                    } catch (err) {
                       console.error('PDF Generation Error:', err);
                       if (showGlobalToast) showGlobalToast('Error', 'Could not download receipt. Please try taking a screenshot.');
-                    }).finally(() => {
-                      // CLEANUP stuck html2pdf overlays that freeze the app
+                    } finally {
+                      // CLEANUP stuck html2pdf overlays
                       setTimeout(() => {
                         document.querySelectorAll('.html2pdf__overlay, .html2pdf__container').forEach(o => o.remove());
                       }, 500);
-                    });
+                    }
                   }}
                   className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--border)] py-3 text-sm font-bold transition hover:bg-[var(--soft)]"
                 >

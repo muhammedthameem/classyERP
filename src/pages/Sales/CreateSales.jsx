@@ -352,7 +352,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     setClientSearch('');
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (!showReceipt) return;
     if (showGlobalToast) showGlobalToast('Preparing Receipt', 'Generating your professional bill...');
 
@@ -370,18 +370,44 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       jsPDF: { unit: 'mm', format: [97, 200], orientation: 'portrait' }
     };
 
-    // Use .outerHTML to prevent html2canvas from crashing on complex live React DOM nodes
-    html2pdf().set(opt).from(visualBill.outerHTML).save().then(() => {
+    try {
+      // Generate blob instead of calling .save() to prevent iOS blocking
+      const pdfBlob = await html2pdf().set(opt).from(visualBill.outerHTML).output('blob');
+      
+      // Mobile Fallback: Native Web Share API
+      try {
+        const file = new File([pdfBlob], `Receipt_${showReceipt.saleId}.pdf`, { type: 'application/pdf' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: `Receipt - ${showReceipt.saleId}`
+          });
+          return; // User shared successfully
+        }
+      } catch (shareErr) {
+        console.warn("Share API error:", shareErr);
+      }
+
+      // Desktop Fallback
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `Receipt_${showReceipt.saleId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+      
       if (showGlobalToast) showGlobalToast('Success', 'Receipt downloaded successfully.');
-    }).catch(err => {
+    } catch (err) {
       console.error('PDF Error:', err);
       if (showGlobalToast) showGlobalToast('Export Failed', 'Please try again or contact support.');
-    }).finally(() => {
+    } finally {
       // CLEANUP stuck html2pdf overlays that freeze the app
       setTimeout(() => {
         document.querySelectorAll('.html2pdf__overlay, .html2pdf__container').forEach(o => o.remove());
       }, 500);
-    });
+    }
   };
 
   const handleWhatsApp = async () => {
