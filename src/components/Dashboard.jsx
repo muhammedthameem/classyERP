@@ -43,7 +43,7 @@ function Dashboard({
   orderLimits, setOrderLimits,
   cloudLoaded,
   syncError,
-  saveSale, saveOrder, saveClient, saveUser, deleteClient, deleteOrder, saveConfig, saveActivity,
+  saveSale, saveOrder, saveClient, saveUser, deleteClient, deleteOrder, saveConfig, saveActivity, saveInventory,
   selectedClient, setSelectedClient, clientDetailMode, setClientDetailMode,
   staffList, setStaffList,
   themeStyle
@@ -181,13 +181,58 @@ function Dashboard({
   const [highlightAccountId, setHighlightAccountId] = useState(null)
 
   const [allAccounts, setAllAccounts] = useState([])
+  const [accountsLoaded, setAccountsLoaded] = useState(false)
+  const migrationRunRef = useRef(false)
+  
   const fetchAllAccountsData = () => {
     if (user?.role === 'Admin' || user?.role === 'Owner') {
       supabase.from('erp_accounts').select('*').then(({ data }) => {
-        if (data) setAllAccounts(data)
+        if (data) {
+          setAllAccounts(data)
+          setAccountsLoaded(true)
+        }
       })
     }
   }
+
+  useEffect(() => {
+    if (migrationRunRef.current || !accountsLoaded || !cloudLoaded || !(user?.role === 'Admin' || user?.role === 'Owner') || sales.length === 0) return;
+    
+    migrationRunRef.current = true;
+    const syncMissingSales = async () => {
+      let needsRefresh = false;
+      const existingSaleReferences = new Set(allAccounts.filter(a => a.type === 'Income' && a.reference && a.reference.startsWith('Sale #')).map(a => a.reference));
+      
+      for (const sale of sales) {
+        const total = parseFloat(sale.total) || 0;
+        if (total <= 0) continue;
+        
+        const saleIdRef = `Sale #${sale.saleId || sale.id}`;
+        if (!existingSaleReferences.has(saleIdRef)) {
+          const saleDate = sale.timestamp ? sale.timestamp.split('T')[0] : new Date().toISOString().split('T')[0];
+          const clientName = sale.client?.name || sale.client || 'Unknown Client';
+          const paymentMode = sale.paymentMode || 'Cash';
+          
+          try {
+            await supabase.from('erp_accounts').insert([{
+              type: 'Income',
+              date: saleDate,
+              category: 'Sales',
+              amount: total,
+              payment_mode: paymentMode,
+              reference: saleIdRef,
+              notes: `Auto-migrated from past sale for ${clientName}`
+            }]);
+            needsRefresh = true;
+          } catch (err) {
+            console.error("Migration auto-insert failed", err);
+          }
+        }
+      }
+      if (needsRefresh) fetchAllAccountsData();
+    };
+    syncMissingSales();
+  }, [cloudLoaded, accountsLoaded, user?.role, sales, allAccounts]);
 
   useEffect(() => {
     fetchAllAccountsData();
@@ -1345,9 +1390,9 @@ function Dashboard({
               {currentPage === 'add-clients' && <AddClientsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} clients={clients} setClients={setClients} saveClient={saveClient} productTypes={productTypes} setProductTypes={setProductTypes} saveConfig={saveConfig} cloudLoaded={cloudLoaded} />}
               {currentPage === 'view-clients' && <ViewClientsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} setSelectedClient={setSelectedClient} setClientDetailMode={setClientDetailMode} showGlobalToast={showGlobalToast} currentUser={user} highlightClientId={highlightClientId} setHighlightClientId={setHighlightClientId} clients={clients} setClients={setClients} saveClient={saveClient} deleteClient={deleteClient} cloudLoaded={cloudLoaded} />}
               {currentPage === 'client-detail' && <ClientDetailPage themeStyle={themeStyle} client={selectedClient} setCurrentPage={setCurrentPage} setSelectedClient={setSelectedClient} initialMode={clientDetailMode} setClientDetailMode={setClientDetailMode} showGlobalToast={showGlobalToast} currentUser={user} clients={clients} setClients={setClients} saveClient={saveClient} deleteClient={deleteClient} productTypes={productTypes} setProductTypes={setProductTypes} saveConfig={saveConfig} cloudLoaded={cloudLoaded} />}
-              {currentPage === 'create-inventory' && <CreateInventoryPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} inventory={inventory} setInventory={setInventory} productTypes={productTypes} setProductTypes={setProductTypes} inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits} saveConfig={saveConfig} cloudLoaded={cloudLoaded} />}
+              {currentPage === 'create-inventory' && <CreateInventoryPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} inventory={inventory} setInventory={setInventory} productTypes={productTypes} setProductTypes={setProductTypes} inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits} saveConfig={saveConfig} saveInventory={saveInventory} cloudLoaded={cloudLoaded} />}
               {currentPage === 'view-inventory' && <ViewInventoryPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} setSelectedInventoryItem={setSelectedInventoryItem} setInventoryDetailMode={setInventoryDetailMode} highlightInventoryId={highlightInventoryId} setHighlightInventoryId={setHighlightInventoryId} inventory={inventory} setInventory={setInventory} cloudLoaded={cloudLoaded} />}
-              {currentPage === 'inventory-detail' && <InventoryDetailPage themeStyle={themeStyle} item={selectedInventoryItem} setCurrentPage={setCurrentPage} setSelectedInventoryItem={setSelectedInventoryItem} initialMode={inventoryDetailMode} setInventoryDetailMode={setInventoryDetailMode} showGlobalToast={showGlobalToast} currentUser={user} inventory={inventory} setInventory={setInventory} cloudLoaded={cloudLoaded} />}
+              {currentPage === 'inventory-detail' && <InventoryDetailPage themeStyle={themeStyle} item={selectedInventoryItem} setCurrentPage={setCurrentPage} setSelectedInventoryItem={setSelectedInventoryItem} initialMode={inventoryDetailMode} setInventoryDetailMode={setInventoryDetailMode} showGlobalToast={showGlobalToast} currentUser={user} inventory={inventory} setInventory={setInventory} saveInventory={saveInventory} cloudLoaded={cloudLoaded} />}
               {currentPage === 'create-sales' && <CreateSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} sales={sales} setSales={setSales} clients={clients} setClients={setClients} orders={orders} setOrders={setOrders} inventory={inventory} setInventory={setInventory} saveSale={saveSale} saveOrder={saveOrder} cloudLoaded={cloudLoaded} />}
               {currentPage === 'view-sales' && <ViewSalesPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} highlightSaleId={highlightSaleId} setHighlightSaleId={setHighlightSaleId} sales={sales} setSales={setSales} inventory={inventory} setInventory={setInventory} orders={orders} setOrders={setOrders} cloudLoaded={cloudLoaded} />}
               {currentPage === 'add-income' && <AddIncomePage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} incomeCategories={incomeCategories} setIncomeCategories={setIncomeCategories} saveConfig={saveConfig} sales={sales} orders={orders} refreshAccounts={fetchAllAccountsData} />}

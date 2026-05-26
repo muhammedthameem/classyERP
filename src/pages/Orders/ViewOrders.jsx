@@ -158,13 +158,13 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
     if (newStatus === 'Completed' && changedOrder) {
       const client = (clients || []).find(c => c.name === changedOrder.clientName);
       const phoneToUse = client?.mobile || changedOrder.clientPhone;
-      
+
       if (phoneToUse) {
         if (showGlobalToast) showGlobalToast('Sending', `Sending WhatsApp notification...`);
         try {
           await sendWhatsApp(
-            phoneToUse, 
-            changedOrder.clientName || 'Customer', 
+            phoneToUse,
+            changedOrder.clientName || 'Customer',
             changedOrder.orderId || changedOrder.id
           );
           if (showGlobalToast) showGlobalToast('Success', `Ready for delivery message sent successfully to ${changedOrder.clientName || 'Customer'}`);
@@ -371,10 +371,10 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                       {viewOrder.internalItems.map((item, idx) => (
                         <div key={idx} className="flex justify-between items-start text-xs bg-[var(--surface)] p-2.5 rounded-lg border border-[var(--border)] transition hover:border-[var(--accent)]">
                           <div>
-                            <p className="font-bold text-[var(--text)]">{item.productName}</p>
-                            <p className="text-[10px] font-medium text-[var(--muted)] mt-0.5">Qty: {item.quantity} {item.unit}</p>
+                            <span className="font-bold text-[var(--text)] block">{item.productName}</span>
+                            <span className="block text-[10px] font-medium text-[var(--muted)] mt-0.5">Qty: {item.quantity} {item.unit}</span>
                           </div>
-                          <p className="font-black text-[var(--accent)]">₹{(item.totalPrice || 0).toFixed(2)}</p>
+                          <span className="font-black text-[var(--accent)]">₹{(item.totalPrice || 0).toFixed(2)}</span>
                         </div>
                       ))}
                     </div>

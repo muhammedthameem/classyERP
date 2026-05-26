@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { ChevronDown, CircleDollarSign, Package, Search, Sparkles, Trash2 } from 'lucide-react'
 
-function CreateInventoryPage({ themeStyle, setCurrentPage, showGlobalToast, inventory, setInventory, productTypes, setProductTypes, inventoryUnits, setInventoryUnits, saveConfig }) {
+function CreateInventoryPage({ themeStyle, setCurrentPage, showGlobalToast, inventory, setInventory, productTypes, setProductTypes, inventoryUnits, setInventoryUnits, saveConfig, saveInventory }) {
   const [productId, setProductId] = useState('');
   const [productName, setProductName] = useState('');
   const [productType, setProductType] = useState('');
@@ -54,6 +54,7 @@ function CreateInventoryPage({ themeStyle, setCurrentPage, showGlobalToast, inve
     };
 
     setInventory([...inventory, newInventoryItem]);
+    if (saveInventory) saveInventory(newInventoryItem);
 
     if (showGlobalToast) showGlobalToast('Stock Added', `New item: ${productName} (${productId})`);
 

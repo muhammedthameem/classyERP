@@ -344,6 +344,11 @@ function App() {
               clientDetailMode={clientDetailMode}
               setClientDetailMode={setClientDetailMode}
               // Direct Save Functions for Supabase (FLEXIBLE SCHEMA & COMPRESSED)
+              saveInventory={async (inv) => {
+                const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
+                const { error } = await supabase.from('erp_inventory').upsert([{ id: (inv.id || inv.productId).toString(), data: clean(inv) }]);
+                if (error) console.error("Save Failed: ", error.message);
+              }}
               saveSale={async (s) => {
                 const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
                 const { error } = await supabase.from('erp_sales').upsert([{ id: (s.id || s.saleId).toString(), data: clean(s) }]);

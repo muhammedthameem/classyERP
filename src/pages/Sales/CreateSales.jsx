@@ -343,6 +343,26 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     // Instant Cloud Save
     if (saveSale) saveSale(newSale);
 
+    // Automatically record income in accounts ledger
+    const recordIncome = async () => {
+      if (newSale.total > 0) {
+        try {
+          await supabase.from('erp_accounts').insert([{
+            type: 'Income',
+            date: saleDate,
+            category: 'Sales',
+            amount: newSale.total,
+            payment_mode: paymentMode,
+            reference: `Sale #${newSale.saleId}`,
+            notes: `Auto-generated from completed sale for ${newSale.client.name}`
+          }]);
+        } catch (err) {
+          console.error("Auto account insert failed", err);
+        }
+      }
+    };
+    recordIncome();
+
     setSales([...sales, newSale]);
     setShowReceipt(newSale);
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, CircleDollarSign, ClipboardList, Package, ShoppingBag, UsersRound, Pencil, Trash2 } from 'lucide-react'
 
-function InventoryDetailPage({ themeStyle, item, setCurrentPage, setSelectedInventoryItem, initialMode, setInventoryDetailMode, showGlobalToast, inventory, setInventory }) {
+function InventoryDetailPage({ themeStyle, item, setCurrentPage, setSelectedInventoryItem, initialMode, setInventoryDetailMode, showGlobalToast, inventory, setInventory, saveInventory }) {
   const [mode, setMode] = useState(initialMode);
   const [formData, setFormData] = useState(item);
   const [priceEntryMode, setPriceEntryMode] = useState('per-unit');
@@ -20,6 +20,7 @@ function InventoryDetailPage({ themeStyle, item, setCurrentPage, setSelectedInve
     e.preventDefault();
     const updated = inventory.map(i => i.id === item.id ? formData : i);
     setInventory(updated);
+    if (saveInventory) saveInventory(formData);
     setSelectedInventoryItem(formData);
     setMode('view');
     if (showGlobalToast) showGlobalToast('Updated!', 'Inventory item updated successfully.');
