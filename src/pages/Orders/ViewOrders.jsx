@@ -19,6 +19,8 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
   const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'desc' })
   const [dateFilter, setDateFilter] = useState('All') // All, Today, Tomorrow, Week, Custom
   const [customDate, setCustomDate] = useState(getIndianDate())
+  const [showWaPopup, setShowWaPopup] = useState(false)
+  const [waData, setWaData] = useState({ phone: '', name: '', message: '', orderId: '' })
 
   const isDataLoading = !cloudLoaded || !orders;
 
@@ -157,24 +159,22 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
     // Send WhatsApp notification when order is completed
     if (newStatus === 'Completed' && changedOrder) {
       const client = (clients || []).find(c => c.name === changedOrder.clientName);
-      const phoneToUse = client?.mobile || changedOrder.clientPhone;
+      const phoneToUse = client?.mobile || changedOrder.clientPhone || '';
 
-      if (phoneToUse) {
-        if (showGlobalToast) showGlobalToast('Sending', `Sending WhatsApp notification...`);
-        try {
-          await sendWhatsApp(
-            phoneToUse,
-            changedOrder.clientName || 'Customer',
-            changedOrder.orderId || changedOrder.id
-          );
-          if (showGlobalToast) showGlobalToast('Success', `Ready for delivery message sent successfully to ${changedOrder.clientName || 'Customer'}`);
-        } catch (err) {
-          console.error("WhatsApp sending failed", err);
-          if (showGlobalToast) showGlobalToast('Error', `Failed to send WhatsApp message. (Check console for details)`);
-        }
-      } else {
-        if (showGlobalToast) showGlobalToast('Warning', 'No phone number found for this client. WhatsApp message skipped.');
+      let formattedPhone = String(phoneToUse).replace(/\D/g, '');
+      if (formattedPhone.length === 10) {
+          formattedPhone = '91' + formattedPhone;
       }
+      
+      const defaultMsg = `Hi ${changedOrder.clientName || 'Customer'}\nYour ${changedOrder.product || 'Item'} (#${changedOrder.orderId || changedOrder.id}) is ready for delivery. Please collect it.\n\nThank you,\nClassy Couture`;
+      
+      setWaData({
+        phone: formattedPhone,
+        name: changedOrder.clientName || 'Customer',
+        message: defaultMsg,
+        orderId: changedOrder.orderId || changedOrder.id
+      });
+      setShowWaPopup(true);
     }
   }
 
@@ -587,6 +587,54 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                 setEditOrder(null)
                 if (showGlobalToast) showGlobalToast('Success', 'Order updated successfully.')
               }}>Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showWaPopup && (
+        <div className="fixed inset-0 z-[2000] grid place-items-center bg-black/50 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl p-6">
+            <h2 className="text-xl font-semibold mb-4 text-[#25D366] flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+              Send WhatsApp Message
+            </h2>
+            <p className="text-sm text-[var(--muted)] mb-4">Send a delivery confirmation to <strong>{waData.name}</strong>.</p>
+            <div className="space-y-4">
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-[var(--text)]">WhatsApp Number</span>
+                <input
+                  type="text"
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2 outline-none transition focus:border-[var(--accent)] text-[var(--text)]"
+                  value={waData.phone}
+                  onChange={(e) => setWaData({ ...waData, phone: e.target.value })}
+                  placeholder="e.g. 919876543210"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-[var(--text)]">Message</span>
+                <textarea
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2 outline-none transition focus:border-[var(--accent)] text-[var(--text)] min-h-[120px] resize-none"
+                  value={waData.message}
+                  onChange={(e) => setWaData({ ...waData, message: e.target.value })}
+                />
+              </label>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" className="rounded-xl px-4 py-2 font-semibold hover:bg-[var(--soft)] transition" onClick={() => setShowWaPopup(false)}>Cancel</button>
+              <button type="button" className="rounded-xl bg-[#25D366] px-4 py-2 font-semibold text-white shadow-lg transition hover:brightness-95 flex items-center gap-2" onClick={() => {
+                if (waData.phone) {
+                  let finalPhone = waData.phone.replace(/\D/g, '');
+                  const url = `https://wa.me/${finalPhone}?text=${encodeURIComponent(waData.message)}`;
+                  window.open(url, '_blank');
+                } else {
+                  if (showGlobalToast) showGlobalToast('Error', 'Please enter a valid WhatsApp number');
+                  return;
+                }
+                setShowWaPopup(false);
+              }}>
+                Send via WhatsApp
+              </button>
             </div>
           </div>
         </div>
