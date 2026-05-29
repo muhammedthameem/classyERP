@@ -530,7 +530,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                 </div>
               </button>
               
-              <div className={`transition-all duration-300 ease-in-out ${showTopAccordion ? 'max-h-[1500px] opacity-100 mt-6' : 'max-h-0 opacity-0'}`}>
+              <div className={`transition-all duration-300 ease-in-out ${showTopAccordion ? 'max-h-[4000px] opacity-100 mt-6' : 'max-h-0 opacity-0'}`}>
                 <div className="measurement-grid">
                 <div className="measurement-row bg-[var(--soft)]/30">
                   <span className="measurement-label text-[var(--accent)]">Product Length</span>
@@ -594,7 +594,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                 </div>
               </button>
 
-              <div className={`transition-all duration-300 ease-in-out ${showBottomAccordion ? 'max-h-[1000px] opacity-100 mt-6' : 'max-h-0 opacity-0'}`}>
+              <div className={`transition-all duration-300 ease-in-out ${showBottomAccordion ? 'max-h-[3000px] opacity-100 mt-6' : 'max-h-0 opacity-0'}`}>
                 <div className="measurement-grid">
                 <div className="measurement-row bg-[var(--soft)]/30">
                   <span className="measurement-label text-[var(--accent)]">Product Length</span>
