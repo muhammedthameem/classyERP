@@ -213,17 +213,27 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
 
   useEffect(() => {
     if (highlightAccountId) {
+      if (searchQuery !== '') setSearchQuery('');
+
       setTimeout(() => {
-        const row = rowRefs.current[highlightAccountId];
-        if (row) {
-          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const index = sortedAccounts.findIndex(acc => String(acc.id) === String(highlightAccountId));
+        if (index !== -1) {
+          const page = Math.floor(index / itemsPerPage) + 1;
+          setCurrentPageNum(page);
+          
           setTimeout(() => {
-            if (setHighlightAccountId) setHighlightAccountId(null);
-          }, 3000);
+            const row = rowRefs.current[highlightAccountId] || rowRefs.current[String(highlightAccountId)] || rowRefs.current[Number(highlightAccountId)];
+            if (row) {
+              row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              setTimeout(() => {
+                if (setHighlightAccountId) setHighlightAccountId(null);
+              }, 3000);
+            }
+          }, 500);
         }
-      }, 300);
+      }, 100);
     }
-  }, [highlightAccountId, setHighlightAccountId]);
+  }, [highlightAccountId, sortedAccounts, itemsPerPage, setHighlightAccountId]);
 
   const balancePercentage = totalIncome > 0 ? Math.min(100, Math.round((netBalance / totalIncome) * 100)) : 0;
 
@@ -532,6 +542,7 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
                 <tr>
                   <th className="p-4 font-semibold">Date</th>
                   <th className="p-4 font-semibold">Type</th>
+                  <th className="p-4 font-semibold">Customer</th>
                   <th className="p-4 font-semibold">Category</th>
                   <th className="p-4 font-semibold hidden md:table-cell">Reference</th>
                   <th className="p-4 font-semibold hidden sm:table-cell">Mode</th>
@@ -547,6 +558,7 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
                   <tr key={i} className="animate-pulse border-b border-[var(--border)]">
                     <td className="p-4"><div className="skeleton h-5 w-20 rounded" /></td>
                     <td className="p-4"><div className="skeleton h-6 w-16 rounded-full" /></td>
+                    <td className="p-4"><div className="skeleton h-6 w-24 rounded" /></td>
                     <td className="p-4"><div className="skeleton h-6 w-24 rounded" /></td>
                     <td className="p-4 hidden md:table-cell"><div className="skeleton h-5 w-32 rounded" /></td>
                     <td className="p-4 hidden sm:table-cell"><div className="skeleton h-5 w-16 rounded" /></td>
@@ -601,6 +613,15 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
                         <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-bold ${item.type === 'Income' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                           {item.type}
                         </span>
+                      </td>
+                      <td className="p-4 font-bold text-[var(--text)]">
+                        {(() => {
+                          if (item.category === 'Sales' && item.notes) {
+                            const match = item.notes.match(/for\s+(.*?)(?:\s+\(Split|$)/i);
+                            if (match && match[1]) return match[1].trim();
+                          }
+                          return '-';
+                        })()}
                       </td>
                       <td className="p-4">
                         <span className="inline-flex items-center rounded-md bg-[var(--accent-soft)] px-2 py-1 text-xs font-medium text-[var(--accent)]">
@@ -962,6 +983,18 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
                     <span className="inline-flex items-center rounded-md bg-[var(--accent-soft)] px-2 py-0.5 text-xs font-medium text-[var(--accent)]">
                       {viewModalData.category}
                     </span>
+                  </p>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-[var(--muted)]">Customer Name</label>
+                  <p className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2.5 text-[var(--text)] font-bold">
+                    {(() => {
+                      if (viewModalData.category === 'Sales' && viewModalData.notes) {
+                        const match = viewModalData.notes.match(/for\s+(.*?)(?:\s+\(Split|$)/i);
+                        if (match && match[1]) return match[1].trim();
+                      }
+                      return '-';
+                    })()}
                   </p>
                 </div>
                 <div>

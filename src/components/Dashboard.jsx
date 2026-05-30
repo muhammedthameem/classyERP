@@ -187,6 +187,18 @@ function Dashboard({
   const [highlightStaffId, setHighlightStaffId] = useState(null)
   const [highlightAccountId, setHighlightAccountId] = useState(null)
 
+  useEffect(() => {
+    const handleGlobalNav = (e) => {
+      const { type, id } = e.detail;
+      if (type === 'order') {
+        setCurrentPage('view-orders');
+        setHighlightOrderId(id);
+      }
+    };
+    window.addEventListener('erp-global-nav', handleGlobalNav);
+    return () => window.removeEventListener('erp-global-nav', handleGlobalNav);
+  }, [setCurrentPage]);
+
   const [allAccounts, setAllAccounts] = useState([])
   const [accountsLoaded, setAccountsLoaded] = useState(false)
   const migrationRunRef = useRef(false)

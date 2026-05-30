@@ -127,11 +127,18 @@ function DeliveryAlertModal({ orders }) {
             </div>
           </div>
 
-          <div className="space-y-2 mb-6">
-            <h3 className="text-lg font-black leading-tight">
+          <div 
+            className="space-y-2 mb-6 cursor-pointer group hover:bg-white/5 p-2 -mx-2 rounded-xl transition-colors"
+            title="Click to view this order"
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('erp-global-nav', { detail: { type: 'order', id: currentAlert.id } }));
+              handleSnooze(currentAlert.id);
+            }}
+          >
+            <h3 className="text-lg font-black leading-tight group-hover:text-[#e6c9b8] transition-colors">
               Delivery for <span className="text-[#e6c9b8] underline decoration-wavy decoration-[#e6c9b8]/30 underline-offset-4">{currentAlert.clientName}</span>
             </h3>
-            <p className="text-sm font-medium text-white/70">
+            <p className="text-sm font-medium text-white/70 group-hover:text-white transition-colors">
               Order #{currentAlert.id} • {currentAlert.product}
             </p>
           </div>

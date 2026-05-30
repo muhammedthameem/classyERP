@@ -41,23 +41,30 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
 
   useEffect(() => {
     if (highlightClientId) {
-      const index = sortedClients.findIndex(c => c.id === highlightClientId);
-      if (index !== -1) {
-        const page = Math.floor(index / itemsPerPage) + 1;
-        setCurrentPageNum(page);
+      if (searchQuery !== '') setSearchQuery('');
 
-        setTimeout(() => {
-          const row = rowRefs.current[highlightClientId];
-          if (row) {
-            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(() => {
-              if (setHighlightClientId) setHighlightClientId(null);
-            }, 3000);
-          }
-        }, 300);
-      }
+      setTimeout(() => {
+        const currentDisplay = (clients || []).filter(c => String(c.id) !== String(recentlyDeletedClient?.id));
+        const currentSorted = [...currentDisplay].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+        const index = currentSorted.findIndex(c => String(c.id) === String(highlightClientId));
+        if (index !== -1) {
+          const page = Math.floor(index / itemsPerPage) + 1;
+          setCurrentPageNum(page);
+
+          setTimeout(() => {
+            const row = rowRefs.current[highlightClientId] || rowRefs.current[String(highlightClientId)] || rowRefs.current[Number(highlightClientId)];
+            if (row) {
+              row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              setTimeout(() => {
+                if (setHighlightClientId) setHighlightClientId(null);
+              }, 3000);
+            }
+          }, 500);
+        }
+      }, 100);
     }
-  }, [highlightClientId, sortedClients, itemsPerPage, setHighlightClientId]);
+  }, [highlightClientId, clients, recentlyDeletedClient, itemsPerPage, setHighlightClientId]);
 
   useEffect(() => {
     setCurrentPageNum(1);

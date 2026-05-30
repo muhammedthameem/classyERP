@@ -260,8 +260,10 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
 
   useEffect(() => {
     if (highlightStaffId) {
+      if (searchQuery !== '') setSearchQuery('');
+
       setTimeout(() => {
-        const row = rowRefs.current[highlightStaffId];
+        const row = rowRefs.current[highlightStaffId] || rowRefs.current[String(highlightStaffId)] || rowRefs.current[Number(highlightStaffId)];
         if (row) {
           row.scrollIntoView({ behavior: 'smooth', block: 'center' });
           setTimeout(() => {

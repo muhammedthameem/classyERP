@@ -138,23 +138,33 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
   // Scroll to highlight logic
   useEffect(() => {
     if (highlightSaleId) {
-      const index = sortedSales.findIndex(s => s.saleId === highlightSaleId);
-      if (index !== -1) {
-        const page = Math.floor(index / itemsPerPage) + 1;
-        setCurrentPageNum(page);
+      if (searchQuery !== '') setSearchQuery('');
 
-        setTimeout(() => {
-          const row = rowRefs.current[highlightSaleId];
-          if (row) {
-            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(() => {
-              if (setHighlightSaleId) setHighlightSaleId(null);
-            }, 3000);
-          }
-        }, 300);
-      }
+      setTimeout(() => {
+        const currentSorted = [...sales.filter(s => String(s.id) !== String(recentlyDeletedSale?.id))].sort((a, b) => {
+          const timeA = new Date(a.timestamp || a.id || 0).getTime();
+          const timeB = new Date(b.timestamp || b.id || 0).getTime();
+          return timeB - timeA;
+        });
+
+        const index = currentSorted.findIndex(s => String(s.saleId) === String(highlightSaleId) || String(s.id) === String(highlightSaleId));
+        if (index !== -1) {
+          const page = Math.floor(index / itemsPerPage) + 1;
+          setCurrentPageNum(page);
+
+          setTimeout(() => {
+            const row = rowRefs.current[highlightSaleId] || rowRefs.current[String(highlightSaleId)] || rowRefs.current[Number(highlightSaleId)];
+            if (row) {
+              row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              setTimeout(() => {
+                if (setHighlightSaleId) setHighlightSaleId(null);
+              }, 3000);
+            }
+          }, 500);
+        }
+      }, 100);
     }
-  }, [highlightSaleId, sortedSales]);
+  }, [highlightSaleId, sales, recentlyDeletedSale]);
 
   // Pagination Logic
   const [currentPageNum, setCurrentPageNum] = useState(1);
@@ -331,19 +341,19 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
       {viewSale && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
           <div className={`absolute inset-0 bg-black/60 backdrop-blur-sm ${isSendingPdf ? 'cursor-wait' : 'cursor-pointer'}`} onClick={() => !isSendingPdf && setViewSale(null)}></div>
-          <div className="relative w-full max-w-2xl rounded-3xl bg-[var(--surface)] p-8 shadow-2xl border border-[var(--border)] animate-in fade-in zoom-in duration-200 overflow-y-auto max-h-[90vh]">
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <img src="/logo-black.png" alt="Logo" className="w-16 h-16 object-contain" />
+          <div className="relative w-full max-w-2xl rounded-[24px] sm:rounded-3xl bg-[var(--surface)] p-4 sm:p-8 shadow-2xl border border-[var(--border)] animate-in fade-in zoom-in duration-200 overflow-y-auto max-h-[90vh]">
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <img src="/logo-black.png" alt="Logo" className="w-12 h-12 sm:w-16 sm:h-16 object-contain" />
                 <div>
-                  <h3 className="text-2xl font-bold text-[var(--text)]">Sale Details</h3>
-                  <p className="text-sm text-[var(--muted)]">{viewSale.saleId} • {new Date(viewSale.timestamp).toDateString() === new Date().toDateString() ? new Date(viewSale.timestamp).toLocaleString() : new Date(viewSale.timestamp).toLocaleDateString()}</p>
+                  <h3 className="text-xl sm:text-2xl font-bold text-[var(--text)]">Sale Details</h3>
+                  <p className="text-xs sm:text-sm text-[var(--muted)]">{viewSale.saleId} • {new Date(viewSale.timestamp).toDateString() === new Date().toDateString() ? new Date(viewSale.timestamp).toLocaleString() : new Date(viewSale.timestamp).toLocaleDateString()}</p>
                 </div>
               </div>
               <button 
                 disabled={isSendingPdf}
                 onClick={() => setViewSale(null)} 
-                className="h-10 w-10 grid place-items-center rounded-xl hover:bg-[var(--soft)] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="absolute top-4 right-4 sm:static h-10 w-10 grid place-items-center rounded-xl hover:bg-[var(--soft)] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
@@ -351,7 +361,8 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
 
             <div className="mb-8 space-y-6">
               {/* Receipt Visual Container */}
-              <div id="printable-bill-view" className="mb-8 bg-white p-4 text-black shadow-inner overflow-hidden mx-auto" style={{ width: '97mm', minHeight: '120mm', fontFamily: 'monospace' }}>
+              <div className="w-full overflow-x-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div id="printable-bill-view" className="mb-4 sm:mb-8 bg-white p-4 text-black shadow-inner overflow-hidden mx-auto shrink-0" style={{ width: '97mm', minHeight: '120mm', fontFamily: 'monospace' }}>
                 <div className="text-center mb-4 border-b-2 border-dashed border-gray-300 pb-4">
                   <img src="/logo-black.png" alt="Logo" className="w-28 h-32 mx-auto mb-4 object-contain" />
                   <h3 className="uppercase tracking-tight !text-[24px] !font-extrabold">Classy Couture</h3>
@@ -413,6 +424,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                   <p>Please visit again for more unique designs.</p>
                   <p className="mt-2 text-[9px]">This is a computer generated receipt.</p>
                 </div>
+              </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

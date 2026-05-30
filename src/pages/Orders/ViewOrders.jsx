@@ -259,26 +259,48 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
   // Scroll to highlight logic
   useEffect(() => {
     if (highlightOrderId) {
-      // Find the index in the sorted list to calculate the exact page
-      const index = sortedOrders.findIndex(o => o.id === highlightOrderId);
-      if (index !== -1) {
-        const page = Math.floor(index / itemsPerPage) + 1;
-        setCurrentPageNum(page);
+      // Clear filters to ensure the order is visible
+      if (activeFilter !== 'All') setActiveFilter('All');
+      if (dateFilter !== 'All') setDateFilter('All');
+      if (searchQuery !== '') setSearchQuery('');
 
-        // Wait for page to render
-        setTimeout(() => {
-          const row = rowRefs.current[highlightOrderId];
-          if (row) {
-            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            // Keep highlight for 3 seconds then clear
-            setTimeout(() => {
-              if (setHighlightOrderId) setHighlightOrderId(null);
-            }, 3000);
+      // Use a timeout to allow state updates (filters) to apply and render
+      setTimeout(() => {
+        // Recalculate index based on the unfiltered orders
+        const currentSorted = [...orders.filter(o => String(o.id) !== String(recentlyDeletedOrder?.id))].sort((a, b) => {
+          if (a.status === 'Closed' && b.status !== 'Closed') return 1;
+          if (a.status !== 'Closed' && b.status === 'Closed') return -1;
+          let valA = a[sortConfig.key] || ''
+          let valB = b[sortConfig.key] || ''
+          if (sortConfig.key === 'orderDate' || sortConfig.key === 'deliveryDate') {
+            valA = new Date(valA || 0).getTime()
+            valB = new Date(valB || 0).getTime()
           }
-        }, 300);
-      }
+          if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1
+          if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1
+          return 0
+        });
+
+        const index = currentSorted.findIndex(o => String(o.id) === String(highlightOrderId));
+        if (index !== -1) {
+          const page = Math.floor(index / itemsPerPage) + 1;
+          setCurrentPageNum(page);
+
+          // Wait for pagination to render
+          setTimeout(() => {
+            const row = rowRefs.current[highlightOrderId] || rowRefs.current[String(highlightOrderId)] || rowRefs.current[Number(highlightOrderId)];
+            if (row) {
+              row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              // Keep highlight for 3 seconds then clear
+              setTimeout(() => {
+                if (setHighlightOrderId) setHighlightOrderId(null);
+              }, 3000);
+            }
+          }, 500);
+        }
+      }, 100);
     }
-  }, [highlightOrderId, sortedOrders]);
+  }, [highlightOrderId, orders, recentlyDeletedOrder, sortConfig]);
 
   // Reset pagination to page 1 when search or filters change
   useEffect(() => {

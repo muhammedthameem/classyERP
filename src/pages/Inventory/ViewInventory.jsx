@@ -27,23 +27,29 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
   // Scroll to highlight logic
   useEffect(() => {
     if (highlightInventoryId) {
-      const index = filteredInventory.findIndex(item => item.id === highlightInventoryId);
-      if (index !== -1) {
-        const page = Math.floor(index / itemsPerPage) + 1;
-        setCurrentPageNum(page);
-        
-        setTimeout(() => {
-          const row = rowRefs.current[highlightInventoryId];
-          if (row) {
-            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(() => {
-              if (setHighlightInventoryId) setHighlightInventoryId(null);
-            }, 3000);
-          }
-        }, 300);
-      }
+      if (searchQuery !== '') setSearchQuery('');
+
+      setTimeout(() => {
+        const currentSorted = [...displayInventory].sort((a, b) => (b.id || 0) - (a.id || 0));
+
+        const index = currentSorted.findIndex(item => String(item.productId) === String(highlightInventoryId) || String(item.id) === String(highlightInventoryId));
+        if (index !== -1) {
+          const page = Math.floor(index / itemsPerPage) + 1;
+          setCurrentPageNum(page);
+          
+          setTimeout(() => {
+            const row = rowRefs.current[highlightInventoryId] || rowRefs.current[String(highlightInventoryId)] || rowRefs.current[Number(highlightInventoryId)];
+            if (row) {
+              row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              setTimeout(() => {
+                if (setHighlightInventoryId) setHighlightInventoryId(null);
+              }, 3000);
+            }
+          }, 500);
+        }
+      }, 100);
     }
-  }, [highlightInventoryId, filteredInventory]);
+  }, [highlightInventoryId, inventory, recentlyDeletedInventory]);
 
   // Pagination Logic
   const [currentPageNum, setCurrentPageNum] = useState(1);

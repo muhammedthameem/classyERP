@@ -1015,31 +1015,32 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       {showReceipt && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
           <div className={`absolute inset-0 bg-black/70 backdrop-blur-md ${isSendingPdf ? 'cursor-wait' : 'cursor-pointer'}`} onClick={() => !isSendingPdf && setCurrentPage('view-sales')}></div>
-          <div className="relative w-full max-w-2xl rounded-[32px] bg-[var(--surface)] p-8 shadow-2xl animate-in zoom-in duration-300 overflow-y-auto max-h-[90vh]">
-            <div className="mb-8 flex items-center justify-between">
+          <div className="relative w-full max-w-2xl rounded-[24px] sm:rounded-[32px] bg-[var(--surface)] p-4 sm:p-8 shadow-2xl animate-in zoom-in duration-300 overflow-y-auto max-h-[90vh]">
+            <div className="mb-6 sm:mb-8 flex items-start sm:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2 text-[var(--accent)] mb-1">
-                  <CheckCircle size={20} />
-                  <span className="text-sm font-bold uppercase tracking-widest">Transaction Successful</span>
+                  <CheckCircle size={20} className="shrink-0" />
+                  <span className="text-xs sm:text-sm font-bold uppercase tracking-widest leading-tight">Transaction Successful</span>
                 </div>
-                <h2 className="text-3xl font-black">Sales Receipt</h2>
+                <h2 className="text-2xl sm:text-3xl font-black">Sales Receipt</h2>
               </div>
               <button
                 disabled={isSendingPdf}
                 onClick={() => setCurrentPage('view-sales')}
-                className="h-12 w-12 grid place-items-center rounded-2xl hover:bg-[var(--soft)] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 grid place-items-center rounded-2xl hover:bg-[var(--soft)] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
             </div>
 
-            <div id="printable-bill" className="mb-8 bg-white p-4 text-black shadow-inner overflow-hidden mx-auto" style={{ width: '97mm', minHeight: '120mm', fontFamily: 'monospace' }}>
-              <div className="text-center mb-4 border-b-2 border-dashed border-gray-300 pb-4">
-                <img src="/logo-black.png" alt="Logo" className="w-28 h-32 mx-auto mb-4 object-contain" />
-                <h3 className="uppercase tracking-tight !text-[24px] !font-extrabold">Classy Couture</h3>
-                <p className="text-[10px] font-medium">Be Unique, Be Classy</p>
-                <p style={{ margin: '2px 0', fontSize: '12px' }}>Ph : 8606154015</p>
-                <div className="mt-2 text-gray-500">
+            <div className="w-full overflow-x-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div id="printable-bill" className="mb-4 sm:mb-8 bg-white p-4 text-black shadow-inner overflow-hidden mx-auto shrink-0" style={{ width: '97mm', minHeight: '120mm', fontFamily: 'monospace' }}>
+                <div className="text-center mb-4 border-b-2 border-dashed border-gray-300 pb-4">
+                  <img src="/logo-black.png" alt="Logo" className="w-28 h-32 mx-auto mb-4 object-contain" />
+                  <h3 className="uppercase tracking-tight !text-[24px] !font-extrabold">Classy Couture</h3>
+                  <p className="text-[10px] font-medium">Be Unique, Be Classy</p>
+                  <p style={{ margin: '2px 0', fontSize: '12px' }}>Ph : 8606154015</p>
+                  <div className="mt-2 text-gray-500">
                   <p className="!text-[10px]">Order ID: {showReceipt.saleId}</p>
                   <p className="!text-[10px]">{new Date(showReceipt.timestamp).toDateString() === new Date().toDateString() ? new Date(showReceipt.timestamp).toLocaleString() : new Date(showReceipt.timestamp).toLocaleDateString()}</p>
                 </div>
@@ -1093,6 +1094,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                 <p>Please visit again for more unique designs.</p>
                 <p className="mt-2 text-[9px]">This is a computer generated receipt.</p>
               </div>
+            </div>
             </div>
 
             <div className="mb-6 p-4 rounded-2xl bg-[var(--surface-strong)] border border-[var(--border)]">
