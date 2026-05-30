@@ -132,8 +132,15 @@ function Dashboard({
   const cycleCardSize = (id) => {
     setDashboardCards(prev => prev.map(c => {
       if (c.id === id) {
-        const nextSpan = c.span === 3 ? 1 : (c.span || 1) + 1;
-        return { ...c, span: nextSpan };
+        let col = c.colSpan || c.span || 1;
+        let row = c.rowSpan || 1;
+
+        if (col === 1 && row === 1) { col = 2; row = 1; }
+        else if (col === 2 && row === 1) { col = 1; row = 2; }
+        else if (col === 1 && row === 2) { col = 2; row = 2; }
+        else { col = 1; row = 1; }
+        
+        return { ...c, colSpan: col, rowSpan: row, span: col };
       }
       return c;
     }));
@@ -418,19 +425,23 @@ function Dashboard({
   const getCardSpan = (card) => {
     const cols = screenSize >= 1024 ? 2 : 1;
 
-    if (cols === 1) return 'span-full';
+    let colSpan = card.colSpan || card.span;
+    let rowSpan = card.rowSpan || 1;
 
-    // In a 2-column grid, span 2 is full-width, span 1 is 50%
-    let span = card.span;
-    if (!span) {
+    if (!colSpan) {
       switch (card.id) {
-        case 'Hero': span = 2; break;
-        case 'Stats': span = 2; break;
-        case 'Elegance': span = 2; break;
-        default: span = 1; break;
+        case 'Hero': colSpan = 2; break;
+        case 'Stats': colSpan = 2; break;
+        case 'Elegance': colSpan = 2; break;
+        default: colSpan = 1; break;
       }
     }
-    return span === 2 ? 'span-full' : 'span-1';
+
+    const rowClass = rowSpan > 1 ? `row-span-${rowSpan}` : '';
+    
+    if (cols === 1) return `span-full ${rowClass}`.trim();
+
+    return `${colSpan === 2 ? 'span-full' : 'span-1'} ${rowClass}`.trim();
   };
 
   return (
@@ -940,7 +951,7 @@ function Dashboard({
                         if (draggedCardId && draggedCardId !== card.id) handleCardMove(draggedCardId, card.id);
                         setDraggedCardId(null);
                       }}
-                      className={`animate-in-card transition-all duration-300 ${getCardSpan(card)} ${draggedCardId === card.id ? 'opacity-30 scale-95' : 'opacity-100 scale-100'}`}
+                      className={`group/card animate-in-card transition-all duration-300 ${getCardSpan(card)} ${draggedCardId === card.id ? 'opacity-30 scale-95' : 'opacity-100 scale-100'}`}
                       style={{ animationDelay: `${idx * 0.05}s` }}
                     >
                       {/* Drag Handle & Close Button Overlay */}

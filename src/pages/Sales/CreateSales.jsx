@@ -17,6 +17,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
   const [selectionMode, setSelectionMode] = useState('inventory');
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
   const [paymentMode, setPaymentMode] = useState('Cash');
+  const [splitPayments, setSplitPayments] = useState({ Cash: 0, UPI: 0, Card: 0, 'Bank Transfer': 0, Cheque: 0 });
   const [showReceipt, setShowReceipt] = useState(null);
   const [cartAlert, setCartAlert] = useState(null); // { title: '', message: '', type: 'warning'|'error' }
   const [isSendingPdf, setIsSendingPdf] = useState(false);
@@ -237,6 +238,20 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       return;
     }
 
+    const balanceTotal = calculateTotals().total;
+
+    if (paymentMode === 'Split') {
+      const splitTotal = Object.values(splitPayments).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+      if (Math.abs(splitTotal - balanceTotal) > 0.01) {
+        if (showGlobalToast) showGlobalToast('Split Payment Mismatch', 'The split amounts must equal the balance total.');
+        setCartAlert({
+          title: 'Payment Mismatch',
+          message: `The total of your split payments (₹${splitTotal.toFixed(2)}) does not match the Balance (₹${balanceTotal.toFixed(2)}). Please adjust the amounts.`,
+          type: 'error'
+        });
+        return;
+      }
+    }
 
     // Await all inventory updates to prevent race conditions with App.jsx realtime sync
     const inventoryPromises = [];
@@ -338,24 +353,46 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       }),
       total: Number(Math.max(0, calculateTotals().subtotal - calculateTotals().discount).toFixed(2)),
       timestamp: saleDate === new Date().toISOString().split('T')[0] ? new Date().toISOString() : new Date(`${saleDate}T12:00:00Z`).toISOString(),
-      paymentMode: paymentMode
+      paymentMode: paymentMode,
+      ...(paymentMode === 'Split' ? { splitPayments } : {})
     };
     // Instant Cloud Save
     if (saveSale) saveSale(newSale);
 
     // Automatically record income in accounts ledger
     const recordIncome = async () => {
-      if (newSale.total > 0) {
+      const balanceAmount = calculateTotals().total;
+      if (balanceAmount > 0) {
         try {
-          await supabase.from('erp_accounts').insert([{
-            type: 'Income',
-            date: saleDate,
-            category: 'Sales',
-            amount: newSale.total,
-            payment_mode: paymentMode,
-            reference: `Sale #${newSale.saleId}`,
-            notes: `Auto-generated from completed sale for ${newSale.client.name}`
-          }]);
+          if (paymentMode === 'Split') {
+            const splitInserts = [];
+            for (const [method, amount] of Object.entries(splitPayments)) {
+              if (parseFloat(amount) > 0) {
+                splitInserts.push({
+                  type: 'Income',
+                  date: saleDate,
+                  category: 'Sales',
+                  amount: parseFloat(amount),
+                  payment_mode: method,
+                  reference: `Sale #${newSale.saleId}`,
+                  notes: `Auto-generated from completed sale for ${newSale.client.name} (Split - ${method})`
+                });
+              }
+            }
+            if (splitInserts.length > 0) {
+              await supabase.from('erp_accounts').insert(splitInserts);
+            }
+          } else {
+            await supabase.from('erp_accounts').insert([{
+              type: 'Income',
+              date: saleDate,
+              category: 'Sales',
+              amount: balanceAmount,
+              payment_mode: paymentMode,
+              reference: `Sale #${newSale.saleId}`,
+              notes: `Auto-generated from completed sale for ${newSale.client.name}`
+            }]);
+          }
         } catch (err) {
           console.error("Auto account insert failed", err);
         }
@@ -1473,7 +1510,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
             <div className="mb-6">
               <span className="text-sm font-medium text-[var(--text)] block mb-3">Payment Mode</span>
               <div className="flex overflow-x-auto gap-2 pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                {['Cash', 'Bank Transfer', 'UPI', 'Card', 'Cheque'].map(mode => (
+                {['Cash', 'Bank Transfer', 'UPI', 'Card', 'Cheque', 'Split'].map(mode => (
                   <button
                     key={mode}
                     type="button"
@@ -1485,6 +1522,34 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                 ))}
               </div>
             </div>
+            {paymentMode === 'Split' && (
+              <div className="mb-6 rounded-2xl bg-[var(--soft)] p-4 border border-[var(--border)] animate-in fade-in zoom-in duration-300">
+                <p className="text-xs font-bold uppercase tracking-widest text-[var(--accent)] mb-3">Split Amounts</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {Object.keys(splitPayments).map(method => (
+                    <div key={method} className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-[var(--muted)] w-24">{method}</span>
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)] font-bold">₹</span>
+                        <input
+                          type="number"
+                          className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] py-2 pl-7 pr-3 text-sm font-bold outline-none focus:border-[var(--accent)]"
+                          value={splitPayments[method] || ''}
+                          onChange={(e) => setSplitPayments({ ...splitPayments, [method]: parseFloat(e.target.value) || 0 })}
+                          onFocus={(e) => e.target.select()}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 flex items-center justify-between border-t border-dashed border-[var(--border)] pt-3">
+                  <span className="text-xs font-bold text-[var(--muted)]">Allocated: ₹{Object.values(splitPayments).reduce((sum, v) => sum + (parseFloat(v) || 0), 0).toFixed(2)}</span>
+                  <span className={`text-xs font-bold ${Math.abs(Object.values(splitPayments).reduce((sum, v) => sum + (parseFloat(v) || 0), 0) - calculateTotals().total) < 0.01 ? 'text-green-500' : 'text-red-500'}`}>
+                    Remaining: ₹{(calculateTotals().total - Object.values(splitPayments).reduce((sum, v) => sum + (parseFloat(v) || 0), 0)).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            )}
             <div className="space-y-4">
               <div className="flex justify-between text-sm">
                 <span className="text-[var(--muted)]">Total Items</span>
