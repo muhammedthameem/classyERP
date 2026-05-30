@@ -29,10 +29,10 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
   useEffect(() => {
     const container = tableContainerRef.current;
     if (!container) return;
-    
+
     const handleWheel = (e) => {
       const hasHorizontalScroll = container.scrollWidth > container.clientWidth;
-      
+
       // If table is horizontally scrollable and user is scrolling vertically
       if (hasHorizontalScroll && Math.abs(e.deltaY) > 0) {
         e.preventDefault();
@@ -40,7 +40,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
         container.scrollLeft += e.deltaY;
       }
     };
-    
+
     // Use passive: false to allow preventDefault
     container.addEventListener('wheel', handleWheel, { passive: false });
     return () => container.removeEventListener('wheel', handleWheel);
@@ -59,8 +59,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
   };
 
   const filteredProducts = (inventory || []).filter(p =>
-    ((p?.productName?.toLowerCase() || '').includes(productSearch.toLowerCase()) ||
-      (p?.productId?.toLowerCase() || '').includes(productSearch.toLowerCase()))
+  ((p?.productName?.toLowerCase() || '').includes(productSearch.toLowerCase()) ||
+    (p?.productId?.toLowerCase() || '').includes(productSearch.toLowerCase()))
   ).map(p => {
     // Subtract whatever qty is already in the cart so the remaining stock is shown
     const cartItem = cart.find(ci => ci.id === p.id && ci.type === 'inventory');
@@ -425,10 +425,10 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     const htmlString = generateReceiptHtmlString(showReceipt);
     const container = document.createElement('div');
     container.innerHTML = htmlString;
-    
+
     html2pdf().set(opt).from(container.outerHTML).output('blob').then((pdfBlob) => {
       const blobUrl = URL.createObjectURL(pdfBlob);
-      
+
       // 1. Auto-download
       const link = document.createElement('a');
       link.href = blobUrl;
@@ -436,7 +436,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       // 2. Auto-print
       const iframe = document.createElement('iframe');
       iframe.style.display = 'none';
@@ -470,11 +470,11 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       if (showGlobalToast) showGlobalToast('Generating', 'Uploading receipt PDF to secure server...');
 
       const htmlString = generateReceiptHtmlString(showReceipt);
-    const container = document.createElement('div');
-    container.innerHTML = htmlString;
-    document.body.appendChild(container);
-    container.style.position = 'absolute';
-    container.style.left = '-9999px';
+      const container = document.createElement('div');
+      container.innerHTML = htmlString;
+      document.body.appendChild(container);
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
 
       const opt = {
         margin: 0,
@@ -583,7 +583,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     let message = `Hi ${showReceipt.client.name}, %0a%0a`;
     message += `Items: ${itemsText}%0a`;
     message += `Total Amount: ₹${subtotal.toFixed(2)}%0a`;
-    if(totDisc > 0) message += `Discount: -₹${totDisc.toFixed(2)}%0a`;
+    if (totDisc > 0) message += `Discount: -₹${totDisc.toFixed(2)}%0a`;
     message += `Grand Total: ₹${parseFloat(showReceipt.total).toFixed(2)}%0a%0a`;
     message += `Thank you for shopping!%0a`;
     message += `Your elegance is our priority.%0a`;
@@ -1236,47 +1236,47 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                       <button onClick={() => setIsSearchingProduct(false)} className="text-[var(--accent)] text-xs font-bold">Close</button>
                     </div>
                     <div className="p-2">
-                    {selectionMode === 'inventory' ? (
-                      filteredProducts.length > 0 ? filteredProducts.map(p => (
-                        <button
-                          key={p.id}
-                          className="flex w-full items-center justify-between rounded-xl p-4 text-left transition hover:bg-[var(--soft)]"
-                          onClick={() => {
-                            addToCart(p, 'inventory');
-                            setIsSearchingProduct(false);
-                            setProductSearch('');
-                          }}
-                        >
-                          <div>
-                            <p className="font-semibold">{p.productName}</p>
-                            <p className="text-xs text-[var(--muted)]">Stock: {p.quantity} {p.unit}</p>
-                          </div>
-                          <p className="font-bold text-[var(--accent)]">₹{p.finalPrice}</p>
-                        </button>
-                      )) : (
-                        <p className="p-4 text-center text-xs text-[var(--muted)]">No inventory items found.</p>
-                      )
-                    ) : (
-                      readyOrders.length > 0 ? readyOrders.map(o => (
-                        <button
-                          key={o.id}
-                          className="flex w-full items-center justify-between rounded-xl p-4 text-left transition hover:bg-[var(--soft)]"
-                          onClick={() => {
-                            addToCart(o, 'order');
-                            setIsSearchingProduct(false);
-                            setProductSearch('');
-                          }}
-                        >
-                          <div>
-                            <p className="font-semibold">{o.clientName}</p>
-                            <p className="text-xs text-[var(--muted)]">Order #{o.id} | {o.product}</p>
-                          </div>
-                          <p className="font-bold text-[var(--accent)]">₹{o.price}</p>
-                        </button>
-                      )) : (
-                        <p className="p-4 text-center text-xs text-[var(--muted)]">No completed orders found.</p>
-                      )
-                    )}
+                      {selectionMode === 'inventory' ? (
+                        filteredProducts.length > 0 ? filteredProducts.map(p => (
+                          <button
+                            key={p.id}
+                            className="flex w-full items-center justify-between rounded-xl p-4 text-left transition hover:bg-[var(--soft)]"
+                            onClick={() => {
+                              addToCart(p, 'inventory');
+                              setIsSearchingProduct(false);
+                              setProductSearch('');
+                            }}
+                          >
+                            <div>
+                              <p className="font-semibold">{p.productName}</p>
+                              <p className="text-xs text-[var(--muted)]">Stock: {p.quantity} {p.unit}</p>
+                            </div>
+                            <p className="font-bold text-[var(--accent)]">₹{p.finalPrice}</p>
+                          </button>
+                        )) : (
+                          <p className="p-4 text-center text-xs text-[var(--muted)]">No inventory items found.</p>
+                        )
+                      ) : (
+                        readyOrders.length > 0 ? readyOrders.map(o => (
+                          <button
+                            key={o.id}
+                            className="flex w-full items-center justify-between rounded-xl p-4 text-left transition hover:bg-[var(--soft)]"
+                            onClick={() => {
+                              addToCart(o, 'order');
+                              setIsSearchingProduct(false);
+                              setProductSearch('');
+                            }}
+                          >
+                            <div>
+                              <p className="font-semibold">{o.clientName}</p>
+                              <p className="text-xs text-[var(--muted)]">Order #{o.id} | {o.product}</p>
+                            </div>
+                            <p className="font-bold text-[var(--accent)]">₹{o.price}</p>
+                          </button>
+                        )) : (
+                          <p className="p-4 text-center text-xs text-[var(--muted)]">No completed orders found.</p>
+                        )
+                      )}
                     </div>
                   </div>
                 )}
@@ -1458,35 +1458,35 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                     <button onClick={() => setIsSearchingClient(false)} className="text-[var(--accent)] text-xs font-bold">Close</button>
                   </div>
                   <div className="p-2">
-                  {filteredClients.map(c => (
-                    <button
-                      key={c.id}
-                      className="flex w-full items-center justify-between rounded-xl p-3 text-left transition hover:bg-[var(--soft)]"
-                      onClick={() => {
-                        if (selectedClient && selectedClient.id !== c.id && cart.length > 0) {
-                          setPendingClientSwitch(c);
-                        } else {
-                          setSelectedClient(c);
-                          setClientSearch(c.name);
-                          setIsSearchingClient(false);
-                        }
-                      }}
-                    >
-                      <div>
-                        <p className="font-semibold text-sm">{c.name}</p>
-                        <p className="text-[10px] text-[var(--muted)]">{c.phone}</p>
-                      </div>
-                    </button>
-                  ))}
-                  {clientSearch && filteredClients.length === 0 && (
-                    <button
-                      className="flex w-full items-center gap-2 rounded-xl bg-[var(--accent-soft)] p-3 text-left text-sm font-bold text-[var(--accent)] transition hover:brightness-95"
-                      onClick={handleAddGuest}
-                    >
-                      <Plus size={16} />
-                      {/^[0-9]+$/.test(clientSearch) ? `Use Phone: ${clientSearch}` : `Add "${clientSearch}" as Guest`}
-                    </button>
-                  )}
+                    {filteredClients.map(c => (
+                      <button
+                        key={c.id}
+                        className="flex w-full items-center justify-between rounded-xl p-3 text-left transition hover:bg-[var(--soft)]"
+                        onClick={() => {
+                          if (selectedClient && selectedClient.id !== c.id && cart.length > 0) {
+                            setPendingClientSwitch(c);
+                          } else {
+                            setSelectedClient(c);
+                            setClientSearch(c.name);
+                            setIsSearchingClient(false);
+                          }
+                        }}
+                      >
+                        <div>
+                          <p className="font-semibold text-sm">{c.name}</p>
+                          <p className="text-[10px] text-[var(--muted)]">{c.phone}</p>
+                        </div>
+                      </button>
+                    ))}
+                    {clientSearch && filteredClients.length === 0 && (
+                      <button
+                        className="flex w-full items-center gap-2 rounded-xl bg-[var(--accent-soft)] p-3 text-left text-sm font-bold text-[var(--accent)] transition hover:brightness-95"
+                        onClick={handleAddGuest}
+                      >
+                        <Plus size={16} />
+                        {/^[0-9]+$/.test(clientSearch) ? `Use Phone: ${clientSearch}` : `Add "${clientSearch}" as Guest`}
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -1528,7 +1528,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                 <div className="grid gap-3 sm:grid-cols-2">
                   {Object.keys(splitPayments).map(method => (
                     <div key={method} className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-[var(--muted)] w-24">{method}</span>
+                      <span className="text-xs font-semibold text-[var(--muted)] w-20">{method}</span>
                       <div className="relative flex-1">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)] font-bold">₹</span>
                         <input
