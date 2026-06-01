@@ -136,8 +136,17 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
         if (newStatus === 'In Progress' && !o.startDate) {
           newData.startDate = getIndianDate()
         }
-        if (newStatus === 'Completed' && !o.completedDate) {
-          newData.completedDate = getIndianDate()
+        if (newStatus === 'Completed') {
+          if (!o.completedDate) {
+            newData.completedDate = getIndianDate()
+          }
+          if (!o.startDate) {
+            newData.startDate = getIndianDate()
+          }
+        }
+        if (newStatus === 'Not Ready' || newStatus === 'Pending') {
+          newData.startDate = null;
+          newData.completedDate = null;
         }
         if (newStatus !== 'Hold') {
           newData.lastActiveStatus = newStatus
@@ -485,14 +494,23 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                   onChange={(e) => setEditOrder({ ...editOrder, product: e.target.value })}
                 />
               </label>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <label className="block">
                   <span className="mb-1 block text-sm font-medium text-[var(--text)]">Order Type</span>
                   <input
                     type="text"
                     className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2 outline-none transition focus:border-[var(--accent)] text-[var(--text)]"
-                    value={editOrder.orderType}
+                    value={editOrder.orderType || ''}
                     onChange={(e) => setEditOrder({ ...editOrder, orderType: e.target.value })}
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-[var(--text)]">Quantity</span>
+                  <input
+                    type="text"
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2 outline-none transition focus:border-[var(--accent)] text-[var(--text)]"
+                    value={editOrder.size || ''}
+                    onChange={(e) => setEditOrder({ ...editOrder, size: e.target.value })}
                   />
                 </label>
                 <label className="block">
@@ -500,7 +518,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                   <input
                     type="text"
                     className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2 outline-none transition focus:border-[var(--accent)] text-[var(--text)]"
-                    value={editOrder.price}
+                    value={editOrder.price || ''}
                     onChange={(e) => setEditOrder({ ...editOrder, price: e.target.value })}
                   />
                 </label>
@@ -514,6 +532,18 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                   />
                 </label>
               </div>
+
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-[var(--text)]">Material Source</span>
+                <select
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2 outline-none transition focus:border-[var(--accent)] text-[var(--text)]"
+                  value={editOrder.sourceOfMaterial || 'Outside'}
+                  onChange={(e) => setEditOrder({ ...editOrder, sourceOfMaterial: e.target.value })}
+                >
+                  <option value="Outside">Client Provided</option>
+                  <option value="Internal">Studio Inventory</option>
+                </select>
+              </label>
 
               {editOrder.sourceOfMaterial === 'Internal' && editOrder.internalItems && (
                 <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] overflow-hidden mb-4">

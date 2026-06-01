@@ -1151,13 +1151,13 @@ function Dashboard({
                                   }
                                 }}
                                 disabled={!d.day || d.count === 0}
-                                className={`relative aspect-square rounded-2xl border flex flex-col items-center justify-center transition-all ${d.day ? (d.count > 0 ? 'bg-[var(--accent-soft)] border-[var(--accent)] shadow-sm cursor-pointer hover:brightness-95' : 'bg-[var(--surface-strong)] border-[var(--border)] cursor-default') : 'bg-transparent border-transparent'}`}
+                                className={`relative aspect-square rounded-2xl border flex flex-col items-center justify-center transition-all ${!d.day ? 'bg-transparent border-transparent' : d.count >= 10 ? 'bg-red-500/10 border-red-500 shadow-sm cursor-pointer hover:brightness-95' : d.count >= 5 ? 'bg-orange-500/10 border-orange-500 shadow-sm cursor-pointer hover:brightness-95' : d.count > 0 ? 'bg-green-500/10 border-green-500 shadow-sm cursor-pointer hover:brightness-95' : 'bg-[var(--surface-strong)] border-[var(--border)] cursor-default'}`}
                               >
                                 {d.day && (
                                   <>
-                                    <span className={`text-xs font-bold ${d.count > 0 ? 'text-[var(--accent)]' : 'text-[var(--text)]'}`}>{d.day}</span>
+                                    <span className={`text-xs font-bold ${d.count >= 10 ? 'text-red-500' : d.count >= 5 ? 'text-orange-500' : d.count > 0 ? 'text-green-500' : 'text-[var(--text)]'}`}>{d.day}</span>
                                     {d.count > 0 && (
-                                      <div className="mt-1 flex items-center justify-center h-5 w-5 rounded-full bg-[var(--accent)] text-white text-[10px] font-black shadow-lg animate-pulse">
+                                      <div className={`mt-1 flex items-center justify-center h-5 w-5 rounded-full text-white text-[10px] font-black shadow-lg animate-pulse ${d.count >= 10 ? 'bg-red-500' : d.count >= 5 ? 'bg-orange-500' : 'bg-green-500'}`}>
                                         {d.count}
                                       </div>
                                     )}
