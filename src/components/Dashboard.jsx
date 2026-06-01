@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react'
-import { AlertCircle, Bell, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Crown, Gem, LayoutDashboard, LogOut, Menu, Moon, Package, Palette, Search, Settings, ShieldCheck, ShoppingBag, Sparkles, Sun, TrendingUp, UsersRound, BarChart3, Maximize } from 'lucide-react'
+import { AlertCircle, Bell, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Crown, Gem, LayoutDashboard, LogOut, Menu, Moon, Package, Palette, Search, Settings, ShieldCheck, ShoppingBag, Sparkles, Sun, TrendingUp, UsersRound, BarChart3, Maximize, X } from 'lucide-react'
 import { formatDateTimeDDMMYY, boutiqueThemes, appearanceTokens, navItems, stats, orders, products, staffActivities } from '../utils/constants'
 const CreateUserPage = lazy(() => import('../pages/Users/CreateUser'))
 const ViewUsersPage = lazy(() => import('../pages/Users/ViewUsers'))
@@ -1111,7 +1111,7 @@ function Dashboard({
                       )}
 
                       {card.id === 'Calendar' && (
-                        <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
+                        <section className="relative rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
                           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
                             <div>
                               <h2 className="text-h2 flex items-center gap-2">
@@ -1171,17 +1171,23 @@ function Dashboard({
                           </div>
 
                           {selectedCalendarDate && (
-                            <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                              <div className="w-full max-w-sm rounded-3xl border border-[var(--border)] bg-[var(--surface-strong)] p-5 shadow-2xl">
-                                <div className="flex justify-between items-center mb-4 border-b border-[var(--border)] pb-3">
-                                  <h3 className="font-semibold text-[var(--accent)] flex items-center gap-2">
-                                    <Bell size={16} /> Deliveries on {new Date(selectedCalendarDate).toLocaleDateString()}
-                                  </h3>
-                                  <button onClick={() => setSelectedCalendarDate(null)} className="text-[var(--muted)] hover:text-[var(--text)]">
-                                    <AlertCircle size={18} className="rotate-45" />
-                                  </button>
-                                </div>
-                                <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
+                              <div className="absolute inset-0 z-[50] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-200 rounded-[24px]">
+                                <div className="w-full max-w-md max-h-full rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col">
+                                  <div className="flex justify-between items-center mb-5 pb-4 border-b border-[var(--border)]">
+                                    <div className="flex items-center gap-3">
+                                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
+                                        <Bell size={20} />
+                                      </div>
+                                      <div>
+                                        <h3 className="font-bold text-[var(--text)] text-lg">Deliveries</h3>
+                                        <p className="text-xs font-medium text-[var(--muted)]">{new Date(selectedCalendarDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                      </div>
+                                    </div>
+                                    <button onClick={() => setSelectedCalendarDate(null)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--soft)] hover:text-[var(--text)] transition-colors">
+                                      <X size={18} />
+                                    </button>
+                                  </div>
+                                  <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin">
                                   {orders.filter(o => o.deliveryDate === selectedCalendarDate && o.status !== 'Sold' && o.status !== 'Closed').map((o, idx) => (
                                     <button
                                       key={o.id || idx}
@@ -1202,25 +1208,31 @@ function Dashboard({
                                       </div>
                                     </button>
                                   ))}
-                                </div>
-                                <div className="mt-4 pt-3 flex justify-end">
-                                  <button
-                                    onClick={() => setSelectedCalendarDate(null)}
-                                    className="bg-[var(--surface)] border border-[var(--border)] px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[var(--soft)]"
-                                  >
-                                    Close
-                                  </button>
+                                  </div>
+                                  <div className="mt-6 pt-4 flex justify-end border-t border-[var(--border)]">
+                                    <button
+                                      onClick={() => setSelectedCalendarDate(null)}
+                                      className="bg-[var(--surface)] border border-[var(--border)] px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[var(--soft)] hover:text-[var(--accent)] transition-all"
+                                    >
+                                      Close
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          )}
+                            )}
 
-                          <div className="mt-6 flex items-center gap-4 text-xs">
+                          <div className="mt-6 flex flex-wrap items-center gap-4 text-xs">
                             <div className="flex items-center gap-1.5 text-[var(--muted)] font-medium">
-                              <div className="h-3 w-3 rounded-md bg-[var(--surface-strong)] border border-[var(--border)]" /> No deliveries
+                              <div className="h-3 w-3 rounded-md bg-[var(--surface-strong)] border border-[var(--border)]" /> None
                             </div>
-                            <div className="flex items-center gap-1.5 text-[var(--accent)] font-bold">
-                              <div className="h-3 w-3 rounded-md bg-[var(--accent-soft)] border border-[var(--accent)]" /> Priority deliveries
+                            <div className="flex items-center gap-1.5 text-green-600 dark:text-green-500 font-medium">
+                              <div className="h-3 w-3 rounded-md bg-green-500/20 border border-green-500" /> 1-4 Deliveries
+                            </div>
+                            <div className="flex items-center gap-1.5 text-orange-600 dark:text-orange-500 font-semibold">
+                              <div className="h-3 w-3 rounded-md bg-orange-500/20 border border-orange-500" /> 5-9 Deliveries
+                            </div>
+                            <div className="flex items-center gap-1.5 text-red-600 dark:text-red-500 font-bold">
+                              <div className="h-3 w-3 rounded-md bg-red-500/20 border border-red-500" /> 10+ Deliveries
                             </div>
                           </div>
                         </section>
