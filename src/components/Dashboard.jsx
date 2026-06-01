@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react'
 import { AlertCircle, Bell, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Crown, Gem, LayoutDashboard, LogOut, Menu, Moon, Package, Palette, Search, Settings, ShieldCheck, ShoppingBag, Sparkles, Sun, TrendingUp, UsersRound, BarChart3, Maximize, X } from 'lucide-react'
+import Masonry from 'react-masonry-css'
 import { formatDateTimeDDMMYY, boutiqueThemes, appearanceTokens, navItems, stats, orders, products, staffActivities } from '../utils/constants'
 const CreateUserPage = lazy(() => import('../pages/Users/CreateUser'))
 const ViewUsersPage = lazy(() => import('../pages/Users/ViewUsers'))
@@ -455,6 +456,436 @@ function Dashboard({
 
     return `${colSpan === 2 ? 'span-full' : 'span-1'} ${rowClass}`.trim();
   };
+
+  const renderDashboardCard = (card, idx) => (
+                    <div
+                      key={card.id}
+                      draggable={isDesktop}
+                      onDragStart={() => setDraggedCardId(card.id)}
+                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                      onDrop={() => {
+                        if (draggedCardId && draggedCardId !== card.id) handleCardMove(draggedCardId, card.id);
+                        setDraggedCardId(null);
+                      }}
+                      className={`group/card animate-in-card transition-all duration-300 ${getCardSpan(card)} ${draggedCardId === card.id ? 'opacity-30 scale-95' : 'opacity-100 scale-100'}`}
+                      style={{ animationDelay: `${idx * 0.05}s` }}
+                    >
+                      {/* Drag Handle & Close Button Overlay */}
+                      <div className="absolute right-4 top-4 z-10 hidden md:flex items-center gap-2 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => cycleCardSize(card.id)}
+                          className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-[var(--surface-strong)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--accent)] shadow-sm transition-all"
+                          title="Resize card"
+                        >
+                          <Maximize size={14} />
+                          <span className="text-[10px] font-bold uppercase tracking-wider">Resize</span>
+                        </button>
+                        <div className="cursor-move flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-[var(--surface-strong)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--accent)] shadow-sm" title="Drag to reorder">
+                          <Menu size={14} />
+                          <span className="text-[10px] font-bold uppercase tracking-wider">Drag</span>
+                        </div>
+                        <button
+                          onClick={() => toggleCardVisibility(card.id, false)}
+                          className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white shadow-sm transition-all"
+                          title="Close card"
+                        >
+                          <AlertCircle size={14} />
+                          <span className="text-[10px] font-bold uppercase tracking-wider">Close</span>
+                        </button>
+                      </div>
+
+                      {card.id === 'Hero' && (
+                        <section className="overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--jewel)] text-white shadow-[var(--shadow)]">
+                          <div className="grid gap-6 bg-[var(--hero)] p-6 md:grid-cols-[1fr_320px] lg:p-8">
+                            <div>
+                              <p className="flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-[#f8e6dc]">
+                                <Palette size={16} /> Spring bridal collection is live
+                              </p>
+                              <h2 className="mt-5 max-w-2xl text-h1 font-semibold leading-tight lg:text-5xl">
+                                Boutique operations with fittings, fabrics, and client moments in one view.
+                              </h2>
+                              <div className="mt-6 flex flex-wrap gap-3">
+                                {['42 priority orders', '18 fittings today', '96% delivery score'].map((item) => (
+                                  <span className="rounded-xl border border-white/10 bg-white/12 px-4 py-2 text-sm font-semibold backdrop-blur" key={item}>
+                                    {item}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            {user?.role === 'Admin' && (
+                              <div className="rounded-2xl border border-white/15 bg-white/12 p-5 backdrop-blur">
+                                <p className="flex items-center gap-2 text-sm text-[#f8e6dc]">
+                                  <TrendingUp size={16} /> Revenue pulse
+                                </p>
+                                <p className="mt-3 text-h1 font-semibold">₹{allSales.reduce((acc, s) => acc + (parseFloat(s.totalAmount) || 0), 0).toLocaleString()}</p>
+                                <div className="mt-5 space-y-3">
+                                  {liveRevenuePulse.slice(0, 3).map((item, index) => (
+                                    <div key={item.label}>
+                                      <div className="mb-1 flex justify-between text-xs text-[#f8e6dc]">
+                                        <span>{item.label}</span>
+                                        <span>{item.percentage}%</span>
+                                      </div>
+                                      <div className="h-2 rounded-full bg-white/15">
+                                        <div className="h-2 rounded-full bg-[#f4ded2]" style={{ width: `${item.percentage}%` }} />
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </section>
+                      )}
+
+                      {card.id === 'Stats' && (
+                        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                          {(isAuthLoading || !cloudLoaded) ? (
+                            // Skeleton Stats
+                            [1, 2, 3, 4].map((i) => (
+                              <div key={i} className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
+                                <div className="mb-5 flex items-center justify-between">
+                                  <div className="skeleton w-11 h-11 rounded-xl" />
+                                  <div className="skeleton w-12 h-5 rounded-full" />
+                                </div>
+                                <div className="skeleton skeleton-text w-1/2" />
+                                <div className="skeleton skeleton-text w-3/4 h-8 mt-3" />
+                                <div className="skeleton skeleton-text w-1/3 mt-2" />
+                              </div>
+                            ))
+                          ) : (
+                            liveStats.map((stat) => {
+                              const Icon = stat.icon
+                              return (
+                                <article key={stat.label} className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur transition hover:-translate-y-0.5">
+                                  <div className="mb-5 flex items-center justify-between">
+                                    <span className="grid h-11 w-11 place-items-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
+                                      <Icon size={21} />
+                                    </span>
+                                    <span className="rounded-full bg-[var(--soft)] px-3 py-1 text-xs font-semibold text-[var(--jewel)]">
+                                      Live
+                                    </span>
+                                  </div>
+                                  <p className="text-tiny">{stat.label}</p>
+                                  <h3 className="text-h1 mt-3">{stat.value}</h3>
+                                  <p className="text-para-sm mt-2 text-[var(--jewel)] font-medium">{stat.note}</p>
+                                </article>
+                              )
+                            })
+                          )}
+                        </section>
+                      )}
+
+                      {card.id === 'AIRules' && (
+                        <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
+                          <div className="mb-5 flex items-center justify-between">
+                            <div>
+                              <h2 className="text-h2 flex items-center gap-2">
+                                <Sparkles size={20} className="text-[var(--jewel)]" /> AI Capacity Rules
+                              </h2>
+                              <p className="text-para text-[var(--muted)]">Active production limits set by AI</p>
+                            </div>
+                            <button
+                              onClick={() => setCurrentPage('view-orders')}
+                              className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-sm font-semibold hover:bg-[var(--soft)] transition"
+                            >
+                              Manage
+                            </button>
+                          </div>
+                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="rounded-2xl bg-[var(--soft)] p-4 border border-[var(--border)]">
+                              <p className="text-[10px] font-bold uppercase text-[var(--muted)]">Global Default</p>
+                              <p className="text-2xl font-black text-[var(--text)] mt-1">{orderLimits.global || 6} <span className="text-xs font-medium text-[var(--muted)]">orders/day</span></p>
+                            </div>
+                            {Object.entries(orderLimits).filter(([k]) => k !== 'global').map(([date, limit]) => (
+                              <div key={date} className="rounded-2xl bg-[var(--accent-soft)] p-4 border border-[var(--accent)]">
+                                <p className="text-[10px] font-bold uppercase text-[var(--accent)]">Scheduled Limit</p>
+                                <div className="flex items-center justify-between mt-1">
+                                  <p className="text-xl font-black text-[var(--text)]">{limit} <span className="text-xs font-medium text-[var(--muted)]">orders</span></p>
+                                  <span className="text-xs font-bold bg-[var(--surface)] px-2 py-0.5 rounded-lg border border-[var(--border)]">{date}</span>
+                                </div>
+                              </div>
+                            ))}
+                            {Object.keys(orderLimits).length <= 1 && (
+                              <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[var(--border)] p-4 text-center">
+                                <p className="text-xs font-medium text-[var(--muted)]">No active AI date overrides. All days are set to {orderLimits.global || 6}.</p>
+                              </div>
+                            )}
+                          </div>
+                        </section>
+                      )}
+
+                      {card.id === 'Calendar' && (
+                        <section className="relative rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
+                          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+                            <div>
+                              <h2 className="text-h2 flex items-center gap-2">
+                                <Bell size={20} className="text-[var(--accent)]" /> Smart Delivery Tracker
+                              </h2>
+                              <p className="text-para text-[var(--muted)]">Monitor daily production output</p>
+                            </div>
+                            <div className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] p-1">
+                              <button
+                                onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1))}
+                                className="p-2 hover:bg-[var(--soft)] rounded-lg text-[var(--muted)] hover:text-[var(--accent)]"
+                              >
+                                <ChevronsLeft size={16} />
+                              </button>
+                              <span className="px-4 text-sm font-bold min-w-[140px] text-center">
+                                {calendarDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                              </span>
+                              <button
+                                onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1))}
+                                className="p-2 hover:bg-[var(--soft)] rounded-lg text-[var(--muted)] hover:text-[var(--accent)]"
+                              >
+                                <ChevronsRight size={16} />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-7 gap-2">
+                            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                              <div key={d} className="text-center text-[10px] font-black uppercase tracking-widest text-[var(--muted)] py-2">{d}</div>
+                            ))}
+                            {generateCalendarDays().map((d, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => {
+                                  if (d.day && d.count > 0) {
+                                    setSelectedCalendarDate(d.date);
+                                  }
+                                }}
+                                disabled={!d.day || d.count === 0}
+                                className={`relative aspect-square rounded-2xl border flex flex-col items-center justify-center transition-all ${!d.day ? 'bg-transparent border-transparent' : d.count >= 10 ? 'bg-red-500/10 border-red-500 shadow-sm cursor-pointer hover:brightness-95' : d.count >= 5 ? 'bg-orange-500/10 border-orange-500 shadow-sm cursor-pointer hover:brightness-95' : d.count > 0 ? 'bg-green-500/10 border-green-500 shadow-sm cursor-pointer hover:brightness-95' : 'bg-[var(--surface-strong)] border-[var(--border)] cursor-default'}`}
+                              >
+                                {d.day && (
+                                  <>
+                                    <span className={`text-xs font-bold ${d.count >= 10 ? 'text-red-500' : d.count >= 5 ? 'text-orange-500' : d.count > 0 ? 'text-green-500' : 'text-[var(--text)]'}`}>{d.day}</span>
+                                    {d.count > 0 && (
+                                      <div className={`mt-1 flex items-center justify-center h-5 w-5 rounded-full text-white text-[10px] font-black shadow-lg animate-pulse ${d.count >= 10 ? 'bg-red-500' : d.count >= 5 ? 'bg-orange-500' : 'bg-green-500'}`}>
+                                        {d.count}
+                                      </div>
+                                    )}
+                                    {d.date === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` && (
+                                      <div className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 shadow-sm" />
+                                    )}
+                                  </>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+
+                          {selectedCalendarDate && (
+                              <div className="absolute inset-0 z-[50] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-200 rounded-[24px]">
+                                <div className="w-full max-w-md max-h-full rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col">
+                                  <div className="flex justify-between items-center mb-5 pb-4 border-b border-[var(--border)]">
+                                    <div className="flex items-center gap-3">
+                                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
+                                        <Bell size={20} />
+                                      </div>
+                                      <div>
+                                        <h3 className="font-bold text-[var(--text)] text-lg">Deliveries</h3>
+                                        <p className="text-xs font-medium text-[var(--muted)]">{new Date(selectedCalendarDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                      </div>
+                                    </div>
+                                    <button onClick={() => setSelectedCalendarDate(null)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--soft)] hover:text-[var(--text)] transition-colors">
+                                      <X size={18} />
+                                    </button>
+                                  </div>
+                                  <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin">
+                                  {orders.filter(o => o.deliveryDate === selectedCalendarDate && o.status !== 'Sold' && o.status !== 'Closed').map((o, idx) => (
+                                    <button
+                                      key={o.id || idx}
+                                      className="w-full text-left bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 hover:border-[var(--accent)] transition flex items-center justify-between group"
+                                      onClick={() => {
+                                        setHighlightOrderId(o.id)
+                                        setCurrentPage('view-orders')
+                                        setSelectedCalendarDate(null)
+                                      }}
+                                    >
+                                      <div>
+                                        <p className="font-bold text-[var(--text)] group-hover:text-[var(--accent)]">{o.clientName}</p>
+                                        <p className="text-xs text-[var(--muted)]">{o.product}</p>
+                                      </div>
+                                      <div className="text-right">
+                                        <p className="text-xs font-semibold bg-[var(--accent-soft)] text-[var(--accent)] px-2 py-1 rounded-lg">{o.status}</p>
+                                        <p className="text-[10px] text-[var(--muted)] mt-1">#{o.id}</p>
+                                      </div>
+                                    </button>
+                                  ))}
+                                  </div>
+                                  <div className="mt-6 pt-4 flex justify-end border-t border-[var(--border)]">
+                                    <button
+                                      onClick={() => setSelectedCalendarDate(null)}
+                                      className="bg-[var(--surface)] border border-[var(--border)] px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[var(--soft)] hover:text-[var(--accent)] transition-all"
+                                    >
+                                      Close
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                          <div className="mt-6 flex flex-wrap items-center gap-4 text-xs">
+                            <div className="flex items-center gap-1.5 text-[var(--muted)] font-medium">
+                              <div className="h-3 w-3 rounded-md bg-[var(--surface-strong)] border border-[var(--border)]" /> None
+                            </div>
+                            <div className="flex items-center gap-1.5 text-green-600 dark:text-green-500 font-medium">
+                              <div className="h-3 w-3 rounded-md bg-green-500/20 border border-green-500" /> 1-4 Deliveries
+                            </div>
+                            <div className="flex items-center gap-1.5 text-orange-600 dark:text-orange-500 font-semibold">
+                              <div className="h-3 w-3 rounded-md bg-orange-500/20 border border-orange-500" /> 5-9 Deliveries
+                            </div>
+                            <div className="flex items-center gap-1.5 text-red-600 dark:text-red-500 font-bold">
+                              <div className="h-3 w-3 rounded-md bg-red-500/20 border border-red-500" /> 10+ Deliveries
+                            </div>
+                          </div>
+                        </section>
+                      )}
+
+                      {card.id === 'Orders' && (
+                        <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
+                          <div className="mb-5 flex items-center justify-between">
+                            <div>
+                              <h2 className="text-h2">Live boutique orders</h2>
+                              <p className="text-para text-[var(--muted)]">Production queue for this week</p>
+                            </div>
+                            <button
+                              className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-sm font-semibold hover:bg-[var(--soft)] transition"
+                              type="button"
+                              onClick={() => setCurrentPage('view-orders')}
+                            >
+                              View all
+                            </button>
+                          </div>
+                          <div className="overflow-hidden rounded-2xl border border-[var(--border)]">
+                            {liveRecentOrders.map((o) => (
+                              <div className="grid gap-3 border-b border-[var(--border)] px-4 py-4 last:border-b-0 md:grid-cols-[1fr_1fr_150px_90px]" key={o.id}>
+                                <span className="font-semibold">{o.clientName}</span>
+                                <span className="text-[var(--muted)]">{o.product}</span>
+                                <span className="w-fit rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)] max-h-[26px]">{o.status}</span>
+                                <span className="font-semibold md:text-right">{o.price}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      )}
+
+                      {card.id === 'Team' && user?.role === 'Admin' && (
+                        <section className="rounded-[24px] border border-[var(--border)] bg-[var(--jewel)] p-5 text-white shadow-[var(--shadow)]">
+                          <h2 className="text-h2 flex items-center gap-2">
+                            <ShieldCheck size={20} /> Team pulse
+                          </h2>
+                          <p className="text-para-sm mt-1 text-[#cce0da]">Staff activities today</p>
+                          <div className="mt-5 space-y-3">
+                            {liveActivities.map((act) => (
+                              <div className="rounded-md bg-white/10 p-4" key={act.id}>
+                                <p className="text-sm text-[#cce0da]">{new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                <p className="font-semibold">{act.title}</p>
+                                <p className="text-sm text-[#dfeee9]">{act.actor || 'System'}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      )}
+
+                      {card.id === 'Sales' && (
+                        <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
+                          <div className="mb-5 flex items-center justify-between">
+                            <div>
+                              <h2 className="text-h2">Real-time sales</h2>
+                              <p className="text-para text-[var(--muted)]">Recent transactions</p>
+                            </div>
+                            {user?.role === 'Admin' && (
+                              <button
+                                className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-sm font-semibold hover:bg-[var(--soft)] transition"
+                                type="button"
+                                onClick={() => setCurrentPage('view-sales')}
+                              >
+                                All Sales
+                              </button>
+                            )}
+                          </div>
+                          <div className="overflow-hidden rounded-2xl border border-[var(--border)]">
+                            {liveRecentSales.map((s) => (
+                              <div className="grid gap-3 border-b border-[var(--border)] px-4 py-4 last:border-b-0 md:grid-cols-[100px_1fr_100px]" key={s.id || s.saleId}>
+                                <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-tight">{new Date(s.timestamp).toLocaleDateString()}</span>
+                                <div className="min-w-0">
+                                  <p className="font-semibold truncate">{s.client?.name || 'Guest'}</p>
+                                  <p className="text-[10px] text-[var(--muted)] truncate">ID: {s.saleId}</p>
+                                </div>
+                                <span className="font-black text-[var(--accent)] text-right">₹{s.total}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      )}
+
+                      {card.id === 'Revenue' && user?.role === 'Admin' && (
+                        <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
+                          <div className="mb-6 flex items-center justify-between">
+                            <h2 className="text-h2 flex items-center gap-2">
+                              <BarChart3 size={22} className="text-[var(--accent)]" /> Revenue pulse
+                            </h2>
+                            <div className="h-8 w-8 rounded-full bg-[var(--accent-soft)] flex items-center justify-center text-[var(--accent)]">
+                              <TrendingUp size={14} />
+                            </div>
+                          </div>
+                          <p className="text-h1 mt-2">₹{totalRev.toLocaleString()}</p>
+                          <div className="space-y-6 mt-6">
+                            {liveRevenuePulse.map((item) => (
+                              <div key={item.label}>
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-tiny font-bold">{item.label}</span>
+                                  <span className="text-sm font-black text-[var(--accent)]">{item.percentage}%</span>
+                                </div>
+                                <div className="h-2 w-full rounded-full bg-[var(--soft)] overflow-hidden">
+                                  <div className={`h-full rounded-full transition-all duration-1000 ${item.color}`} style={{ width: `${item.percentage}%` }} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      )}
+
+                      {card.id === 'Elegance' && (
+                        <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur h-full">
+                          <h2 className="text-h2 flex items-center gap-2">
+                            <ShieldCheck size={20} /> Client elegance score
+                          </h2>
+                          <p className="text-para mt-1">Retention, repeat orders, and fulfillment quality</p>
+                          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                            {(() => {
+                              const totalClientsCount = clients.length || 0;
+                              const totalOrdersCount = orders.length || 0;
+                              const clientTransactionMap = {};
+                              orders.forEach(o => {
+                                const cid = o.clientId || o.client;
+                                if (cid) clientTransactionMap[cid] = (clientTransactionMap[cid] || 0) + 1;
+                              });
+                              const repeatClientsCount = Object.values(clientTransactionMap).filter(count => count > 1).length;
+                              const retentionRate = totalClientsCount > 0 ? Math.round((repeatClientsCount / totalClientsCount) * 100) : 0;
+                              const repeatOrdersCount = orders.filter(o => clientTransactionMap[o.clientId || o.client] > 1).length;
+                              const repeatOrdersRate = totalOrdersCount > 0 ? Math.round((repeatOrdersCount / totalOrdersCount) * 100) : 0;
+                              const completedOrders = orders.filter(o => o.status === 'Completed').length;
+                              const fulfillmentRate = totalOrdersCount > 0 ? Math.round((completedOrders / totalOrdersCount) * 100) : 0;
+
+                              return [
+                                { label: 'Retention', value: `${retentionRate}%` },
+                                { label: 'Repeat orders', value: `${repeatOrdersRate}%` },
+                                { label: 'Fulfillment', value: `${fulfillmentRate}%` }
+                              ].map((item) => (
+                                <div className="rounded-2xl bg-[var(--soft)] p-4" key={item.label}>
+                                  <p className="text-h1">{item.value}</p>
+                                  <p className="text-tiny mt-1">{item.label}</p>
+                                </div>
+                              ));
+                            })()}
+                          </div>
+                        </section>
+                      )}
+                    </div>
+  );
+
 
   return (
     <div className="relative min-h-screen">
@@ -952,436 +1383,37 @@ function Dashboard({
           <div className="space-y-6 p-5 lg:p-8 pb-28 lg:pb-8">
             {currentPage === 'overview' && (
               <div id="dashboard-overview-wrapper" className="flex flex-col gap-10">
-                <div className="dashboard-grid">
-                  {dashboardCards.filter(c => c.visible && (!c.adminOnly || user?.role === 'Admin')).map((card, idx) => (
-                    <div
-                      key={card.id}
-                      draggable={isDesktop}
-                      onDragStart={() => setDraggedCardId(card.id)}
-                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                      onDrop={() => {
-                        if (draggedCardId && draggedCardId !== card.id) handleCardMove(draggedCardId, card.id);
-                        setDraggedCardId(null);
-                      }}
-                      className={`group/card animate-in-card transition-all duration-300 ${getCardSpan(card)} ${draggedCardId === card.id ? 'opacity-30 scale-95' : 'opacity-100 scale-100'}`}
-                      style={{ animationDelay: `${idx * 0.05}s` }}
-                    >
-                      {/* Drag Handle & Close Button Overlay */}
-                      <div className="absolute right-4 top-4 z-10 hidden md:flex items-center gap-2 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => cycleCardSize(card.id)}
-                          className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-[var(--surface-strong)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--accent)] shadow-sm transition-all"
-                          title="Resize card"
-                        >
-                          <Maximize size={14} />
-                          <span className="text-[10px] font-bold uppercase tracking-wider">Resize</span>
-                        </button>
-                        <div className="cursor-move flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-[var(--surface-strong)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--accent)] shadow-sm" title="Drag to reorder">
-                          <Menu size={14} />
-                          <span className="text-[10px] font-bold uppercase tracking-wider">Drag</span>
+                {(() => {
+                  const visibleCards = dashboardCards.filter(c => c.visible && (!c.adminOnly || user?.role === 'Admin'));
+                  const groups = [];
+                  let currentGroup = { isFull: false, items: [] };
+                  visibleCards.forEach(card => {
+                    const isFull = getCardSpan(card).includes('span-full');
+                    if (isFull !== currentGroup.isFull) {
+                      if (currentGroup.items.length > 0) groups.push(currentGroup);
+                      currentGroup = { isFull, items: [card] };
+                    } else {
+                      currentGroup.items.push(card);
+                    }
+                  });
+                  if (currentGroup.items.length > 0) groups.push(currentGroup);
+
+                  return groups.map((group, groupIdx) => {
+                    if (group.isFull) {
+                      return (
+                        <div key={groupIdx} className="flex flex-col gap-6">
+                          {group.items.map((card, idx) => renderDashboardCard(card, visibleCards.indexOf(card)))}
                         </div>
-                        <button
-                          onClick={() => toggleCardVisibility(card.id, false)}
-                          className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white shadow-sm transition-all"
-                          title="Close card"
-                        >
-                          <AlertCircle size={14} />
-                          <span className="text-[10px] font-bold uppercase tracking-wider">Close</span>
-                        </button>
-                      </div>
-
-                      {card.id === 'Hero' && (
-                        <section className="overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--jewel)] text-white shadow-[var(--shadow)]">
-                          <div className="grid gap-6 bg-[var(--hero)] p-6 md:grid-cols-[1fr_320px] lg:p-8">
-                            <div>
-                              <p className="flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-[#f8e6dc]">
-                                <Palette size={16} /> Spring bridal collection is live
-                              </p>
-                              <h2 className="mt-5 max-w-2xl text-h1 font-semibold leading-tight lg:text-5xl">
-                                Boutique operations with fittings, fabrics, and client moments in one view.
-                              </h2>
-                              <div className="mt-6 flex flex-wrap gap-3">
-                                {['42 priority orders', '18 fittings today', '96% delivery score'].map((item) => (
-                                  <span className="rounded-xl border border-white/10 bg-white/12 px-4 py-2 text-sm font-semibold backdrop-blur" key={item}>
-                                    {item}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                            {user?.role === 'Admin' && (
-                              <div className="rounded-2xl border border-white/15 bg-white/12 p-5 backdrop-blur">
-                                <p className="flex items-center gap-2 text-sm text-[#f8e6dc]">
-                                  <TrendingUp size={16} /> Revenue pulse
-                                </p>
-                                <p className="mt-3 text-h1 font-semibold">₹{allSales.reduce((acc, s) => acc + (parseFloat(s.totalAmount) || 0), 0).toLocaleString()}</p>
-                                <div className="mt-5 space-y-3">
-                                  {liveRevenuePulse.slice(0, 3).map((item, index) => (
-                                    <div key={item.label}>
-                                      <div className="mb-1 flex justify-between text-xs text-[#f8e6dc]">
-                                        <span>{item.label}</span>
-                                        <span>{item.percentage}%</span>
-                                      </div>
-                                      <div className="h-2 rounded-full bg-white/15">
-                                        <div className="h-2 rounded-full bg-[#f4ded2]" style={{ width: `${item.percentage}%` }} />
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </section>
-                      )}
-
-                      {card.id === 'Stats' && (
-                        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                          {(isAuthLoading || !cloudLoaded) ? (
-                            // Skeleton Stats
-                            [1, 2, 3, 4].map((i) => (
-                              <div key={i} className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
-                                <div className="mb-5 flex items-center justify-between">
-                                  <div className="skeleton w-11 h-11 rounded-xl" />
-                                  <div className="skeleton w-12 h-5 rounded-full" />
-                                </div>
-                                <div className="skeleton skeleton-text w-1/2" />
-                                <div className="skeleton skeleton-text w-3/4 h-8 mt-3" />
-                                <div className="skeleton skeleton-text w-1/3 mt-2" />
-                              </div>
-                            ))
-                          ) : (
-                            liveStats.map((stat) => {
-                              const Icon = stat.icon
-                              return (
-                                <article key={stat.label} className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur transition hover:-translate-y-0.5">
-                                  <div className="mb-5 flex items-center justify-between">
-                                    <span className="grid h-11 w-11 place-items-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
-                                      <Icon size={21} />
-                                    </span>
-                                    <span className="rounded-full bg-[var(--soft)] px-3 py-1 text-xs font-semibold text-[var(--jewel)]">
-                                      Live
-                                    </span>
-                                  </div>
-                                  <p className="text-tiny">{stat.label}</p>
-                                  <h3 className="text-h1 mt-3">{stat.value}</h3>
-                                  <p className="text-para-sm mt-2 text-[var(--jewel)] font-medium">{stat.note}</p>
-                                </article>
-                              )
-                            })
-                          )}
-                        </section>
-                      )}
-
-                      {card.id === 'AIRules' && (
-                        <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
-                          <div className="mb-5 flex items-center justify-between">
-                            <div>
-                              <h2 className="text-h2 flex items-center gap-2">
-                                <Sparkles size={20} className="text-[var(--jewel)]" /> AI Capacity Rules
-                              </h2>
-                              <p className="text-para text-[var(--muted)]">Active production limits set by AI</p>
-                            </div>
-                            <button
-                              onClick={() => setCurrentPage('view-orders')}
-                              className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-sm font-semibold hover:bg-[var(--soft)] transition"
-                            >
-                              Manage
-                            </button>
-                          </div>
-                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            <div className="rounded-2xl bg-[var(--soft)] p-4 border border-[var(--border)]">
-                              <p className="text-[10px] font-bold uppercase text-[var(--muted)]">Global Default</p>
-                              <p className="text-2xl font-black text-[var(--text)] mt-1">{orderLimits.global || 6} <span className="text-xs font-medium text-[var(--muted)]">orders/day</span></p>
-                            </div>
-                            {Object.entries(orderLimits).filter(([k]) => k !== 'global').map(([date, limit]) => (
-                              <div key={date} className="rounded-2xl bg-[var(--accent-soft)] p-4 border border-[var(--accent)]">
-                                <p className="text-[10px] font-bold uppercase text-[var(--accent)]">Scheduled Limit</p>
-                                <div className="flex items-center justify-between mt-1">
-                                  <p className="text-xl font-black text-[var(--text)]">{limit} <span className="text-xs font-medium text-[var(--muted)]">orders</span></p>
-                                  <span className="text-xs font-bold bg-[var(--surface)] px-2 py-0.5 rounded-lg border border-[var(--border)]">{date}</span>
-                                </div>
-                              </div>
-                            ))}
-                            {Object.keys(orderLimits).length <= 1 && (
-                              <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[var(--border)] p-4 text-center">
-                                <p className="text-xs font-medium text-[var(--muted)]">No active AI date overrides. All days are set to {orderLimits.global || 6}.</p>
-                              </div>
-                            )}
-                          </div>
-                        </section>
-                      )}
-
-                      {card.id === 'Calendar' && (
-                        <section className="relative rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
-                          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                            <div>
-                              <h2 className="text-h2 flex items-center gap-2">
-                                <Bell size={20} className="text-[var(--accent)]" /> Smart Delivery Tracker
-                              </h2>
-                              <p className="text-para text-[var(--muted)]">Monitor daily production output</p>
-                            </div>
-                            <div className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] p-1">
-                              <button
-                                onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1))}
-                                className="p-2 hover:bg-[var(--soft)] rounded-lg text-[var(--muted)] hover:text-[var(--accent)]"
-                              >
-                                <ChevronsLeft size={16} />
-                              </button>
-                              <span className="px-4 text-sm font-bold min-w-[140px] text-center">
-                                {calendarDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                              </span>
-                              <button
-                                onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1))}
-                                className="p-2 hover:bg-[var(--soft)] rounded-lg text-[var(--muted)] hover:text-[var(--accent)]"
-                              >
-                                <ChevronsRight size={16} />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-7 gap-2">
-                            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                              <div key={d} className="text-center text-[10px] font-black uppercase tracking-widest text-[var(--muted)] py-2">{d}</div>
-                            ))}
-                            {generateCalendarDays().map((d, i) => (
-                              <button
-                                key={i}
-                                type="button"
-                                onClick={() => {
-                                  if (d.day && d.count > 0) {
-                                    setSelectedCalendarDate(d.date);
-                                  }
-                                }}
-                                disabled={!d.day || d.count === 0}
-                                className={`relative aspect-square rounded-2xl border flex flex-col items-center justify-center transition-all ${!d.day ? 'bg-transparent border-transparent' : d.count >= 10 ? 'bg-red-500/10 border-red-500 shadow-sm cursor-pointer hover:brightness-95' : d.count >= 5 ? 'bg-orange-500/10 border-orange-500 shadow-sm cursor-pointer hover:brightness-95' : d.count > 0 ? 'bg-green-500/10 border-green-500 shadow-sm cursor-pointer hover:brightness-95' : 'bg-[var(--surface-strong)] border-[var(--border)] cursor-default'}`}
-                              >
-                                {d.day && (
-                                  <>
-                                    <span className={`text-xs font-bold ${d.count >= 10 ? 'text-red-500' : d.count >= 5 ? 'text-orange-500' : d.count > 0 ? 'text-green-500' : 'text-[var(--text)]'}`}>{d.day}</span>
-                                    {d.count > 0 && (
-                                      <div className={`mt-1 flex items-center justify-center h-5 w-5 rounded-full text-white text-[10px] font-black shadow-lg animate-pulse ${d.count >= 10 ? 'bg-red-500' : d.count >= 5 ? 'bg-orange-500' : 'bg-green-500'}`}>
-                                        {d.count}
-                                      </div>
-                                    )}
-                                    {d.date === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` && (
-                                      <div className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 shadow-sm" />
-                                    )}
-                                  </>
-                                )}
-                              </button>
-                            ))}
-                          </div>
-
-                          {selectedCalendarDate && (
-                              <div className="absolute inset-0 z-[50] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-200 rounded-[24px]">
-                                <div className="w-full max-w-md max-h-full rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col">
-                                  <div className="flex justify-between items-center mb-5 pb-4 border-b border-[var(--border)]">
-                                    <div className="flex items-center gap-3">
-                                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
-                                        <Bell size={20} />
-                                      </div>
-                                      <div>
-                                        <h3 className="font-bold text-[var(--text)] text-lg">Deliveries</h3>
-                                        <p className="text-xs font-medium text-[var(--muted)]">{new Date(selectedCalendarDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                                      </div>
-                                    </div>
-                                    <button onClick={() => setSelectedCalendarDate(null)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--soft)] hover:text-[var(--text)] transition-colors">
-                                      <X size={18} />
-                                    </button>
-                                  </div>
-                                  <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin">
-                                  {orders.filter(o => o.deliveryDate === selectedCalendarDate && o.status !== 'Sold' && o.status !== 'Closed').map((o, idx) => (
-                                    <button
-                                      key={o.id || idx}
-                                      className="w-full text-left bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 hover:border-[var(--accent)] transition flex items-center justify-between group"
-                                      onClick={() => {
-                                        setHighlightOrderId(o.id)
-                                        setCurrentPage('view-orders')
-                                        setSelectedCalendarDate(null)
-                                      }}
-                                    >
-                                      <div>
-                                        <p className="font-bold text-[var(--text)] group-hover:text-[var(--accent)]">{o.clientName}</p>
-                                        <p className="text-xs text-[var(--muted)]">{o.product}</p>
-                                      </div>
-                                      <div className="text-right">
-                                        <p className="text-xs font-semibold bg-[var(--accent-soft)] text-[var(--accent)] px-2 py-1 rounded-lg">{o.status}</p>
-                                        <p className="text-[10px] text-[var(--muted)] mt-1">#{o.id}</p>
-                                      </div>
-                                    </button>
-                                  ))}
-                                  </div>
-                                  <div className="mt-6 pt-4 flex justify-end border-t border-[var(--border)]">
-                                    <button
-                                      onClick={() => setSelectedCalendarDate(null)}
-                                      className="bg-[var(--surface)] border border-[var(--border)] px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[var(--soft)] hover:text-[var(--accent)] transition-all"
-                                    >
-                                      Close
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                          <div className="mt-6 flex flex-wrap items-center gap-4 text-xs">
-                            <div className="flex items-center gap-1.5 text-[var(--muted)] font-medium">
-                              <div className="h-3 w-3 rounded-md bg-[var(--surface-strong)] border border-[var(--border)]" /> None
-                            </div>
-                            <div className="flex items-center gap-1.5 text-green-600 dark:text-green-500 font-medium">
-                              <div className="h-3 w-3 rounded-md bg-green-500/20 border border-green-500" /> 1-4 Deliveries
-                            </div>
-                            <div className="flex items-center gap-1.5 text-orange-600 dark:text-orange-500 font-semibold">
-                              <div className="h-3 w-3 rounded-md bg-orange-500/20 border border-orange-500" /> 5-9 Deliveries
-                            </div>
-                            <div className="flex items-center gap-1.5 text-red-600 dark:text-red-500 font-bold">
-                              <div className="h-3 w-3 rounded-md bg-red-500/20 border border-red-500" /> 10+ Deliveries
-                            </div>
-                          </div>
-                        </section>
-                      )}
-
-                      {card.id === 'Orders' && (
-                        <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
-                          <div className="mb-5 flex items-center justify-between">
-                            <div>
-                              <h2 className="text-h2">Live boutique orders</h2>
-                              <p className="text-para text-[var(--muted)]">Production queue for this week</p>
-                            </div>
-                            <button
-                              className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-sm font-semibold hover:bg-[var(--soft)] transition"
-                              type="button"
-                              onClick={() => setCurrentPage('view-orders')}
-                            >
-                              View all
-                            </button>
-                          </div>
-                          <div className="overflow-hidden rounded-2xl border border-[var(--border)]">
-                            {liveRecentOrders.map((o) => (
-                              <div className="grid gap-3 border-b border-[var(--border)] px-4 py-4 last:border-b-0 md:grid-cols-[1fr_1fr_150px_90px]" key={o.id}>
-                                <span className="font-semibold">{o.clientName}</span>
-                                <span className="text-[var(--muted)]">{o.product}</span>
-                                <span className="w-fit rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)] max-h-[26px]">{o.status}</span>
-                                <span className="font-semibold md:text-right">{o.price}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </section>
-                      )}
-
-                      {card.id === 'Team' && user?.role === 'Admin' && (
-                        <section className="rounded-[24px] border border-[var(--border)] bg-[var(--jewel)] p-5 text-white shadow-[var(--shadow)]">
-                          <h2 className="text-h2 flex items-center gap-2">
-                            <ShieldCheck size={20} /> Team pulse
-                          </h2>
-                          <p className="text-para-sm mt-1 text-[#cce0da]">Staff activities today</p>
-                          <div className="mt-5 space-y-3">
-                            {liveActivities.map((act) => (
-                              <div className="rounded-md bg-white/10 p-4" key={act.id}>
-                                <p className="text-sm text-[#cce0da]">{new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                                <p className="font-semibold">{act.title}</p>
-                                <p className="text-sm text-[#dfeee9]">{act.actor || 'System'}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </section>
-                      )}
-
-                      {card.id === 'Sales' && (
-                        <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur">
-                          <div className="mb-5 flex items-center justify-between">
-                            <div>
-                              <h2 className="text-h2">Real-time sales</h2>
-                              <p className="text-para text-[var(--muted)]">Recent transactions</p>
-                            </div>
-                            {user?.role === 'Admin' && (
-                              <button
-                                className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-sm font-semibold hover:bg-[var(--soft)] transition"
-                                type="button"
-                                onClick={() => setCurrentPage('view-sales')}
-                              >
-                                All Sales
-                              </button>
-                            )}
-                          </div>
-                          <div className="overflow-hidden rounded-2xl border border-[var(--border)]">
-                            {liveRecentSales.map((s) => (
-                              <div className="grid gap-3 border-b border-[var(--border)] px-4 py-4 last:border-b-0 md:grid-cols-[100px_1fr_100px]" key={s.id || s.saleId}>
-                                <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-tight">{new Date(s.timestamp).toLocaleDateString()}</span>
-                                <div className="min-w-0">
-                                  <p className="font-semibold truncate">{s.client?.name || 'Guest'}</p>
-                                  <p className="text-[10px] text-[var(--muted)] truncate">ID: {s.saleId}</p>
-                                </div>
-                                <span className="font-black text-[var(--accent)] text-right">₹{s.total}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </section>
-                      )}
-
-                      {card.id === 'Revenue' && user?.role === 'Admin' && (
-                        <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
-                          <div className="mb-6 flex items-center justify-between">
-                            <h2 className="text-h2 flex items-center gap-2">
-                              <BarChart3 size={22} className="text-[var(--accent)]" /> Revenue pulse
-                            </h2>
-                            <div className="h-8 w-8 rounded-full bg-[var(--accent-soft)] flex items-center justify-center text-[var(--accent)]">
-                              <TrendingUp size={14} />
-                            </div>
-                          </div>
-                          <p className="text-h1 mt-2">₹{totalRev.toLocaleString()}</p>
-                          <div className="space-y-6 mt-6">
-                            {liveRevenuePulse.map((item) => (
-                              <div key={item.label}>
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-tiny font-bold">{item.label}</span>
-                                  <span className="text-sm font-black text-[var(--accent)]">{item.percentage}%</span>
-                                </div>
-                                <div className="h-2 w-full rounded-full bg-[var(--soft)] overflow-hidden">
-                                  <div className={`h-full rounded-full transition-all duration-1000 ${item.color}`} style={{ width: `${item.percentage}%` }} />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </section>
-                      )}
-
-                      {card.id === 'Elegance' && (
-                        <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur h-full">
-                          <h2 className="text-h2 flex items-center gap-2">
-                            <ShieldCheck size={20} /> Client elegance score
-                          </h2>
-                          <p className="text-para mt-1">Retention, repeat orders, and fulfillment quality</p>
-                          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                            {(() => {
-                              const totalClientsCount = clients.length || 0;
-                              const totalOrdersCount = orders.length || 0;
-                              const clientTransactionMap = {};
-                              orders.forEach(o => {
-                                const cid = o.clientId || o.client;
-                                if (cid) clientTransactionMap[cid] = (clientTransactionMap[cid] || 0) + 1;
-                              });
-                              const repeatClientsCount = Object.values(clientTransactionMap).filter(count => count > 1).length;
-                              const retentionRate = totalClientsCount > 0 ? Math.round((repeatClientsCount / totalClientsCount) * 100) : 0;
-                              const repeatOrdersCount = orders.filter(o => clientTransactionMap[o.clientId || o.client] > 1).length;
-                              const repeatOrdersRate = totalOrdersCount > 0 ? Math.round((repeatOrdersCount / totalOrdersCount) * 100) : 0;
-                              const completedOrders = orders.filter(o => o.status === 'Completed').length;
-                              const fulfillmentRate = totalOrdersCount > 0 ? Math.round((completedOrders / totalOrdersCount) * 100) : 0;
-
-                              return [
-                                { label: 'Retention', value: `${retentionRate}%` },
-                                { label: 'Repeat orders', value: `${repeatOrdersRate}%` },
-                                { label: 'Fulfillment', value: `${fulfillmentRate}%` }
-                              ].map((item) => (
-                                <div className="rounded-2xl bg-[var(--soft)] p-4" key={item.label}>
-                                  <p className="text-h1">{item.value}</p>
-                                  <p className="text-tiny mt-1">{item.label}</p>
-                                </div>
-                              ));
-                            })()}
-                          </div>
-                        </section>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                      );
+                    } else {
+                      return (
+                        <Masonry key={groupIdx} breakpointCols={{default: 2, 1023: 1}} className="my-masonry-grid" columnClassName="my-masonry-grid_column">
+                          {group.items.map((card, idx) => renderDashboardCard(card, visibleCards.indexOf(card)))}
+                        </Masonry>
+                      );
+                    }
+                  });
+                })()}
 
                 {/* Manage Cards Button */}
                 <div className="flex items-center justify-center pt-8">
