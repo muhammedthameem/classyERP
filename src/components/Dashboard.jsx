@@ -336,7 +336,7 @@ function Dashboard({
 
   const liveStats = [
     { label: 'Total Revenue', value: `₹${allSales.reduce((acc, s) => acc + (parseFloat(s.total) || parseFloat(s.totalAmount) || parseFloat(s.paidAmount) || 0), 0).toLocaleString()}`, note: 'Real-time sales', icon: TrendingUp, adminOnly: true },
-    { label: 'Active Orders', value: allOrders.filter(o => o.status !== 'Closed' && o.status !== 'Sold').length, note: 'In production', icon: ShoppingBag },
+    { label: 'Active Orders', value: allOrders.filter(o => o.status !== 'Closed' && o.status !== 'Sold' && o.status !== 'Completed').length, note: 'In production', icon: ShoppingBag },
     { label: 'Studio Clients', value: allClients.length, note: 'Registered profiles', icon: UsersRound },
     { label: 'Stock Items', value: allInventory.length, note: 'Inventory items', icon: Package },
   ].filter(s => !s.adminOnly || user?.role === 'Admin')
@@ -408,7 +408,7 @@ function Dashboard({
   // Smart Delivery Calendar Logic
   const deliveryStats = React.useMemo(() => {
     const counts = {};
-    orders.filter(o => o.status !== 'Sold' && o.status !== 'Closed').forEach(o => {
+    orders.filter(o => o.status !== 'Sold' && o.status !== 'Closed' && o.status !== 'Completed').forEach(o => {
       if (o.deliveryDate) {
         counts[o.deliveryDate] = (counts[o.deliveryDate] || 0) + 1;
       }
@@ -692,7 +692,7 @@ function Dashboard({
                                     </button>
                                   </div>
                                   <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin">
-                                  {orders.filter(o => o.deliveryDate === selectedCalendarDate && o.status !== 'Sold' && o.status !== 'Closed').map((o, idx) => (
+                                  {orders.filter(o => o.deliveryDate === selectedCalendarDate && o.status !== 'Sold' && o.status !== 'Closed' && o.status !== 'Completed').map((o, idx) => (
                                     <button
                                       key={o.id || idx}
                                       className="w-full text-left bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 hover:border-[var(--accent)] transition flex items-center justify-between group"
