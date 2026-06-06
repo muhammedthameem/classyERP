@@ -5,7 +5,7 @@ import { sendWhatsApp } from "../../utils/whatsapp";
 import supabase from '../../supabase'
 import UndoToast from '../../components/UndoToast'
 
-function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory, clients, saveOrder, deleteOrder, cloudLoaded }) {
+function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClientDetailMode, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory, clients, saveOrder, deleteOrder, cloudLoaded }) {
   const rowRefs = useRef({});
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPageNum, setCurrentPageNum] = useState(1)
@@ -21,6 +21,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
   const [customDate, setCustomDate] = useState(getIndianDate())
   const [showWaPopup, setShowWaPopup] = useState(false)
   const [waData, setWaData] = useState({ phone: '', name: '', message: '', orderId: '' })
+  const [showMeasurements, setShowMeasurements] = useState(false)
 
   const isDataLoading = !cloudLoaded || !orders;
 
@@ -324,6 +325,16 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
     }
   }, [totalPages, currentPageNum])
 
+  // Keep the viewOrder popup in sync with any background updates
+  useEffect(() => {
+    if (viewOrder) {
+      const updatedOrder = orders.find(o => o.id === viewOrder.id);
+      if (updatedOrder && JSON.stringify(updatedOrder) !== JSON.stringify(viewOrder)) {
+        setViewOrder(updatedOrder);
+      }
+    }
+  }, [orders, viewOrder]);
+
   const paginatedOrders = sortedOrders.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage)
 
   const getProgress = (order) => {
@@ -371,52 +382,70 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-y-6 gap-x-4">
-              <div>
-                <p className="text-sm font-medium text-[var(--muted)] mb-1">Client</p>
-                <p className="font-semibold text-[var(--text)] text-lg">{viewOrder.clientName}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-[var(--muted)] mb-1">Status</p>
-                <span className="rounded bg-[var(--accent-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--accent)]">{viewOrder.status === 'Pending' ? 'Not Ready' : (viewOrder.status || 'Not Ready')}</span>
-              </div>
-
-              <div>
-                <p className="text-sm font-medium text-[var(--muted)] mb-1">Product Details</p>
-                <p className="font-semibold text-[var(--text)]">{viewOrder.product}</p>
-                <p className="text-sm text-[var(--muted)] mt-0.5">{viewOrder.orderType} • ₹{viewOrder.price}</p>
-                {viewOrder.advance > 0 && <p className="text-sm text-green-600 font-semibold mt-0.5">Advance Paid: ₹{viewOrder.advance} • Bal: ₹{(parseFloat(viewOrder.price || 0) - parseFloat(viewOrder.advance || 0)).toFixed(2)}</p>}
-                {viewOrder.size && <p className="text-xs text-[var(--muted)] mt-1">Qty: <span className="font-medium text-[var(--text)]">{viewOrder.size}</span></p>}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              {/* Client Card */}
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 flex flex-col justify-center">
+                <p className="text-xs font-medium text-[var(--muted)] mb-1.5">Client Name</p>
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-[var(--surface-strong)] flex items-center justify-center text-sm font-semibold text-[var(--text)] border border-[var(--border)]">
+                    {viewOrder.clientName?.charAt(0)?.toUpperCase()}
+                  </div>
+                  <p className="font-semibold text-[var(--text)] text-base truncate">{viewOrder.clientName}</p>
+                </div>
               </div>
 
-              <div>
-                <p className="text-sm font-medium text-[var(--muted)] mb-1">Material Details</p>
-                <p className="text-sm text-[var(--text)] font-medium mb-2">{viewOrder.sourceOfMaterial || 'Outside'}</p>
+              {/* Status Card */}
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 flex flex-col justify-center">
+                <p className="text-xs font-medium text-[var(--muted)] mb-2">Order Status</p>
+                <div className="flex items-center">
+                  <span className={`px-2.5 py-1 rounded-md text-xs font-medium border
+                    ${viewOrder.status === 'Completed' || viewOrder.status === 'Sold' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                      viewOrder.status === 'In Progress' || viewOrder.status === 'Start' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' :
+                      viewOrder.status === 'Hold' ? 'bg-red-50 text-red-600 border-red-100' :
+                      'bg-[var(--surface-strong)] text-[var(--text)] border-[var(--border)]'
+                    }`}>
+                    {viewOrder.status === 'Pending' ? 'Not Ready' : (viewOrder.status || 'Not Ready')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Product Card */}
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 flex flex-col justify-center">
+                <p className="text-xs font-medium text-[var(--muted)] mb-1">Product Details</p>
+                <p className="font-semibold text-[var(--text)] text-sm">{viewOrder.product}</p>
+                <p className="text-[13px] text-[var(--muted)] mt-0.5">{viewOrder.orderType} <span className="opacity-40 mx-1.5">•</span> ₹{viewOrder.price}</p>
+                
+                <div className="flex flex-wrap items-center gap-3 mt-2.5">
+                  {viewOrder.advance > 0 && <span className="text-[11px] text-[var(--muted)] bg-[var(--surface-strong)] px-2 py-0.5 rounded-md border border-[var(--border)]">Adv: <span className="text-emerald-600 font-medium">₹{viewOrder.advance}</span> <span className="opacity-40 mx-1">•</span> Bal: <span className="font-medium">₹{(parseFloat(viewOrder.price || 0) - parseFloat(viewOrder.advance || 0)).toFixed(2)}</span></span>}
+                  {viewOrder.size && <span className="text-[11px] text-[var(--muted)] bg-[var(--surface-strong)] px-2 py-0.5 rounded-md border border-[var(--border)]">Qty: <span className="font-medium text-[var(--text)]">{viewOrder.size}</span></span>}
+                </div>
+              </div>
+
+              {/* Material Details Card */}
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 flex flex-col justify-start">
+                <p className="text-xs font-medium text-[var(--muted)] mb-1">Material Source</p>
+                <p className="text-sm font-semibold text-[var(--text)]">{viewOrder.sourceOfMaterial || 'Outside'}</p>
+                
                 {viewOrder.sourceOfMaterial === 'Internal' && viewOrder.internalItems && viewOrder.internalItems.length > 0 && (
-                  <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] overflow-hidden flex flex-col">
-                    <div className="bg-[var(--soft)] px-3 py-2 border-b border-[var(--border)] flex justify-between items-center">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">Internal Materials</span>
-                      <span className="text-[10px] font-bold bg-[var(--accent-soft)] text-[var(--accent)] px-2 py-0.5 rounded-full">{viewOrder.internalItems.length} Items</span>
-                    </div>
-                    <div className="max-h-40 overflow-y-auto custom-scrollbar p-3 space-y-2">
+                  <div className="mt-3 text-xs text-[var(--muted)]">
+                    <div className="border-l-2 border-[var(--border)] pl-3 py-1 space-y-1.5">
                       {viewOrder.internalItems.map((item, idx) => (
-                        <div key={idx} className="flex justify-between items-start text-xs bg-[var(--surface)] p-2.5 rounded-lg border border-[var(--border)] transition hover:border-[var(--accent)]">
-                          <div>
-                            <span className="font-bold text-[var(--text)] block">{item.productName}</span>
-                            <span className="block text-[10px] font-medium text-[var(--muted)] mt-0.5">Qty: {item.quantity} {item.unit}</span>
-                          </div>
-                          <span className="font-black text-[var(--accent)]">₹{(item.totalPrice || 0).toFixed(2)}</span>
+                        <div key={idx} className="flex justify-between items-center">
+                          <span>{item.quantity}x {item.productName}</span>
+                          <span className="text-[var(--text)] font-medium">₹{(item.totalPrice || 0).toFixed(2)}</span>
                         </div>
                       ))}
                     </div>
-                    <div className="bg-[var(--soft)] px-3 py-2.5 border-t border-[var(--border)] flex justify-between items-center">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">Material Total</span>
-                      <span className="text-sm font-black text-[var(--text)]">₹{viewOrder.internalItems.reduce((sum, i) => sum + (i.totalPrice || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <div className="flex justify-between items-center mt-2.5 pl-3 font-medium text-[var(--text)]">
+                      <span>Total Material</span>
+                      <span>₹{viewOrder.internalItems.reduce((sum, i) => sum + (i.totalPrice || 0), 0).toFixed(2)}</span>
                     </div>
                   </div>
                 )}
               </div>
+            </div>
 
+            <div className="flex flex-col gap-6 mt-6">
               {viewOrder.notes && (
                 <div className="col-span-2">
                   <p className="text-sm font-medium text-[var(--muted)] mb-1">Notes</p>
@@ -424,26 +453,157 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                 </div>
               )}
 
-              {viewOrder.photo && (
-                <div>
-                  <p className="text-sm font-medium text-[var(--muted)] mb-1">Design Reference</p>
-                  <img src={viewOrder.photo} alt="Ref" className="h-24 w-24 rounded-xl object-cover border border-[var(--border)] cursor-pointer hover:opacity-80 transition" onClick={() => setImagePopup(viewOrder.photo)} />
+              {(() => {
+                const clientObj = (clients || []).find(c => c.name?.toLowerCase().trim() === viewOrder.clientName?.toLowerCase().trim());
+                const matchMeasure = clientObj?.measurements?.find(m => m.product?.toLowerCase().trim() === viewOrder.product?.toLowerCase().trim());
+                if (!matchMeasure) return null;
+                
+                const topData = [];
+                const bottomData = [];
+                const otherData = [];
+                
+                if (matchMeasure.topMeasurements) {
+                  Object.keys(matchMeasure.topMeasurements).forEach(k => {
+                    const val = matchMeasure.topMeasurements[k];
+                    if (val && typeof val === 'string' && val.trim() !== '') {
+                      topData.push({ key: k, value: val });
+                    }
+                  });
+                }
+                if (matchMeasure.bottomMeasurements) {
+                  Object.keys(matchMeasure.bottomMeasurements).forEach(k => {
+                    const val = matchMeasure.bottomMeasurements[k];
+                    if (val && typeof val === 'string' && val.trim() !== '') {
+                      bottomData.push({ key: k, value: val });
+                    }
+                  });
+                }
+
+                // If old format or flat measurements exist
+                Object.keys(matchMeasure).forEach(k => {
+                  if (!['id', 'product', 'note', 'notes', 'timestamp', 'createdAt', 'topMeasurements', 'bottomMeasurements'].includes(k)) {
+                    const val = matchMeasure[k];
+                    if (val && typeof val === 'string' && val.trim() !== '') {
+                      otherData.push({ key: k, value: val });
+                    }
+                  }
+                });
+
+                const totalItems = topData.length + bottomData.length + otherData.length;
+                if (totalItems === 0) return null;
+
+                const formatKey = (str) => {
+                  return str.replace(/([A-Z])/g, ' $1').trim();
+                };
+
+                const renderSection = (title, data) => {
+                  if (data.length === 0) return null;
+                  return (
+                    <div className="mb-4 last:mb-0">
+                      <h4 className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest mb-2.5 pb-1 border-b border-[var(--border)]">{title}</h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                        {data.map((item, idx) => (
+                          <div key={idx} className="flex flex-col justify-center bg-[var(--surface-strong)] p-2.5 rounded-lg border border-[var(--border)] shadow-sm">
+                            <span className="text-[10px] font-bold text-[var(--muted)] leading-tight uppercase mb-0.5">{formatKey(item.key)}</span>
+                            <span className="text-sm font-black text-[var(--text)]">{item.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                };
+
+                return (
+                  <div className="col-span-2">
+                    <button 
+                      onClick={() => setShowMeasurements(!showMeasurements)}
+                      className="w-full flex items-center justify-between bg-[var(--soft)] p-3 rounded-xl border border-[var(--border)] hover:border-[var(--accent)] transition"
+                    >
+                      <p className="text-sm font-medium text-[var(--text)] flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--accent)]"><path d="M4 14l6-6 4 4 6-6"/><path d="M22 8v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8"/></svg>
+                        Client Measurements ({totalItems})
+                      </p>
+                      {showMeasurements ? <ChevronDown size={16} className="text-[var(--muted)]" /> : <ChevronRight size={16} className="text-[var(--muted)]" />}
+                    </button>
+                    {showMeasurements && (
+                      <div className="bg-[var(--soft)] p-4 rounded-xl border border-[var(--border)] mt-2">
+                        {renderSection('Top Measurements', topData)}
+                        {renderSection('Bottom Measurements', bottomData)}
+                        {renderSection('Other Details', otherData)}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {viewOrder.audioNote && (
+                <div className="col-span-2">
+                  <p className="text-sm font-medium text-[var(--muted)] mb-1 flex items-center gap-2">
+                    <Play size={14} className="text-[var(--accent)]" /> Voice Note
+                  </p>
+                  <audio controls src={viewOrder.audioNote} className="w-full h-10 rounded-xl outline-none" />
                 </div>
               )}
 
-              {viewOrder.materialPhoto && (
-                <div>
-                  <p className="text-sm font-medium text-[var(--muted)] mb-1">Material Photo</p>
-                  <img src={viewOrder.materialPhoto} alt="Mat" className="h-24 w-24 rounded-xl object-cover border border-[var(--border)] cursor-pointer hover:opacity-80 transition" onClick={() => setImagePopup(viewOrder.materialPhoto)} />
-                </div>
-              )}
+              <div className="flex flex-wrap gap-4">
+                {viewOrder.photo && (
+                  <div>
+                    <p className="text-sm font-medium text-[var(--muted)] mb-1">Design Reference</p>
+                    <img src={viewOrder.photo} alt="Ref" className="h-24 w-24 rounded-xl object-cover border border-[var(--border)] cursor-pointer hover:opacity-80 transition" onClick={() => setImagePopup(viewOrder.photo)} />
+                  </div>
+                )}
 
-              <div>
-                <p className="text-sm font-medium text-[var(--muted)] mb-1">Timeline</p>
-                <div className="flex flex-col gap-1 text-sm">
-                  <p className="text-[var(--text)]"><span className="text-[var(--muted)] w-16 inline-block">Order:</span> {viewOrder.orderDate}</p>
-                  {viewOrder.startDate && <p className="text-[var(--text)]"><span className="text-[var(--muted)] w-16 inline-block">Started:</span> {viewOrder.startDate}</p>}
-                  <p className="text-[var(--text)] font-medium"><span className="text-[var(--muted)] font-normal w-16 inline-block">Delivery:</span> {viewOrder.deliveryDate}</p>
+                {viewOrder.materialPhoto && (
+                  <div>
+                    <p className="text-sm font-medium text-[var(--muted)] mb-1">Material Photo</p>
+                    <img src={viewOrder.materialPhoto} alt="Mat" className="h-24 w-24 rounded-xl object-cover border border-[var(--border)] cursor-pointer hover:opacity-80 transition" onClick={() => setImagePopup(viewOrder.materialPhoto)} />
+                  </div>
+                )}
+              </div>
+
+              <div className="col-span-2 bg-[var(--soft)] p-5 rounded-2xl border border-[var(--border)] shadow-inner">
+                <p className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest mb-6 border-b border-[var(--border)] pb-2 flex items-center gap-2">
+                  <Clock size={14} /> Order Timeline
+                </p>
+                <div className="relative flex flex-col sm:flex-row gap-6 sm:gap-0 justify-between w-full">
+                  {/* Horizontal connecting line (hidden on mobile) */}
+                  <div className="hidden sm:block absolute top-5 left-12 right-12 h-0.5 bg-[var(--border)] z-0"></div>
+                  
+                  {/* Vertical connecting line (mobile only) */}
+                  <div className="sm:hidden absolute top-5 bottom-5 left-5 w-0.5 bg-[var(--border)] z-0"></div>
+
+                  {/* Step 1: Ordered */}
+                  <div className="relative z-10 flex flex-row sm:flex-col items-center sm:items-center gap-4 sm:gap-3 w-full sm:w-1/3">
+                    <div className="h-10 w-10 rounded-full bg-[var(--accent)] text-white flex items-center justify-center shrink-0 shadow-md ring-4 ring-[var(--soft)]">
+                      <CalendarDays size={16} />
+                    </div>
+                    <div className="flex flex-col sm:items-center text-left sm:text-center w-full bg-[var(--surface-strong)] sm:bg-transparent p-3 sm:p-0 rounded-xl border border-[var(--border)] sm:border-none">
+                      <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest">Ordered</span>
+                      <span className="text-sm font-black text-[var(--text)] mt-0.5">{viewOrder.orderDate || 'N/A'}</span>
+                    </div>
+                  </div>
+
+                  {/* Step 2: Started */}
+                  <div className={`relative z-10 flex flex-row sm:flex-col items-center sm:items-center gap-4 sm:gap-3 w-full sm:w-1/3 ${viewOrder.startDate ? '' : 'opacity-70 grayscale-[50%]'}`}>
+                    <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 shadow-md ring-4 ring-[var(--soft)] transition-colors ${viewOrder.startDate ? 'bg-indigo-500 text-white' : 'bg-[var(--surface-strong)] text-[var(--muted)] border border-[var(--border)]'}`}>
+                      <Play size={16} />
+                    </div>
+                    <div className="flex flex-col sm:items-center text-left sm:text-center w-full bg-[var(--surface-strong)] sm:bg-transparent p-3 sm:p-0 rounded-xl border border-[var(--border)] sm:border-none">
+                      <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest">Started</span>
+                      <span className="text-sm font-black text-[var(--text)] mt-0.5">{viewOrder.startDate || 'Pending'}</span>
+                    </div>
+                  </div>
+
+                  {/* Step 3: Delivered/Completed */}
+                  <div className={`relative z-10 flex flex-row sm:flex-col items-center sm:items-center gap-4 sm:gap-3 w-full sm:w-1/3 ${viewOrder.completedDate || viewOrder.status === 'Completed' || viewOrder.status === 'Sold' ? '' : 'opacity-70 grayscale-[50%]'}`}>
+                    <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 shadow-md ring-4 ring-[var(--soft)] transition-colors ${viewOrder.completedDate || viewOrder.status === 'Completed' || viewOrder.status === 'Sold' ? 'bg-emerald-500 text-white' : 'bg-[var(--surface-strong)] text-[var(--muted)] border border-[var(--border)]'}`}>
+                      <CheckCircle2 size={16} />
+                    </div>
+                    <div className="flex flex-col sm:items-center text-left sm:text-center w-full bg-[var(--surface-strong)] sm:bg-transparent p-3 sm:p-0 rounded-xl border border-[var(--border)] sm:border-none">
+                      <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest">Delivery</span>
+                      <span className="text-sm font-black text-[var(--text)] mt-0.5">{viewOrder.deliveryDate || 'N/A'}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -906,7 +1066,22 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, showGlobalToast, currentUs
                   >
                     <td className="font-medium text-[var(--text)]">#{order.id}</td>
                     <td>
-                      <p className="font-semibold text-[var(--text)]">{order.clientName}</p>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const clientObj = (clients || []).find(c => c.name?.toLowerCase().trim() === order.clientName?.toLowerCase().trim());
+                          if (clientObj && setSelectedClient && setClientDetailMode && setCurrentPage) {
+                            setSelectedClient(clientObj);
+                            setClientDetailMode('view');
+                            setCurrentPage('client-detail');
+                          } else if (!clientObj && showGlobalToast) {
+                            showGlobalToast('Not Found', 'Client details could not be found.');
+                          }
+                        }}
+                        className="font-semibold text-[var(--accent)] hover:underline text-left break-words"
+                      >
+                        {order.clientName}
+                      </button>
                     </td>
                     <td>
                       {order.photo ? (

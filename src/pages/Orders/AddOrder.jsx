@@ -40,6 +40,7 @@ function AddOrderPage({
       sourceOfMaterial: 'Outside',
       internalItems: [],
       notes: '',
+      audioNote: null,
       showTypeDropdown: false,
       showProductTypeDropdown: false,
       showInventoryDropdown: null,
@@ -117,6 +118,7 @@ function AddOrderPage({
           sourceOfMaterial: 'Outside',
           internalItems: [],
           notes: prefillNotes,
+          audioNote: null,
           showTypeDropdown: false,
           showProductTypeDropdown: false,
           showInventoryDropdown: null,
@@ -140,6 +142,7 @@ function AddOrderPage({
       sourceOfMaterial: 'Outside',
       internalItems: [],
       notes: '',
+      audioNote: null,
       showTypeDropdown: false,
       showProductTypeDropdown: false,
       showInventoryDropdown: null,
@@ -236,6 +239,7 @@ function AddOrderPage({
       internalItems: item.sourceOfMaterial === 'Internal' ? item.internalItems : [],
       materialPhoto: item.materialPhoto,
       notes: item.notes || notes,
+      audioNote: item.audioNote,
       orderDate: item.orderDate,
       deliveryDate: item.deliveryDate,
       photo: photoPreview,
@@ -296,6 +300,7 @@ function AddOrderPage({
       sourceOfMaterial: 'Outside',
       internalItems: [],
       notes: '',
+      audioNote: null,
       showTypeDropdown: false,
       showProductTypeDropdown: false,
       showInventoryDropdown: null,
@@ -1261,14 +1266,43 @@ function AddOrderPage({
                   </div>
                 </div>
 
-                <div className="mt-6 border-t border-[var(--border)] pt-4">
-                  <span className="mb-2 block text-sm font-medium text-[var(--text)]">Special Instructions / Product Notes</span>
-                  <textarea
-                    placeholder="Enter any specific requirements for this product..."
-                    className="w-full h-20 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] p-3 text-sm outline-none transition focus:border-[var(--accent)] resize-none"
-                    value={item.notes}
-                    onChange={(e) => updateOrderItem(idx, { notes: e.target.value })}
-                  />
+                <div className="mt-6 border-t border-[var(--border)] pt-4 grid grid-cols-1 md:grid-cols-[1fr_250px] gap-6">
+                  <div>
+                    <span className="mb-2 block text-sm font-medium text-[var(--text)]">Special Instructions / Product Notes</span>
+                    <textarea
+                      placeholder="Enter any specific requirements for this product..."
+                      className="w-full h-20 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] p-3 text-sm outline-none transition focus:border-[var(--accent)] resize-none"
+                      value={item.notes}
+                      onChange={(e) => updateOrderItem(idx, { notes: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <span className="mb-2 block text-sm font-medium text-[var(--text)]">Voice Note (Audio)</span>
+                    {!item.audioNote ? (
+                      <label className="flex flex-col items-center justify-center w-full h-20 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-strong)] hover:bg-[var(--soft)] transition cursor-pointer">
+                        <Plus size={20} className="text-[var(--muted)] mb-1" />
+                        <p className="text-[10px] font-bold text-[var(--muted)] uppercase">Upload Audio</p>
+                        <input type="file" className="hidden" accept="audio/*" onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => updateOrderItem(idx, { audioNote: event.target.result });
+                            reader.readAsDataURL(e.target.files[0]);
+                          }
+                        }} />
+                      </label>
+                    ) : (
+                      <div className="flex flex-col justify-center h-20 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2">
+                        <audio controls src={item.audioNote} className="w-full h-8 mb-2" />
+                        <button
+                          type="button"
+                          onClick={() => updateOrderItem(idx, { audioNote: null })}
+                          className="text-[10px] font-bold text-red-500 hover:text-red-700 flex items-center justify-center gap-1 w-full"
+                        >
+                          <Trash2 size={12} /> Remove Audio
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
               </div>
