@@ -173,11 +173,11 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
 
       let formattedPhone = String(phoneToUse).replace(/\D/g, '');
       if (formattedPhone.length === 10) {
-          formattedPhone = '91' + formattedPhone;
+        formattedPhone = '91' + formattedPhone;
       }
-      
+
       const defaultMsg = `Hi ${changedOrder.clientName || 'Customer'}\nYour ${changedOrder.product || 'Item'} (#${changedOrder.orderId || changedOrder.id}) is ready for delivery. Please collect it.\n\nThank you,\nClassy Couture`;
-      
+
       setWaData({
         phone: formattedPhone,
         name: changedOrder.clientName || 'Customer',
@@ -401,8 +401,8 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                   <span className={`px-2.5 py-1 rounded-md text-xs font-medium border
                     ${viewOrder.status === 'Completed' || viewOrder.status === 'Sold' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                       viewOrder.status === 'In Progress' || viewOrder.status === 'Start' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' :
-                      viewOrder.status === 'Hold' ? 'bg-red-50 text-red-600 border-red-100' :
-                      'bg-[var(--surface-strong)] text-[var(--text)] border-[var(--border)]'
+                        viewOrder.status === 'Hold' ? 'bg-red-50 text-red-600 border-red-100' :
+                          'bg-[var(--surface-strong)] text-[var(--text)] border-[var(--border)]'
                     }`}>
                     {viewOrder.status === 'Pending' ? 'Not Ready' : (viewOrder.status || 'Not Ready')}
                   </span>
@@ -414,7 +414,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                 <p className="text-xs font-medium text-[var(--muted)] mb-1">Product Details</p>
                 <p className="font-semibold text-[var(--text)] text-sm">{viewOrder.product}</p>
                 <p className="text-[13px] text-[var(--muted)] mt-0.5">{viewOrder.orderType} <span className="opacity-40 mx-1.5">•</span> ₹{viewOrder.price}</p>
-                
+
                 <div className="flex flex-wrap items-center gap-3 mt-2.5">
                   {viewOrder.advance > 0 && <span className="text-[11px] text-[var(--muted)] bg-[var(--surface-strong)] px-2 py-0.5 rounded-md border border-[var(--border)]">Adv: <span className="text-emerald-600 font-medium">₹{viewOrder.advance}</span> <span className="opacity-40 mx-1">•</span> Bal: <span className="font-medium">₹{(parseFloat(viewOrder.price || 0) - parseFloat(viewOrder.advance || 0)).toFixed(2)}</span></span>}
                   {viewOrder.size && <span className="text-[11px] text-[var(--muted)] bg-[var(--surface-strong)] px-2 py-0.5 rounded-md border border-[var(--border)]">Qty: <span className="font-medium text-[var(--text)]">{viewOrder.size}</span></span>}
@@ -425,7 +425,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
               <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 flex flex-col justify-start">
                 <p className="text-xs font-medium text-[var(--muted)] mb-1">Material Source</p>
                 <p className="text-sm font-semibold text-[var(--text)]">{viewOrder.sourceOfMaterial || 'Outside'}</p>
-                
+
                 {viewOrder.sourceOfMaterial === 'Internal' && viewOrder.internalItems && viewOrder.internalItems.length > 0 && (
                   <div className="mt-3 text-xs text-[var(--muted)]">
                     <div className="border-l-2 border-[var(--border)] pl-3 py-1 space-y-1.5">
@@ -445,7 +445,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
               </div>
             </div>
 
-            <div className="flex flex-col gap-6 mt-6">
+            <div className="flex flex-col gap-3 mt-6">
               {viewOrder.notes && (
                 <div className="col-span-2">
                   <p className="text-sm font-medium text-[var(--muted)] mb-1">Notes</p>
@@ -457,11 +457,11 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                 const clientObj = (clients || []).find(c => c.name?.toLowerCase().trim() === viewOrder.clientName?.toLowerCase().trim());
                 const matchMeasure = clientObj?.measurements?.find(m => m.product?.toLowerCase().trim() === viewOrder.product?.toLowerCase().trim());
                 if (!matchMeasure) return null;
-                
+
                 const topData = [];
                 const bottomData = [];
                 const otherData = [];
-                
+
                 if (matchMeasure.topMeasurements) {
                   Object.keys(matchMeasure.topMeasurements).forEach(k => {
                     const val = matchMeasure.topMeasurements[k];
@@ -515,12 +515,12 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
 
                 return (
                   <div className="col-span-2">
-                    <button 
+                    <button
                       onClick={() => setShowMeasurements(!showMeasurements)}
                       className="w-full flex items-center justify-between bg-[var(--soft)] p-3 rounded-xl border border-[var(--border)] hover:border-[var(--accent)] transition"
                     >
                       <p className="text-sm font-medium text-[var(--text)] flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--accent)]"><path d="M4 14l6-6 4 4 6-6"/><path d="M22 8v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--accent)]"><path d="M4 14l6-6 4 4 6-6" /><path d="M22 8v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8" /></svg>
                         Client Measurements ({totalItems})
                       </p>
                       {showMeasurements ? <ChevronDown size={16} className="text-[var(--muted)]" /> : <ChevronRight size={16} className="text-[var(--muted)]" />}
@@ -568,7 +568,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                 <div className="relative flex flex-col sm:flex-row gap-6 sm:gap-0 justify-between w-full">
                   {/* Horizontal connecting line (hidden on mobile) */}
                   <div className="hidden sm:block absolute top-5 left-12 right-12 h-0.5 bg-[var(--border)] z-0"></div>
-                  
+
                   {/* Vertical connecting line (mobile only) */}
                   <div className="sm:hidden absolute top-5 bottom-5 left-5 w-0.5 bg-[var(--border)] z-0"></div>
 
@@ -1020,8 +1020,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                     </span>
                   </div>
                 </th>
-                <th className="min-w-[140px]">Status</th>
-                <th className="min-w-[120px]">Progress</th>
+                <th className="min-w-[180px]">Status & Progress</th>
                 <th className="text-right">Actions</th>
               </tr>
             </thead>
@@ -1041,11 +1040,10 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                       <div className="skeleton h-4 w-24 rounded mb-1" />
                       <div className="skeleton h-4 w-24 rounded" />
                     </td>
-                    <td><div className="skeleton h-9 w-28 rounded-xl" /></td>
                     <td>
                       <div className="flex items-center gap-2">
-                        <div className="skeleton h-2 w-16 rounded-full" />
-                        <div className="skeleton h-4 w-8 rounded" />
+                        <div className="skeleton h-9 w-28 rounded-xl" />
+                        <div className="skeleton h-4 w-6 rounded" />
                       </div>
                     </td>
                     <td className="text-right">
@@ -1066,7 +1064,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                   >
                     <td className="font-medium text-[var(--text)]">#{order.id}</td>
                     <td>
-                      <button 
+                      <button
                         type="button"
                         onClick={() => {
                           const clientObj = (clients || []).find(c => c.name?.toLowerCase().trim() === order.clientName?.toLowerCase().trim());
@@ -1118,40 +1116,35 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                       </div>
                     </td>
                     <td>
-                      <div className="relative group min-w-[120px]">
-                        <select
-                          className={`w-full appearance-none rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 pr-8 text-[11px] font-bold outline-none transition focus:border-[var(--accent)] cursor-pointer shadow-sm active:scale-95 ${order.status === 'Completed' ? 'text-green-600 border-green-500/30' :
-                            order.status === 'Hold' ? 'text-orange-500 border-orange-500/30' :
-                              'text-[var(--text)]'
-                            }`}
-                          value={order.status || 'Not Ready'}
-                          onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                          disabled={order.status === 'Sold'}
-                        >
-                          <option value="Not Ready">Not Ready</option>
-                          <option value="In Progress">In Progress</option>
-                          <option value="Hold">Hold</option>
-                          <option value="Completed">Completed</option>
-                          <option value="Sold" disabled>Sold</option>
-                        </select>
-                        <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--muted)]">
-                          <ChevronDown size={14} />
+                      <div className="flex items-center gap-2">
+                        <div className="relative group min-w-[130px]">
+                          <div className={`absolute inset-0 rounded-xl overflow-hidden pointer-events-none border ${order.status === 'Completed' || order.status === 'Sold' ? 'border-green-500/30 bg-green-50/50' : order.status === 'Hold' ? 'border-orange-500/30 bg-orange-50/50' : 'border-[var(--border)] bg-[var(--surface-strong)]'}`}>
+                            <div className={`h-full transition-all duration-500 opacity-20 ${order.status === 'Hold' ? 'bg-orange-500' : 'bg-[var(--accent)]'}`} style={{ width: `${progress}%` }}></div>
+                          </div>
+                          <select
+                            className={`relative z-10 w-full appearance-none bg-transparent px-3 py-2 pr-8 text-[11px] font-bold outline-none transition cursor-pointer active:scale-95 ${order.status === 'Completed' || order.status === 'Sold' ? 'text-green-600' : order.status === 'Hold' ? 'text-orange-500' : 'text-[var(--text)]'}`}
+                            value={order.status || 'Not Ready'}
+                            onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                            disabled={order.status === 'Sold'}
+                          >
+                            <option value="Not Ready">Not Ready</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Hold">Hold</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Sold" disabled>Sold</option>
+                          </select>
+                          <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--muted)] z-10">
+                            <ChevronDown size={14} />
+                          </div>
                         </div>
+                        <span className="text-xs font-bold text-[var(--muted)] w-8 text-right">{progress}%</span>
                       </div>
                       {order.startDate && order.status !== 'Pending' && (
-                        <p className="text-[var(--muted)] mt-1 !text-[10px]">Started: {formatDateDDMMYY(order.startDate)}</p>
+                        <p className="text-[var(--muted)] mt-1.5 !text-[10px]">Started: {formatDateDDMMYY(order.startDate)}</p>
                       )}
                       {(order.completedDate || order.closedDate) && (order.status === 'Completed' || order.status === 'Sold') && (
                         <p className="text-[var(--muted)] mt-0.5 !text-[10px]">Completed: {formatDateDDMMYY(order.completedDate || order.closedDate)}</p>
                       )}
-                    </td>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-full max-w-[80px] rounded-full bg-[var(--soft)] overflow-hidden">
-                          <div className={`h-full transition-all duration-500 ${order.status === 'Hold' ? 'bg-orange-500' : 'bg-[var(--accent)]'}`} style={{ width: `${progress}%` }}></div>
-                        </div>
-                        <span className="text-xs font-semibold text-[var(--text)]">{progress}%</span>
-                      </div>
                     </td>
                     <td className="text-right">
                       <div className="flex justify-end gap-2 transition-opacity">
@@ -1177,7 +1170,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
               })}
               {paginatedOrders.length === 0 && !isDataLoading && (
                 <tr>
-                  <td colSpan="8" className="text-center text-[var(--muted)]">No orders found.</td>
+                  <td colSpan="7" className="text-center text-[var(--muted)]">No orders found.</td>
                 </tr>
               )}
             </tbody>
