@@ -1020,7 +1020,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                     </span>
                   </div>
                 </th>
-                <th className="min-w-[180px]">Status & Progress</th>
+                <th className="min-w-[180px]">Status</th>
                 <th className="text-right">Actions</th>
               </tr>
             </thead>
@@ -1060,7 +1060,13 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                   <tr
                     key={order.id}
                     ref={el => rowRefs.current[order.id] = el}
-                    className={`group transition-colors duration-1000 ${highlightOrderId === order.id ? 'bg-[var(--accent-soft)]/50 ring-2 ring-[var(--accent)] ring-inset' : (order.status === 'Completed' ? 'bg-green-500/10' : '')}`}
+                    className={`group transition-all duration-1000 ${highlightOrderId === order.id ? 'ring-2 ring-[var(--accent)] ring-inset' : ''}`}
+                    style={{
+                      background: progress > 0 ? `linear-gradient(to right, ${order.status === 'Completed' || order.status === 'Sold' ? 'rgba(34, 197, 94, 0.15)' :
+                          order.status === 'Hold' ? 'rgba(249, 115, 22, 0.15)' :
+                            'var(--accent-soft)'
+                        } ${progress}%, transparent ${progress}%)` : undefined
+                    }}
                   >
                     <td className="font-medium text-[var(--text)]">#{order.id}</td>
                     <td>
@@ -1118,11 +1124,8 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                     <td>
                       <div className="flex items-center gap-2">
                         <div className="relative group min-w-[130px]">
-                          <div className={`absolute inset-0 rounded-xl overflow-hidden pointer-events-none border ${order.status === 'Completed' || order.status === 'Sold' ? 'border-green-500/30 bg-green-50/50' : order.status === 'Hold' ? 'border-orange-500/30 bg-orange-50/50' : 'border-[var(--border)] bg-[var(--surface-strong)]'}`}>
-                            <div className={`h-full transition-all duration-500 opacity-20 ${order.status === 'Hold' ? 'bg-orange-500' : 'bg-[var(--accent)]'}`} style={{ width: `${progress}%` }}></div>
-                          </div>
                           <select
-                            className={`relative z-10 w-full appearance-none bg-transparent px-3 py-2 pr-8 text-[11px] font-bold outline-none transition cursor-pointer active:scale-95 ${order.status === 'Completed' || order.status === 'Sold' ? 'text-green-600' : order.status === 'Hold' ? 'text-orange-500' : 'text-[var(--text)]'}`}
+                            className={`relative z-10 w-full appearance-none rounded-xl border bg-[var(--surface-strong)] px-3 py-2 pr-8 text-[11px] font-bold outline-none transition cursor-pointer active:scale-95 ${order.status === 'Completed' || order.status === 'Sold' ? 'text-green-600 border-green-500/30' : order.status === 'Hold' ? 'text-orange-500 border-orange-500/30' : 'text-[var(--text)] border-[var(--border)]'}`}
                             value={order.status || 'Not Ready'}
                             onChange={(e) => handleStatusChange(order.id, e.target.value)}
                             disabled={order.status === 'Sold'}
