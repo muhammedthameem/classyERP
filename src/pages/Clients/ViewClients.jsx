@@ -138,7 +138,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
         </div>
       </div>
       
-      <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 40px; border: 1px solid #f3f4f6;">
+      <div style="background-color: #f9fafb; border-radius: 8px; padding: 16px; margin-bottom: 20px; border: 1px solid #f3f4f6;">
         <h3 style="font-size: 14px; color: #8e4431; margin: 0 0 15px 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Personal Information</h3>
         <div style="display: flex; gap: 40px;">
           <div>
@@ -170,10 +170,9 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
     if (measurementsList.length > 0) {
       measurementsList.forEach((m, idx) => {
         html += `
-          <div style="margin-bottom: 40px; page-break-inside: avoid;">
+          <div style="margin-bottom: 24px;">
             <div style="margin-bottom: 20px;">
-              <div style="display: inline-block; vertical-align: middle; background-color: #8e4431; color: white; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-weight: bold; font-size: 12px; margin-right: 10px;">${idx + 1}</div>
-              <h3 style="display: inline-block; vertical-align: middle; font-size: 18px; color: #111827; margin: 0; font-weight: 600;">${m.product || 'Unspecified Product'}</h3>
+              <span style="font-size: 18px; font-weight: 800; color: #8e4431; margin-right: 8px;">${idx + 1}.</span><span style="font-size: 18px; color: #111827; font-weight: 600;">${m.product || 'Unspecified Product'}</span>
             </div>
         `
 
@@ -256,15 +255,30 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
 
     container.innerHTML = html
 
+    // Measure actual content height to avoid blank second page
+    container.style.position = 'absolute'
+    container.style.left = '-9999px'
+    container.style.width = '794px' // A4 width at 96dpi
+    document.body.appendChild(container)
+    const contentHeightPx = container.getBoundingClientRect().height
+    document.body.removeChild(container)
+    container.style.position = ''
+    container.style.left = ''
+    container.style.width = ''
+
+    // Convert px to mm (1px = 0.264583mm) and add margin buffer
+    const pageHeightMm = Math.ceil(contentHeightPx * 0.264583) + 20
+
     const opt = {
       margin: 10,
-      filename: `Client_${client.name.replace(/\\s+/g, '_')}_Details.pdf`,
+      filename: `Client_${client.name.replace(/\s+/g, '_')}_Details.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      jsPDF: { unit: 'mm', format: [210, pageHeightMm], orientation: 'portrait' }
     }
 
     html2pdf().set(opt).from(container).save()
+    if (showGlobalToast) showGlobalToast('Downloaded!', `PDF for "${client.name}" is ready.`)
   }
 
   return (
