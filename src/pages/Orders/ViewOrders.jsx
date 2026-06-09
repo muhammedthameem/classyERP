@@ -1062,9 +1062,9 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                     ref={el => rowRefs.current[order.id] = el}
                     className={`group transition-all duration-1000 ${highlightOrderId === order.id ? 'ring-2 ring-[var(--accent)] ring-inset' : ''}`}
                     style={{
-                      background: progress > 0 ? `linear-gradient(to right, ${order.status === 'Completed' || order.status === 'Sold' ? 'rgba(34, 197, 94, 0.15)' :
-                          order.status === 'Hold' ? 'rgba(249, 115, 22, 0.15)' :
-                            'var(--accent-soft)'
+                      background: progress > 0 ? `linear-gradient(to right, ${order.status === 'Completed' || order.status === 'Sold' ? 'rgba(34, 197, 94, 0.04)' :
+                          order.status === 'Hold' ? 'rgba(249, 115, 22, 0.04)' :
+                            'color-mix(in srgb, var(--accent) 4%, transparent)'
                         } ${progress}%, transparent ${progress}%)` : undefined
                     }}
                   >
