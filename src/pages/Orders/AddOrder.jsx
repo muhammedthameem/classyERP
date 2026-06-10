@@ -1411,19 +1411,19 @@ function AddOrderPage({
               </h2>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto mt-2">
               <button
                 type="button"
                 onClick={() => setCurrentPage('view-orders')}
-                className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-8 py-4 font-bold transition hover:bg-[var(--soft)] text-center active:scale-95"
+                className="w-full sm:w-auto rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-8 py-4 font-bold transition hover:bg-[var(--soft)] text-center active:scale-95 whitespace-nowrap"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="rounded-xl bg-[var(--accent)] px-10 py-4 font-bold text-white shadow-xl shadow-[var(--accent)]/25 transition hover:brightness-95 flex items-center justify-center gap-2 active:scale-95"
+                className="w-full sm:w-auto rounded-xl bg-[var(--accent)] px-8 md:px-10 py-4 font-bold text-white shadow-xl shadow-[var(--accent)]/25 transition hover:brightness-95 flex items-center justify-center gap-2 active:scale-95 whitespace-nowrap"
               >
-                <CheckCircle size={20} /> Confirm Order
+                <CheckCircle size={20} className="shrink-0" /> Confirm Order
               </button>
             </div>
           </div>

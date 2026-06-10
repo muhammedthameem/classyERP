@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
-import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2, Plus, X } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2, Plus, X, Printer } from 'lucide-react'
+import html2pdf from 'html2pdf.js'
 import { formatDateDDMMYY, getIndianDate, orders } from '../../utils/constants'
 import { sendWhatsApp } from "../../utils/whatsapp";
 import supabase from '../../supabase'
@@ -356,6 +357,48 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
   const holdCount = displayOrders.filter(o => o.status === 'Hold').length
   const closedCount = displayOrders.filter(o => o.status === 'Completed' || o.status === 'Sold').length
 
+  const handlePrintReceipt = () => {
+    const originalElement = document.getElementById('receipt-content');
+    if (!originalElement) return;
+    
+    // Create a clone and convert it to an HTML string with display: block.
+    // Passing a raw string to html2pdf completely avoids all DOM constraints, 
+    // scroll offset issues, and blank page bugs while preventing any UI breaks.
+    const clone = originalElement.cloneNode(true);
+    clone.style.display = 'block';
+    clone.style.width = '800px'; // Force exact width to prevent right-side clipping
+    const htmlString = clone.outerHTML;
+    
+    const opt = {
+      margin: [10, 0, 10, 0], // Remove left/right margins so it fits the A4 width perfectly
+      filename: `Receipt_Order_${viewOrder.id}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, windowWidth: 800 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    
+    html2pdf().set(opt).from(htmlString).save().then(() => {
+      if (showGlobalToast) showGlobalToast('Success', 'Receipt downloaded successfully');
+      
+      // Redirect to WhatsApp
+      const client = (clients || []).find(c => c.name === viewOrder.clientName);
+      const phoneToUse = client?.mobile || viewOrder.clientPhone || '';
+      let formattedPhone = String(phoneToUse).replace(/\D/g, '');
+      if (formattedPhone.length === 10) formattedPhone = '91' + formattedPhone;
+      
+      const receiptUrl = `${window.location.origin}/?bill=${viewOrder.id}`;
+      const msg = `Hello ${viewOrder.clientName || 'Valued Client'},\n\nThank you for choosing Classy Couture! Your order receipt has been generated.\n\nYou can view and download your digital receipt here:\n${receiptUrl}\n\nPlease let us know if you have any questions!`;
+      
+      const whatsappUrl = formattedPhone 
+        ? `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}` 
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+        
+      window.open(whatsappUrl, '_blank');
+    }).catch((err) => {
+      console.error("PDF generation failed:", err);
+    });
+  };
+
   return (
     <div style={themeStyle} className="relative">
 
@@ -371,10 +414,15 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
       {viewOrder && (
         <div className="fixed inset-0 z-[2000] grid place-items-center bg-black/50 px-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto">
-            <button className="absolute top-4 right-4 text-[var(--muted)] hover:text-[var(--text)] transition" onClick={() => setViewOrder(null)}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-            <div className="flex items-center gap-4 mb-6">
+            <div className="absolute top-4 right-4 flex items-center gap-3">
+              <button className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--accent)] text-white hover:brightness-95 transition text-sm font-semibold shadow-sm" onClick={handlePrintReceipt}>
+                <Printer size={16} /> Print Receipt
+              </button>
+              <button className="text-[var(--muted)] hover:text-[var(--text)] transition p-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg" onClick={() => setViewOrder(null)}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+            <div className="flex items-center gap-4 mb-6 mt-4">
               <img src="/logo-black.png" alt="Logo" className="w-16 h-16 object-contain" />
               <div>
                 <h2 className="text-2xl font-semibold flex items-center gap-2">Order #{viewOrder.id}</h2>
@@ -610,6 +658,91 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
 
             <div className="mt-8 flex justify-end">
               <button type="button" className="rounded-xl border border-[var(--border)] px-6 py-2.5 font-semibold hover:bg-[var(--soft)] transition" onClick={() => setViewOrder(null)}>Close</button>
+            </div>
+          </div>
+
+          {/* Hidden Receipt Element for PDF Generation (Moved outside max-w-lg container to prevent clipping) */}
+          <div id="receipt-content" style={{ display: 'none' }}>
+            <div style={{ padding: '40px', fontFamily: '"Inter", sans-serif', color: '#1f2937', backgroundColor: '#fff', width: '800px', boxSizing: 'border-box', margin: '0 auto' }}>
+              
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #f3f4f6', paddingBottom: '30px', marginBottom: '30px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                  <img src="/logo-black.png" alt="Logo" style={{ width: '90px', height: '90px', objectFit: 'contain' }} />
+                  <div>
+                    <h1 style={{ margin: 0, fontSize: '32px', color: '#111827', fontWeight: '800', letterSpacing: '-0.5px' }}>Classy Couture</h1>
+                    <p style={{ margin: '5px 0 0 0', fontSize: '15px', color: '#6b7280' }}>Bespoke Tailoring & Design</p>
+                    <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: '#9ca3af' }}>Your trusted fashion partner</p>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <h2 style={{ margin: 0, fontSize: '28px', color: '#111827', fontWeight: '700', letterSpacing: '2px' }}>INVOICE</h2>
+                  <p style={{ margin: '8px 0 0 0', fontSize: '15px', color: '#4b5563', fontWeight: '600' }}>Order #{viewOrder.id}</p>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280' }}>Date: {viewOrder.orderDate || 'N/A'}</p>
+                </div>
+              </div>
+
+              {/* Client & Delivery Info */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px' }}>
+                <div style={{ flex: 1, paddingRight: '20px' }}>
+                  <h3 style={{ margin: '0 0 10px 0', fontSize: '13px', textTransform: 'uppercase', color: '#9ca3af', letterSpacing: '1px', fontWeight: '600' }}>Billed To:</h3>
+                  <p style={{ margin: 0, fontWeight: '700', fontSize: '20px', color: '#111827' }}>{viewOrder.clientName}</p>
+                </div>
+                <div style={{ flex: 1, paddingLeft: '20px', borderLeft: '2px solid #f3f4f6' }}>
+                  <h3 style={{ margin: '0 0 10px 0', fontSize: '13px', textTransform: 'uppercase', color: '#9ca3af', letterSpacing: '1px', fontWeight: '600' }}>Delivery Information:</h3>
+                  <p style={{ margin: 0, fontSize: '15px', color: '#4b5563' }}>Expected Delivery: <span style={{ fontWeight: '600', color: '#111827' }}>{viewOrder.deliveryDate || 'N/A'}</span></p>
+                  <p style={{ margin: '8px 0 0 0', fontSize: '15px', color: '#4b5563' }}>Material Source: <span style={{ fontWeight: '600', color: '#111827' }}>{viewOrder.sourceOfMaterial || 'Outside'}</span></p>
+                </div>
+              </div>
+
+              {/* Order Details Table */}
+              <div style={{ marginBottom: '40px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ padding: '12px 15px', backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb', color: '#4b5563', fontSize: '14px', fontWeight: '600', borderRadius: '8px 0 0 8px' }}>Description</th>
+                      <th style={{ padding: '12px 15px', backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb', color: '#4b5563', fontSize: '14px', fontWeight: '600' }}>Type</th>
+                      <th style={{ padding: '12px 15px', backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb', color: '#4b5563', fontSize: '14px', fontWeight: '600', textAlign: 'center' }}>Qty</th>
+                      <th style={{ padding: '12px 15px', backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb', color: '#4b5563', fontSize: '14px', fontWeight: '600', textAlign: 'right', borderRadius: '0 8px 8px 0' }}>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{ padding: '20px 15px', borderBottom: '1px solid #f3f4f6', fontSize: '16px', fontWeight: '600', color: '#111827' }}>{viewOrder.product}</td>
+                      <td style={{ padding: '20px 15px', borderBottom: '1px solid #f3f4f6', fontSize: '15px', color: '#4b5563' }}>{viewOrder.orderType || '-'}</td>
+                      <td style={{ padding: '20px 15px', borderBottom: '1px solid #f3f4f6', fontSize: '15px', color: '#4b5563', textAlign: 'center' }}>{viewOrder.size || '1'}</td>
+                      <td style={{ padding: '20px 15px', borderBottom: '1px solid #f3f4f6', fontSize: '16px', fontWeight: '600', color: '#111827', textAlign: 'right' }}>₹{parseFloat(viewOrder.price || 0).toFixed(2)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Financial Summary */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '50px' }}>
+                <div style={{ width: '380px', backgroundColor: '#f9fafb', padding: '25px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', fontSize: '16px' }}>
+                    <span style={{ color: '#4b5563' }}>Subtotal:</span>
+                    <span style={{ fontWeight: '600', color: '#111827' }}>₹{parseFloat(viewOrder.price || 0).toFixed(2)}</span>
+                  </div>
+                  {viewOrder.advance > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', fontSize: '16px' }}>
+                      <span style={{ color: '#4b5563' }}>Advance Paid:</span>
+                      <span style={{ fontWeight: '600', color: '#059669' }}>- ₹{parseFloat(viewOrder.advance || 0).toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px', paddingTop: '20px', borderTop: '2px dashed #d1d5db', fontSize: '22px' }}>
+                    <span style={{ fontWeight: '800', color: '#111827' }}>Balance Due:</span>
+                    <span style={{ fontWeight: '800', color: '#111827' }}>₹{(parseFloat(viewOrder.price || 0) - parseFloat(viewOrder.advance || 0)).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div style={{ textAlign: 'center', borderTop: '2px solid #f3f4f6', paddingTop: '30px', color: '#6b7280' }}>
+                <p style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600', color: '#111827' }}>Thank you for choosing Classy Couture!</p>
+                <p style={{ margin: 0, fontSize: '14px' }}>If you have any questions concerning this invoice, please contact us.</p>
+                <p style={{ margin: '20px 0 0 0', fontSize: '12px', color: '#9ca3af', fontStyle: 'italic' }}>This is a computer-generated document and does not require a signature.</p>
+              </div>
             </div>
           </div>
         </div>
