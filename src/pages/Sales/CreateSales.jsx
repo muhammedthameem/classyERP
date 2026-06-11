@@ -1313,7 +1313,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                   }}
                   className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-bold text-white shadow-md transition hover:brightness-95 whitespace-nowrap"
                 >
-                  <Plus size={16} /> Add Custom Item
+                  <Plus size={16} />
                 </button>
               </div>
             </div>
@@ -1393,30 +1393,34 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                         </div>
                       </td>
                       <td>
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-[var(--muted)] w-8 text-right font-semibold uppercase">Disc</span>
-                            <input
-                              type="number"
-                              className="w-14 rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-1.5 py-0.5 font-bold text-[var(--accent)] text-xs"
-                              value={item.discount}
-                              onFocus={(e) => e.target.select()}
-                              onClick={(e) => e.target.select()}
-                              onChange={(e) => updateDiscount(item.id, e.target.value)}
-                            />
+                        {item.type !== 'custom' ? (
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-[var(--muted)] w-8 text-right font-semibold uppercase">Disc</span>
+                              <input
+                                type="number"
+                                className="w-14 rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-1.5 py-0.5 font-bold text-[var(--accent)] text-xs"
+                                value={item.discount}
+                                onFocus={(e) => e.target.select()}
+                                onClick={(e) => e.target.select()}
+                                onChange={(e) => updateDiscount(item.id, e.target.value)}
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-[var(--muted)] w-8 text-right font-semibold uppercase">Adv</span>
+                              <input
+                                type="number"
+                                className="w-14 rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-1.5 py-0.5 font-bold text-green-600 text-xs"
+                                value={item.advancePaid || 0}
+                                onFocus={(e) => e.target.select()}
+                                onClick={(e) => e.target.select()}
+                                onChange={(e) => updateAdvancePaid(item.id, e.target.value)}
+                              />
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-[var(--muted)] w-8 text-right font-semibold uppercase">Adv</span>
-                            <input
-                              type="number"
-                              className="w-14 rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-1.5 py-0.5 font-bold text-green-600 text-xs"
-                              value={item.advancePaid || 0}
-                              onFocus={(e) => e.target.select()}
-                              onClick={(e) => e.target.select()}
-                              onChange={(e) => updateAdvancePaid(item.id, e.target.value)}
-                            />
-                          </div>
-                        </div>
+                        ) : (
+                          <span className="text-[10px] text-[var(--muted)] uppercase font-bold block text-center opacity-50">-</span>
+                        )}
                       </td>
                       <td className="text-right font-bold text-[var(--accent)]">
                         ₹{Math.max(0, ((parseFloat(item.finalPrice) || 0) * item.qty) - (parseFloat(item.discount) || 0) - (parseFloat(item.advancePaid) || 0)).toFixed(2)}
