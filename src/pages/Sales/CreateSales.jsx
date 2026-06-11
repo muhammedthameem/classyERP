@@ -1225,13 +1225,13 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
           )}
 
           {/* Item Selection */}
-          <section className="relative z-9 rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <section className="relative z-30 rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
+            <div className="mb-6 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
               <h3 className="text-lg font-bold flex items-center gap-2 whitespace-nowrap">
                 <ShoppingCart size={20} className="text-[var(--accent)]" /> {selectionMode === 'inventory' ? 'Stock Selection' : 'Order Collection'}
               </h3>
-              <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto flex-1 sm:justify-end">
-                <div className="relative w-full sm:w-auto sm:max-w-md flex-1">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto flex-1 xl:justify-end">
+                <div className="relative w-full sm:max-w-md flex-1">
                   <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
                   <input
                     type="text"
@@ -1311,14 +1311,13 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                       type: 'custom',
                     }]);
                   }}
-                  className="flex items-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-bold text-white shadow-md transition hover:brightness-95 whitespace-nowrap"
+                  className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-bold text-white shadow-md transition hover:brightness-95 whitespace-nowrap"
                 >
-                  <Plus size={16} />
+                  <Plus size={16} /> Add Custom Item
                 </button>
               </div>
             </div>
 
-            {/* Quick Add Client Orders */}
 
             <div className="erp-table-container scrollbar-hide" ref={tableContainerRef}>
               <table className="erp-table">
