@@ -116,6 +116,17 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
 
   const currentMeasurement = measurements[selectedMeasurementIndex] || measurements[0]
 
+  const hasData = (measurementsObj) => {
+    if (!measurementsObj) return false;
+    return Object.values(measurementsObj).some(val => val !== '' && val !== null && val !== undefined);
+  };
+  
+  const showTopSection = isAddingMeasurement || hasData(currentMeasurement.topMeasurements);
+  const showBottomSection = isAddingMeasurement || hasData(currentMeasurement.bottomMeasurements);
+  const forceShowBoth = !showTopSection && !showBottomSection;
+  const displayTop = showTopSection || forceShowBoth;
+  const displayBottom = showBottomSection || forceShowBoth;
+
   const handleSaveMeasurement = (e) => {
     e.preventDefault()
 
@@ -516,6 +527,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
               </div>
             </section>
 
+            {displayTop && (
             <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur overflow-hidden">
               <button 
                 type="button"
@@ -579,7 +591,9 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                 </div>
               </div>
             </section>
+            )}
 
+            {displayBottom && (
             <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur overflow-hidden">
               <button 
                 type="button"
@@ -634,6 +648,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                 </div>
               </div>
             </section>
+            )}
 
             {currentMeasurement.note && (
               <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur">
@@ -757,6 +772,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
               </div>
 
               {/* Top Section */}
+              {displayTop && (
               <div className="mb-8">
                 <h3 className="mb-4 text-lg font-semibold text-[var(--accent)] border-b border-[var(--border)] pb-2">Top Section</h3>
                 <div className="measurement-grid">
@@ -818,8 +834,10 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                   ))}
                 </div>
               </div>
+              )}
 
               {/* Bottom Section */}
+              {displayBottom && (
               <div>
                 <h3 className="mb-4 text-lg font-semibold text-[var(--accent)] border-b border-[var(--border)] pb-2">Bottom Section</h3>
                 <div className="measurement-grid">
@@ -872,6 +890,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                   ))}
                 </div>
               </div>
+              )}
             </section>
 
             {/* Note Section */}
