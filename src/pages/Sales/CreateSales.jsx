@@ -1484,14 +1484,16 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                       </td>
                       <td className="text-right">
                         <div className="flex justify-end gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setViewItem(item)}
-                            className="text-[var(--accent)] hover:text-white transition p-2 hover:bg-[var(--accent-soft)] rounded-lg"
-                            title="View Details"
-                          >
-                            <Eye size={16} />
-                          </button>
+                          {item.type !== 'custom' && (
+                            <button
+                              type="button"
+                              onClick={() => setViewItem(item)}
+                              className="text-[var(--accent)] hover:text-white transition p-2 hover:bg-[var(--accent-soft)] rounded-lg"
+                              title="View Details"
+                            >
+                              <Eye size={16} />
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => removeFromCart(item.id)}
