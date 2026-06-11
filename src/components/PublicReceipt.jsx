@@ -98,16 +98,16 @@ function PublicReceipt({ billId, onClear }) {
   const handleDownload = async () => {
     const element = document.getElementById(isOrder ? 'receipt-content' : 'printable-bill');
     if (!element || isGenerating) return;
-    
+
     try {
       setIsGenerating(true);
 
       if (isOrder) {
         const clone = element.cloneNode(true);
         clone.style.display = 'block';
-        clone.style.width = '800px'; 
+        clone.style.width = '800px';
         const htmlString = clone.outerHTML;
-        
+
         const opt = {
           margin: [10, 0, 10, 0],
           filename: `Receipt_Order_${sale.id}.pdf`,
@@ -115,7 +115,7 @@ function PublicReceipt({ billId, onClear }) {
           html2canvas: { scale: 2, useCORS: true, windowWidth: 800 },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
-        
+
         html2pdf().set(opt).from(htmlString).save().then(() => setIsGenerating(false));
       } else {
         const opt = {
@@ -125,14 +125,14 @@ function PublicReceipt({ billId, onClear }) {
           html2canvas: { scale: 2, useCORS: true, logging: false },
           jsPDF: { unit: 'mm', format: [97, 200], orientation: 'portrait' }
         };
-        
+
         const htmlString = generateReceiptHtmlString(sale);
         const container = document.createElement('div');
         container.innerHTML = htmlString;
-        
+
         html2pdf().set(opt).from(container.outerHTML).output('blob').then((pdfBlob) => {
           const blobUrl = URL.createObjectURL(pdfBlob);
-          
+
           // 1. Auto-download
           const link = document.createElement('a');
           link.href = blobUrl;
@@ -140,7 +140,7 @@ function PublicReceipt({ billId, onClear }) {
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
-          
+
           // 2. Auto-print
           const iframe = document.createElement('iframe');
           iframe.style.display = 'none';
@@ -223,99 +223,98 @@ function PublicReceipt({ billId, onClear }) {
         </div>
         <h1 className="text-3xl font-black mb-2 text-stone-900">Classy Couture</h1>
         <p className="text-stone-500 text-sm">Thank you for your {isOrder ? 'order' : 'purchase'}!</p>
-        
+
         {isOrder && (
-            <button onClick={handleDownload} disabled={isGenerating} className="mt-4 inline-flex items-center gap-2 px-6 py-2.5 bg-[#8B4513] text-white rounded-xl font-bold text-sm shadow-md hover:brightness-110 transition disabled:opacity-50">
-              <Download size={16} /> {isGenerating ? 'Generating...' : 'Download Receipt'}
-            </button>
+          <button onClick={handleDownload} disabled={isGenerating} className="mt-4 inline-flex items-center gap-2 px-6 py-2.5 bg-[#8B4513] text-white rounded-xl font-bold text-sm shadow-md hover:brightness-110 transition disabled:opacity-50">
+            <Download size={16} /> {isGenerating ? 'Generating...' : 'Download Receipt'}
+          </button>
         )}
       </div>
 
       {isOrder ? (
-          <div className="w-full overflow-x-auto pb-8 flex justify-center">
-            <div id="receipt-content" style={{ display: 'block' }} className="shadow-2xl rounded-lg overflow-hidden shrink-0">
-                <div style={{ padding: '40px', fontFamily: '"Inter", sans-serif', color: '#1f2937', backgroundColor: '#fff', width: '800px', boxSizing: 'border-box', margin: '0 auto' }}>
-                  {/* Header */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #f3f4f6', paddingBottom: '30px', marginBottom: '30px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                      <img src="/logo-black.png" alt="Logo" style={{ width: '90px', height: '90px', objectFit: 'contain' }} />
-                      <div>
-                        <h1 style={{ margin: 0, fontSize: '32px', color: '#111827', fontWeight: '800', letterSpacing: '-0.5px' }}>Classy Couture</h1>
-                        <p style={{ margin: '5px 0 0 0', fontSize: '15px', color: '#6b7280' }}>Bespoke Tailoring & Design</p>
-                        <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: '#9ca3af' }}>Your trusted fashion partner</p>
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <h2 style={{ margin: 0, fontSize: '28px', color: '#111827', fontWeight: '700', letterSpacing: '2px' }}>INVOICE</h2>
-                      <p style={{ margin: '8px 0 0 0', fontSize: '15px', color: '#4b5563', fontWeight: '600' }}>Order #{sale.id}</p>
-                      <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280' }}>Date: {sale.orderDate || 'N/A'}</p>
-                    </div>
-                  </div>
-
-                  {/* Client & Delivery Info */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px' }}>
-                    <div style={{ flex: 1, paddingRight: '20px' }}>
-                      <h3 style={{ margin: '0 0 10px 0', fontSize: '13px', textTransform: 'uppercase', color: '#9ca3af', letterSpacing: '1px', fontWeight: '600' }}>Billed To:</h3>
-                      <p style={{ margin: 0, fontWeight: '700', fontSize: '20px', color: '#111827' }}>{sale.clientName}</p>
-                    </div>
-                    <div style={{ flex: 1, paddingLeft: '20px', borderLeft: '2px solid #f3f4f6' }}>
-                      <h3 style={{ margin: '0 0 10px 0', fontSize: '13px', textTransform: 'uppercase', color: '#9ca3af', letterSpacing: '1px', fontWeight: '600' }}>Delivery Information:</h3>
-                      <p style={{ margin: 0, fontSize: '15px', color: '#4b5563' }}>Expected Delivery: <span style={{ fontWeight: '600', color: '#111827' }}>{sale.deliveryDate || 'N/A'}</span></p>
-                      <p style={{ margin: '8px 0 0 0', fontSize: '15px', color: '#4b5563' }}>Material Source: <span style={{ fontWeight: '600', color: '#111827' }}>{sale.sourceOfMaterial || 'Outside'}</span></p>
-                    </div>
-                  </div>
-
-                  {/* Order Details Table */}
-                  <div style={{ marginBottom: '40px' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                      <thead>
-                        <tr>
-                          <th style={{ padding: '12px 15px', backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb', color: '#4b5563', fontSize: '14px', fontWeight: '600', borderRadius: '8px 0 0 8px' }}>Description</th>
-                          <th style={{ padding: '12px 15px', backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb', color: '#4b5563', fontSize: '14px', fontWeight: '600' }}>Type</th>
-                          <th style={{ padding: '12px 15px', backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb', color: '#4b5563', fontSize: '14px', fontWeight: '600', textAlign: 'center' }}>Qty</th>
-                          <th style={{ padding: '12px 15px', backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb', color: '#4b5563', fontSize: '14px', fontWeight: '600', textAlign: 'right', borderRadius: '0 8px 8px 0' }}>Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td style={{ padding: '20px 15px', borderBottom: '1px solid #f3f4f6', fontSize: '16px', fontWeight: '600', color: '#111827' }}>{sale.product}</td>
-                          <td style={{ padding: '20px 15px', borderBottom: '1px solid #f3f4f6', fontSize: '15px', color: '#4b5563' }}>{sale.orderType || '-'}</td>
-                          <td style={{ padding: '20px 15px', borderBottom: '1px solid #f3f4f6', fontSize: '15px', color: '#4b5563', textAlign: 'center' }}>{sale.size || '1'}</td>
-                          <td style={{ padding: '20px 15px', borderBottom: '1px solid #f3f4f6', fontSize: '16px', fontWeight: '600', color: '#111827', textAlign: 'right' }}>₹{parseFloat(sale.price || 0).toFixed(2)}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Financial Summary */}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '50px' }}>
-                    <div style={{ width: '380px', backgroundColor: '#f9fafb', padding: '25px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', fontSize: '16px' }}>
-                        <span style={{ color: '#4b5563' }}>Subtotal:</span>
-                        <span style={{ fontWeight: '600', color: '#111827' }}>₹{parseFloat(sale.price || 0).toFixed(2)}</span>
-                      </div>
-                      {sale.advance > 0 && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', fontSize: '16px' }}>
-                          <span style={{ color: '#4b5563' }}>Advance Paid:</span>
-                          <span style={{ fontWeight: '600', color: '#059669' }}>- ₹{parseFloat(sale.advance || 0).toFixed(2)}</span>
-                        </div>
-                      )}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px', paddingTop: '20px', borderTop: '2px dashed #d1d5db', fontSize: '22px' }}>
-                        <span style={{ fontWeight: '800', color: '#111827' }}>Balance Due:</span>
-                        <span style={{ fontWeight: '800', color: '#111827' }}>₹{(parseFloat(sale.price || 0) - parseFloat(sale.advance || 0)).toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Footer */}
-                  <div style={{ textAlign: 'center', borderTop: '2px solid #f3f4f6', paddingTop: '30px', color: '#6b7280' }}>
-                    <p style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600', color: '#111827' }}>Thank you for choosing Classy Couture!</p>
-                    <p style={{ margin: 0, fontSize: '14px' }}>If you have any questions concerning this invoice, please contact us.</p>
-                    <p style={{ margin: '20px 0 0 0', fontSize: '12px', color: '#9ca3af', fontStyle: 'italic' }}>This is a computer-generated document and does not require a signature.</p>
+        <div className="w-full overflow-x-auto pb-8 flex justify-center">
+          <div id="receipt-content" style={{ display: 'block' }} className="shadow-2xl rounded-lg overflow-hidden shrink-0">
+            <div style={{ padding: '40px', fontFamily: '"Inter", sans-serif', color: '#1f2937', backgroundColor: '#fff', width: '800px', boxSizing: 'border-box', margin: '0 auto' }}>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #f3f4f6', paddingBottom: '30px', marginBottom: '30px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                  <img src="/logo-black.png" alt="Logo" style={{ width: '90px', height: '90px', objectFit: 'contain' }} />
+                  <div>
+                    <h1 style={{ margin: 0, fontSize: '32px', color: '#111827', fontWeight: '800', letterSpacing: '-0.5px' }}>Classy Couture</h1>
+                    <p style={{ margin: '5px 0 0 0', fontSize: '15px', color: '#6b7280' }}>Be Unique, Be Classy</p>
                   </div>
                 </div>
+                <div style={{ textAlign: 'right' }}>
+                  <h2 style={{ margin: 0, fontSize: '28px', color: '#111827', fontWeight: '700', letterSpacing: '2px' }}>INVOICE</h2>
+                  <p style={{ margin: '8px 0 0 0', fontSize: '15px', color: '#4b5563', fontWeight: '600' }}>Order #{sale.id}</p>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280' }}>Date: {sale.orderDate || 'N/A'}</p>
+                </div>
+              </div>
+
+              {/* Client & Delivery Info */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px' }}>
+                <div style={{ flex: 1, paddingRight: '20px' }}>
+                  <h3 style={{ margin: '0 0 10px 0', fontSize: '13px', textTransform: 'uppercase', color: '#9ca3af', letterSpacing: '1px', fontWeight: '600' }}>Billed To:</h3>
+                  <p style={{ margin: 0, fontWeight: '700', fontSize: '20px', color: '#111827' }}>{sale.clientName}</p>
+                </div>
+                <div style={{ flex: 1, paddingLeft: '20px', borderLeft: '2px solid #f3f4f6' }}>
+                  <h3 style={{ margin: '0 0 10px 0', fontSize: '13px', textTransform: 'uppercase', color: '#9ca3af', letterSpacing: '1px', fontWeight: '600' }}>Delivery Information:</h3>
+                  <p style={{ margin: 0, fontSize: '15px', color: '#4b5563' }}>Expected Delivery: <span style={{ fontWeight: '600', color: '#111827' }}>{sale.deliveryDate || 'N/A'}</span></p>
+                  <p style={{ margin: '8px 0 0 0', fontSize: '15px', color: '#4b5563' }}>Material Source: <span style={{ fontWeight: '600', color: '#111827' }}>{sale.sourceOfMaterial || 'Outside'}</span></p>
+                </div>
+              </div>
+
+              {/* Order Details Table */}
+              <div style={{ marginBottom: '40px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ padding: '12px 15px', backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb', color: '#4b5563', fontSize: '14px', fontWeight: '600', borderRadius: '8px 0 0 8px' }}>Description</th>
+                      <th style={{ padding: '12px 15px', backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb', color: '#4b5563', fontSize: '14px', fontWeight: '600' }}>Type</th>
+                      <th style={{ padding: '12px 15px', backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb', color: '#4b5563', fontSize: '14px', fontWeight: '600', textAlign: 'center' }}>Qty</th>
+                      <th style={{ padding: '12px 15px', backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb', color: '#4b5563', fontSize: '14px', fontWeight: '600', textAlign: 'right', borderRadius: '0 8px 8px 0' }}>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{ padding: '20px 15px', borderBottom: '1px solid #f3f4f6', fontSize: '16px', fontWeight: '600', color: '#111827' }}>{sale.product}</td>
+                      <td style={{ padding: '20px 15px', borderBottom: '1px solid #f3f4f6', fontSize: '15px', color: '#4b5563' }}>{sale.orderType || '-'}</td>
+                      <td style={{ padding: '20px 15px', borderBottom: '1px solid #f3f4f6', fontSize: '15px', color: '#4b5563', textAlign: 'center' }}>{sale.size || '1'}</td>
+                      <td style={{ padding: '20px 15px', borderBottom: '1px solid #f3f4f6', fontSize: '16px', fontWeight: '600', color: '#111827', textAlign: 'right' }}>₹{parseFloat(sale.price || 0).toFixed(2)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Financial Summary */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '50px' }}>
+                <div style={{ width: '380px', backgroundColor: '#f9fafb', padding: '25px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', fontSize: '16px' }}>
+                    <span style={{ color: '#4b5563' }}>Subtotal:</span>
+                    <span style={{ fontWeight: '600', color: '#111827' }}>₹{parseFloat(sale.price || 0).toFixed(2)}</span>
+                  </div>
+                  {sale.advance > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', fontSize: '16px' }}>
+                      <span style={{ color: '#4b5563' }}>Advance Paid:</span>
+                      <span style={{ fontWeight: '600', color: '#059669' }}>- ₹{parseFloat(sale.advance || 0).toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px', paddingTop: '20px', borderTop: '2px dashed #d1d5db', fontSize: '22px' }}>
+                    <span style={{ fontWeight: '800', color: '#111827' }}>Balance Due:</span>
+                    <span style={{ fontWeight: '800', color: '#111827' }}>₹{(parseFloat(sale.price || 0) - parseFloat(sale.advance || 0)).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div style={{ textAlign: 'center', borderTop: '2px solid #f3f4f6', paddingTop: '30px', color: '#6b7280' }}>
+                <p style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600', color: '#111827' }}>Thank you for choosing Classy Couture!</p>
+                <p style={{ margin: 0, fontSize: '14px' }}>If you have any questions concerning this invoice, please contact us.</p>
+                <p style={{ margin: '20px 0 0 0', fontSize: '12px', color: '#9ca3af', fontStyle: 'italic' }}>This is a computer-generated document and does not require a signature.</p>
+              </div>
             </div>
           </div>
+        </div>
       ) : (
 
         <div id="printable-bill" className="mb-8 bg-white p-4 text-black shadow-inner overflow-hidden mx-auto" style={{ width: '97mm', minHeight: '120mm', fontFamily: 'monospace' }}>
@@ -349,7 +348,7 @@ function PublicReceipt({ billId, onClear }) {
                 const rowTotal = item.rowTotal !== undefined
                   ? item.rowTotal
                   : (item.qty * (item.price || item.rate)) * (1 - (item.discount || 0) / 100);
-                
+
                 return (
                   <tr key={idx}>
                     <td className="py-2 pr-2">
