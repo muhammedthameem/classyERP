@@ -175,14 +175,16 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
 
       const price = parsePrice(item.price);
       const advance = parseFloat(item.advance) || 0;
+      const parsedQty = item.size ? parseFloat(item.size) || 1 : 1;
+      const parsedUnit = item.size ? item.size.replace(/[0-9.]/g, '').trim() || 'nos' : 'nos';
 
       setCart([...cart, {
         id: `ORD-${item.id}`,
         productId: `ORD-${item.id}`,
         orderId: item.id,
         productName: `${item.product} (Order #${item.id})`,
-        qty: 1,
-        unit: 'nos',
+        qty: parsedQty,
+        unit: parsedUnit,
         rate: price,
         discount: 0,
         advancePaid: advance,
