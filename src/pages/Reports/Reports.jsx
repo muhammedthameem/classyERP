@@ -308,9 +308,9 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
         </button>
       </div>
 
-      <div className="rounded-[32px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="flex flex-wrap gap-2">
+      <div className="rounded-[24px] sm:rounded-[32px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
+          <div className="flex flex-wrap sm:flex-nowrap gap-2 w-full lg:w-auto">
             {[
               { id: 'all', label: 'All Time' },
               { id: 'today', label: 'Today' },
@@ -320,7 +320,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
               <button
                 key={btn.id}
                 onClick={() => setFilter(btn.id)}
-                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${filter === btn.id ? 'bg-[var(--accent)] text-white shadow-lg' : 'bg-[var(--soft)] text-[var(--muted)] hover:text-[var(--text)]'}`}
+                className={`flex-1 sm:flex-none px-3 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${filter === btn.id ? 'bg-[var(--accent)] text-white shadow-lg' : 'bg-[var(--soft)] text-[var(--muted)] hover:text-[var(--text)]'}`}
               >
                 {btn.label}
               </button>
@@ -330,7 +330,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
       </div>
 
       {filter === 'custom' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 items-end gap-6 rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 animate-in slide-in-from-top-2 duration-300 shadow-sm">
+        <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:items-end gap-4 sm:gap-6 rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 animate-in slide-in-from-top-2 duration-300 shadow-sm">
           <div className="space-y-2">
             <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] ml-1">Start Date</p>
             <div className="relative">
@@ -353,7 +353,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
               />
             </div>
           </div>
-          <div className="flex items-center gap-3 bg-[var(--accent-soft)]/30 p-3 rounded-2xl sm:col-span-2 lg:col-span-1">
+          <div className="flex items-center gap-3 bg-[var(--accent-soft)]/30 p-4 sm:p-3 rounded-2xl sm:col-span-2 lg:col-span-1 mt-2 sm:mt-0">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-white shadow-lg">
               <CalendarDays size={20} />
             </div>
