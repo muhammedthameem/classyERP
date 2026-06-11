@@ -3,6 +3,7 @@ import supabase from '../supabase';
 import { CheckCircle, Download, Package } from 'lucide-react';
 import html2pdf from 'html2pdf.js'
 import { generateReceiptHtmlString } from '../utils/pdfHelper';
+import { formatDateDDMMYY } from '../utils/constants';
 
 function PublicReceipt({ billId, onClear }) {
   const [sale, setSale] = useState(null);
@@ -238,7 +239,7 @@ function PublicReceipt({ billId, onClear }) {
               {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #f3f4f6', paddingBottom: '30px', marginBottom: '30px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                  <img src="/logo-black.png" alt="Logo" style={{ width: '90px', height: '90px', objectFit: 'contain' }} />
+                  <img src="/logo-black.png" alt="Logo" style={{ width: '80px', height: '85px', objectFit: 'contain' }} />
                   <div>
                     <h1 style={{ margin: 0, fontSize: '32px', color: '#111827', fontWeight: '800', letterSpacing: '-0.5px' }}>Classy Couture</h1>
                     <p style={{ margin: '5px 0 0 0', fontSize: '15px', color: '#6b7280' }}>Be Unique, Be Classy</p>
@@ -247,7 +248,7 @@ function PublicReceipt({ billId, onClear }) {
                 <div style={{ textAlign: 'right' }}>
                   <h2 style={{ margin: 0, fontSize: '28px', color: '#111827', fontWeight: '700', letterSpacing: '2px' }}>INVOICE</h2>
                   <p style={{ margin: '8px 0 0 0', fontSize: '15px', color: '#4b5563', fontWeight: '600' }}>Order #{sale.id}</p>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280' }}>Date: {sale.orderDate || 'N/A'}</p>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280' }}>Date: {sale.orderDate ? formatDateDDMMYY(sale.orderDate) : 'N/A'}</p>
                 </div>
               </div>
 
@@ -259,7 +260,7 @@ function PublicReceipt({ billId, onClear }) {
                 </div>
                 <div style={{ flex: 1, paddingLeft: '20px', borderLeft: '2px solid #f3f4f6' }}>
                   <h3 style={{ margin: '0 0 10px 0', fontSize: '13px', textTransform: 'uppercase', color: '#9ca3af', letterSpacing: '1px', fontWeight: '600' }}>Delivery Information:</h3>
-                  <p style={{ margin: 0, fontSize: '15px', color: '#4b5563' }}>Expected Delivery: <span style={{ fontWeight: '600', color: '#111827' }}>{sale.deliveryDate || 'N/A'}</span></p>
+                  <p style={{ margin: 0, fontSize: '15px', color: '#4b5563' }}>Expected Delivery: <span style={{ fontWeight: '600', color: '#111827' }}>{sale.deliveryDate ? formatDateDDMMYY(sale.deliveryDate) : 'N/A'}</span></p>
                   <p style={{ margin: '8px 0 0 0', fontSize: '15px', color: '#4b5563' }}>Material Source: <span style={{ fontWeight: '600', color: '#111827' }}>{sale.sourceOfMaterial || 'Outside'}</span></p>
                 </div>
               </div>
