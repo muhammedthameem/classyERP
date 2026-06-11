@@ -1053,60 +1053,60 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                   <p className="text-[10px] font-medium">Be Unique, Be Classy</p>
                   <p style={{ margin: '2px 0', fontSize: '12px' }}>Ph : 8606154015</p>
                   <div className="mt-2 text-gray-500">
-                  <p className="!text-[10px]">Order ID: {showReceipt.saleId}</p>
-                  <p className="!text-[10px]">{new Date(showReceipt.timestamp).toDateString() === new Date().toDateString() ? new Date(showReceipt.timestamp).toLocaleString() : new Date(showReceipt.timestamp).toLocaleDateString()}</p>
+                    <p className="!text-[10px]">Order ID: {showReceipt.saleId}</p>
+                    <p className="!text-[10px]">{new Date(showReceipt.timestamp).toDateString() === new Date().toDateString() ? new Date(showReceipt.timestamp).toLocaleString() : new Date(showReceipt.timestamp).toLocaleDateString()}</p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="mb-4 text-[11px]">
-                <p className="font-bold">Customer: {showReceipt.client.name}</p>
-                {showReceipt.client.phone && <p>Tel: {showReceipt.client.phone}</p>}
-              </div>
+                <div className="mb-4 text-[11px]">
+                  <p className="font-bold">Customer: {showReceipt.client.name}</p>
+                  {showReceipt.client.phone && <p>Tel: {showReceipt.client.phone}</p>}
+                </div>
 
-              <table className="w-full text-[10px] mb-4">
-                <thead>
-                  <tr className="border-b border-dashed border-gray-300 text-left">
-                    <th className="py-1 min-w-[100px] pr-2">Item</th>
-                    <th className="py-1 text-center px-3">Qty</th>
-                    <th className="py-1 text-right px-3 whitespace-nowrap">Disc (₹/%)</th>
-                    <th className="py-1 text-right pl-3 whitespace-nowrap">Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-dashed divide-gray-200">
-                  {showReceipt.items.map((item, idx) => (
-                    <tr key={idx}>
-                      <td className="py-2 pr-2">
-                        <p className="font-bold">{item.productName.replace(/\s*\(Order #[^)]+\)/g, '')}</p>
-                        <div className="flex flex-col mt-0.5">
-                          <p style={{ fontSize: '12px', fontWeight: 700 }} className="opacity-70">Rate: ₹{item.price || item.rate}</p>
-                        </div>
-                      </td>
-                      <td className="py-2 text-center px-3">{item.qty}</td>
-                      <td className="py-2 text-right px-3">
-                        {item.rowTotal !== undefined ? '₹' : ''}{item.discount || 0}{item.rowTotal !== undefined ? '' : '%'}
-                      </td>
-                      <td className="py-2 text-right pl-3 font-bold">
-                        ₹{parseFloat(item.rowTotal || (item.qty * (item.price || item.rate)) - (item.discount || 0)).toFixed(2)}
-                      </td>
+                <table className="w-full text-[10px] mb-4">
+                  <thead>
+                    <tr className="border-b border-dashed border-gray-300 text-left">
+                      <th className="py-1 min-w-[100px] pr-2">Item</th>
+                      <th className="py-1 text-center px-3">Qty</th>
+                      <th className="py-1 text-right px-3 whitespace-nowrap">Disc (₹/%)</th>
+                      <th className="py-1 text-right pl-3 whitespace-nowrap">Total</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-dashed divide-gray-200">
+                    {showReceipt.items.map((item, idx) => (
+                      <tr key={idx}>
+                        <td className="py-2 pr-2">
+                          <p className="font-bold">{item.productName.replace(/\s*\(Order #[^)]+\)/g, '')}</p>
+                          <div className="flex flex-col mt-0.5">
+                            <p style={{ fontSize: '12px', fontWeight: 700 }} className="opacity-70">Rate: ₹{item.price || item.rate}</p>
+                          </div>
+                        </td>
+                        <td className="py-2 text-center px-3">{item.qty}</td>
+                        <td className="py-2 text-right px-3">
+                          {item.rowTotal !== undefined ? '₹' : ''}{item.discount || 0}{item.rowTotal !== undefined ? '' : '%'}
+                        </td>
+                        <td className="py-2 text-right pl-3 font-bold">
+                          ₹{parseFloat(item.rowTotal || (item.qty * (item.price || item.rate)) - (item.discount || 0)).toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
 
-              <div className="border-t-2 border-dashed border-gray-300 pt-3 space-y-1">
-                <div className="flex justify-between text-sm font-black">
-                  <span>Grand Total</span>
-                  <span>₹{showReceipt.total}</span>
+                <div className="border-t-2 border-dashed border-gray-300 pt-3 space-y-1">
+                  <div className="flex justify-between text-sm font-black">
+                    <span>Grand Total</span>
+                    <span>₹{showReceipt.total}</span>
+                  </div>
+                </div>
+
+                <div className="text-center mt-6 text-[10px] text-gray-500 italic border-t border-dashed border-gray-200 pt-4">
+                  <p className="font-bold text-black mb-1">Thank you for shopping!</p>
+                  <p>Your elegance is our priority.</p>
+                  <p>Please visit again for more unique designs.</p>
+                  <p className="mt-2 text-[9px]">This is a computer generated receipt.</p>
                 </div>
               </div>
-
-              <div className="text-center mt-6 text-[10px] text-gray-500 italic border-t border-dashed border-gray-200 pt-4">
-                <p className="font-bold text-black mb-1">Thank you for shopping!</p>
-                <p>Your elegance is our priority.</p>
-                <p>Please visit again for more unique designs.</p>
-                <p className="mt-2 text-[9px]">This is a computer generated receipt.</p>
-              </div>
-            </div>
             </div>
 
             <div className="mb-6 p-4 rounded-2xl bg-[var(--surface-strong)] border border-[var(--border)]">
@@ -1227,98 +1227,98 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
           {/* Item Selection */}
           <section className="relative z-9 rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
             <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-              <h3 className="text-lg font-bold flex items-center gap-2">
+              <h3 className="text-lg font-bold flex items-center gap-2 whitespace-nowrap">
                 <ShoppingCart size={20} className="text-[var(--accent)]" /> {selectionMode === 'inventory' ? 'Stock Selection' : 'Order Collection'}
               </h3>
-              <div className="relative w-full max-w-md">
-                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
-                <input
-                  type="text"
-                  placeholder={selectionMode === 'inventory' ? "Click to see items..." : "Click to see orders..."}
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] py-2.5 pl-12 pr-4 outline-none focus:border-[var(--accent)]"
-                  value={productSearch}
-                  onChange={(e) => {
-                    setProductSearch(e.target.value);
-                    setIsSearchingProduct(true);
+              <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto flex-1 sm:justify-end">
+                <div className="relative w-full sm:w-auto sm:max-w-md flex-1">
+                  <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
+                  <input
+                    type="text"
+                    placeholder={selectionMode === 'inventory' ? "Click to see items..." : "Click to see orders..."}
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] py-2.5 pl-12 pr-4 outline-none focus:border-[var(--accent)]"
+                    value={productSearch}
+                    onChange={(e) => {
+                      setProductSearch(e.target.value);
+                      setIsSearchingProduct(true);
+                    }}
+                    onFocus={() => setIsSearchingProduct(true)}
+                  />
+                  {isSearchingProduct && (
+                    <div className="absolute top-full left-0 right-0 z-50 mt-2 max-h-60 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl backdrop-blur">
+                      <div className="sticky top-0 z-10 flex justify-between items-center px-4 py-2 bg-[var(--surface-strong)] border-b border-[var(--border)]">
+                        <span className="text-[10px] font-bold uppercase text-[var(--muted)]">Select {selectionMode}</span>
+                        <button onClick={() => setIsSearchingProduct(false)} className="text-[var(--accent)] text-xs font-bold">Close</button>
+                      </div>
+                      <div className="p-2">
+                        {selectionMode === 'inventory' ? (
+                          filteredProducts.length > 0 ? filteredProducts.map(p => (
+                            <button
+                              key={p.id}
+                              className="flex w-full items-center justify-between rounded-xl p-4 text-left transition hover:bg-[var(--soft)]"
+                              onClick={() => {
+                                addToCart(p, 'inventory');
+                                setIsSearchingProduct(false);
+                                setProductSearch('');
+                              }}
+                            >
+                              <div>
+                                <p className="font-semibold">{p.productName}</p>
+                                <p className="text-xs text-[var(--muted)]">Stock: {p.quantity} {p.unit}</p>
+                              </div>
+                              <p className="font-bold text-[var(--accent)]">₹{p.finalPrice}</p>
+                            </button>
+                          )) : (
+                            <p className="p-4 text-center text-xs text-[var(--muted)]">No inventory items found.</p>
+                          )
+                        ) : (
+                          readyOrders.length > 0 ? readyOrders.map(o => (
+                            <button
+                              key={o.id}
+                              className="flex w-full items-center justify-between rounded-xl p-4 text-left transition hover:bg-[var(--soft)]"
+                              onClick={() => {
+                                addToCart(o, 'order');
+                                setIsSearchingProduct(false);
+                                setProductSearch('');
+                              }}
+                            >
+                              <div>
+                                <p className="font-semibold">{o.clientName}</p>
+                                <p className="text-xs text-[var(--muted)]">Order #{o.id} | {o.product}</p>
+                              </div>
+                              <p className="font-bold text-[var(--accent)]">₹{o.price}</p>
+                            </button>
+                          )) : (
+                            <p className="p-4 text-center text-xs text-[var(--muted)]">No completed orders found.</p>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCart([...cart, {
+                      id: `CUSTOM-${Date.now()}`,
+                      productId: '',
+                      productName: '',
+                      qty: 1,
+                      unit: 'nos',
+                      finalPrice: 0,
+                      discount: 0,
+                      advancePaid: 0,
+                      type: 'custom',
+                    }]);
                   }}
-                  onFocus={() => setIsSearchingProduct(true)}
-                />
-                {isSearchingProduct && (
-                  <div className="absolute top-full left-0 right-0 z-50 mt-2 max-h-60 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl backdrop-blur">
-                    <div className="sticky top-0 z-10 flex justify-between items-center px-4 py-2 bg-[var(--surface-strong)] border-b border-[var(--border)]">
-                      <span className="text-[10px] font-bold uppercase text-[var(--muted)]">Select {selectionMode}</span>
-                      <button onClick={() => setIsSearchingProduct(false)} className="text-[var(--accent)] text-xs font-bold">Close</button>
-                    </div>
-                    <div className="p-2">
-                      {selectionMode === 'inventory' ? (
-                        filteredProducts.length > 0 ? filteredProducts.map(p => (
-                          <button
-                            key={p.id}
-                            className="flex w-full items-center justify-between rounded-xl p-4 text-left transition hover:bg-[var(--soft)]"
-                            onClick={() => {
-                              addToCart(p, 'inventory');
-                              setIsSearchingProduct(false);
-                              setProductSearch('');
-                            }}
-                          >
-                            <div>
-                              <p className="font-semibold">{p.productName}</p>
-                              <p className="text-xs text-[var(--muted)]">Stock: {p.quantity} {p.unit}</p>
-                            </div>
-                            <p className="font-bold text-[var(--accent)]">₹{p.finalPrice}</p>
-                          </button>
-                        )) : (
-                          <p className="p-4 text-center text-xs text-[var(--muted)]">No inventory items found.</p>
-                        )
-                      ) : (
-                        readyOrders.length > 0 ? readyOrders.map(o => (
-                          <button
-                            key={o.id}
-                            className="flex w-full items-center justify-between rounded-xl p-4 text-left transition hover:bg-[var(--soft)]"
-                            onClick={() => {
-                              addToCart(o, 'order');
-                              setIsSearchingProduct(false);
-                              setProductSearch('');
-                            }}
-                          >
-                            <div>
-                              <p className="font-semibold">{o.clientName}</p>
-                              <p className="text-xs text-[var(--muted)]">Order #{o.id} | {o.product}</p>
-                            </div>
-                            <p className="font-bold text-[var(--accent)]">₹{o.price}</p>
-                          </button>
-                        )) : (
-                          <p className="p-4 text-center text-xs text-[var(--muted)]">No completed orders found.</p>
-                        )
-                      )}
-                    </div>
-                  </div>
-                )}
+                  className="flex items-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-bold text-white shadow-md transition hover:brightness-95 whitespace-nowrap"
+                >
+                  <Plus size={16} />
+                </button>
               </div>
             </div>
 
             {/* Quick Add Client Orders */}
-            <div className="flex justify-end mb-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setCart([...cart, {
-                    id: `CUSTOM-${Date.now()}`,
-                    productId: '',
-                    productName: '',
-                    qty: 1,
-                    unit: 'nos',
-                    finalPrice: 0,
-                    discount: 0,
-                    advancePaid: 0,
-                    type: 'custom',
-                  }]);
-                }}
-                className="flex items-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-bold text-white shadow-md transition hover:brightness-95"
-              >
-                <Plus size={16} /> Add Custom Item / Alteration
-              </button>
-            </div>
 
             <div className="erp-table-container scrollbar-hide" ref={tableContainerRef}>
               <table className="erp-table">
