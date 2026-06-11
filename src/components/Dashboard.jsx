@@ -51,7 +51,20 @@ function Dashboard({
 }) {
   const [showAccountMenu, setShowAccountMenu] = useState(false)
   const [showAccountPanel, setShowAccountPanel] = useState(false)
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    try {
+      const saved = localStorage.getItem('erp_sidebar_collapsed');
+      if (saved !== null) return JSON.parse(saved);
+    } catch (e) {
+      console.error('Failed to load sidebar state', e);
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('erp_sidebar_collapsed', JSON.stringify(isSidebarCollapsed));
+  }, [isSidebarCollapsed]);
+
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const [showThemeDropdown, setShowThemeDropdown] = useState(false)
   const [globalToast, setGlobalToast] = useState(null)
