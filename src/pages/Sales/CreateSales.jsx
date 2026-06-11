@@ -25,6 +25,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
   const [imagePopup, setImagePopup] = useState(null);
   const [pendingClientSwitch, setPendingClientSwitch] = useState(null);
   const tableContainerRef = useRef(null);
+  const paymentScrollRef = useRef(null);
 
   useEffect(() => {
     const container = tableContainerRef.current;
@@ -45,6 +46,62 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     container.addEventListener('wheel', handleWheel, { passive: false });
     return () => container.removeEventListener('wheel', handleWheel);
   }, [cart]); // Re-bind if cart changes just in case, though empty array is mostly fine since ref persists
+
+  useEffect(() => {
+    const container = paymentScrollRef.current;
+    if (!container) return;
+    
+    // For drag to scroll
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    const handleMouseDown = (e) => {
+      isDown = true;
+      container.classList.add('cursor-grabbing');
+      startX = e.pageX - container.offsetLeft;
+      scrollLeft = container.scrollLeft;
+    };
+    const handleMouseLeave = () => {
+      isDown = false;
+      container.classList.remove('cursor-grabbing');
+    };
+    const handleMouseUp = () => {
+      isDown = false;
+      container.classList.remove('cursor-grabbing');
+    };
+    const handleMouseMove = (e) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - container.offsetLeft;
+      const walk = (x - startX) * 2;
+      container.scrollLeft = scrollLeft - walk;
+    };
+
+    // For wheel to scroll
+    const handleWheel = (e) => {
+      const hasHorizontalScroll = container.scrollWidth > container.clientWidth;
+      if (hasHorizontalScroll && Math.abs(e.deltaY) > 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        container.scrollLeft += e.deltaY;
+      }
+    };
+
+    container.addEventListener('mousedown', handleMouseDown);
+    container.addEventListener('mouseleave', handleMouseLeave);
+    container.addEventListener('mouseup', handleMouseUp);
+    container.addEventListener('mousemove', handleMouseMove);
+    container.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener('mousedown', handleMouseDown);
+      container.removeEventListener('mouseleave', handleMouseLeave);
+      container.removeEventListener('mouseup', handleMouseUp);
+      container.removeEventListener('mousemove', handleMouseMove);
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
 
   useEffect(() => {
     if (cart.length === 0) {
@@ -1563,7 +1620,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
             <h3 className="text-lg font-bold mb-6">Payment Summary</h3>
             <div className="mb-6">
               <span className="text-sm font-medium text-[var(--text)] block mb-3">Payment Mode</span>
-              <div className="flex overflow-x-auto gap-2 pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div ref={paymentScrollRef} className="flex overflow-x-auto gap-2 pb-1 cursor-grab [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {['Cash', 'Bank Transfer', 'UPI', 'Card', 'Cheque', 'Split'].map(mode => (
                   <button
                     key={mode}
