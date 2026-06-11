@@ -219,12 +219,18 @@ function Dashboard({
   
   const fetchAllAccountsData = () => {
     if (user?.role === 'Admin' || user?.role === 'Owner') {
-      supabase.from('erp_accounts').select('*').then(({ data }) => {
-        if (data) {
-          setAllAccounts(data)
-          setAccountsLoaded(true)
-        }
-      })
+      supabase.from('erp_accounts').select('*')
+        .then(({ data, error }) => {
+          if (error) {
+            console.warn("Accounts fetch warning:", error.message);
+            return;
+          }
+          if (data) {
+            setAllAccounts(data)
+            setAccountsLoaded(true)
+          }
+        })
+        .catch(err => console.warn("Accounts fetch failed:", err))
     }
   }
 

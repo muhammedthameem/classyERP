@@ -3,7 +3,7 @@ import { ChevronDown, ChevronLeft, Package, Search, Settings, ShoppingBag, Users
 import { formatDateDDMMYY, formatDateTimeDDMMYY, products } from '../../utils/constants'
 import supabase from '../../supabase'
 
-function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClient, initialMode, setClientDetailMode, showGlobalToast, currentUser, clients, setClients, saveClient, productTypes = [], setProductTypes, saveConfig }) {
+function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClient, initialMode, setClientDetailMode, showGlobalToast, currentUser, clients, setClients, saveClient, deleteClient, productTypes = [], setProductTypes, saveConfig }) {
   const [clientsList, setClientsList] = useState([])
   const [showClientDropdown, setShowClientDropdown] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
@@ -46,6 +46,10 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
   const [topMeasurements, setTopMeasurements] = useState(defaultTop)
   const [bottomMeasurements, setBottomMeasurements] = useState(defaultBottom)
   const [note, setNote] = useState('')
+
+  const [measurementToDelete, setMeasurementToDelete] = useState(null)
+  const [showMergePopup, setShowMergePopup] = useState(false)
+  const [pendingMeasurementData, setPendingMeasurementData] = useState(null)
 
   useEffect(() => {
     setIsEditingClient(initialMode === 'edit')
@@ -123,13 +127,105 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
   
   const showTopSection = isAddingMeasurement || hasData(currentMeasurement.topMeasurements);
   const showBottomSection = isAddingMeasurement || hasData(currentMeasurement.bottomMeasurements);
-  const forceShowBoth = !showTopSection && !showBottomSection;
-  const displayTop = showTopSection || forceShowBoth;
-  const displayBottom = showBottomSection || forceShowBoth;
+  const isEmptyMeasurement = !hasData(currentMeasurement.topMeasurements) && !hasData(currentMeasurement.bottomMeasurements) && !isAddingMeasurement && !isEditingClient;
+  const displayTop = showTopSection || isEditingClient;
+  const displayBottom = showBottomSection || isEditingClient;
 
   const handleSaveMeasurement = (e) => {
     e.preventDefault()
 
+    if (isAddingMeasurement && client.measurements?.length > 0) {
+      const existingMatch = client.measurements.find(m => m.product?.toLowerCase() === product.toLowerCase().trim());
+      if (existingMatch) {
+        setPendingMeasurementData({ product, topMeasurements, bottomMeasurements, note });
+        setShowMergePopup(true);
+        return; // Halt save process
+      }
+    }
+
+    executeSaveMeasurement({ product, topMeasurements, bottomMeasurements, note });
+  }
+
+  const handleMergeMeasurement = () => {
+    const existingIndex = client.measurements.findIndex(m => m.product?.toLowerCase() === pendingMeasurementData.product.toLowerCase().trim());
+    if (existingIndex !== -1) {
+      const oldMeasurement = client.measurements[existingIndex];
+      const mergedData = {
+        product: oldMeasurement.product,
+        topMeasurements: { ...oldMeasurement.topMeasurements, ...pendingMeasurementData.topMeasurements },
+        bottomMeasurements: { ...oldMeasurement.bottomMeasurements, ...pendingMeasurementData.bottomMeasurements },
+        note: pendingMeasurementData.note ? pendingMeasurementData.note : oldMeasurement.note
+      };
+      
+      const newMeasurements = [...client.measurements];
+      newMeasurements[existingIndex] = { ...oldMeasurement, ...mergedData };
+      
+      const updatedClient = { ...client, name: editName, mobile: editMobile, address: editAddress, measurements: newMeasurements };
+      
+      saveClientAndClose(updatedClient, existingIndex, false, true);
+    }
+    setShowMergePopup(false);
+    setPendingMeasurementData(null);
+  }
+
+  const handleRecordAsNew = () => {
+    const baseName = pendingMeasurementData.product.trim();
+    let maxNum = 0;
+    client.measurements.forEach(m => {
+      const p = m.product || '';
+      if (p.toLowerCase().startsWith(baseName.toLowerCase())) {
+        const suffix = p.substring(baseName.length).trim();
+        if (suffix === '') {
+          // base name
+        } else if (!isNaN(parseInt(suffix))) {
+          maxNum = Math.max(maxNum, parseInt(suffix));
+        }
+      }
+    });
+    
+    const newProductName = maxNum > 0 ? `${baseName} ${maxNum + 1}` : `${baseName} 1`;
+    const newMeasurement = { ...pendingMeasurementData, product: newProductName };
+    executeSaveMeasurement(newMeasurement);
+    setShowMergePopup(false);
+    setPendingMeasurementData(null);
+  }
+
+  const saveClientAndClose = (updatedClient, newIndex, wasAdding, wasEditing) => {
+    // Eagerly update local state for zero-lag UI
+    if (setClients) {
+      setClients(prev => {
+        const next = [...prev];
+        const idx = next.findIndex(c => String(c.id) === String(updatedClient.id));
+        if (idx >= 0) next[idx] = updatedClient;
+        else next.push(updatedClient);
+        return next;
+      });
+    }
+
+    if (saveClient) {
+      saveClient(updatedClient);
+    } else {
+      const saved = JSON.parse(localStorage.getItem('clients') || '[]');
+      const idx = saved.findIndex(c => c.id === updatedClient.id);
+      if (idx >= 0) saved[idx] = updatedClient;
+      else saved.push(updatedClient);
+      localStorage.setItem('clients', JSON.stringify(saved));
+    }
+
+    setSelectedClient(updatedClient)
+    setSelectedMeasurementIndex(newIndex)
+
+    setIsAddingMeasurement(false)
+    setIsEditingClient(false)
+    if (setClientDetailMode) setClientDetailMode('view')
+
+    if (showGlobalToast) {
+      const action = wasEditing ? 'Updated' : 'Added measurement for';
+      showGlobalToast(`Client ${wasEditing ? 'Updated' : 'Measurement Added'}`, `${action} ${updatedClient.name}`);
+    }
+  }
+
+  const executeSaveMeasurement = (measurementToSave) => {
     const clientListToSearch = clients || [];
     const clientIndex = clientListToSearch.findIndex(c => String(c.id) === String(client.id));
 
@@ -153,18 +249,15 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
 
         updatedClient.measurements[selectedMeasurementIndex] = {
           ...updatedClient.measurements[selectedMeasurementIndex],
-          product,
-          topMeasurements,
-          bottomMeasurements,
-          note
+          product: measurementToSave.product,
+          topMeasurements: measurementToSave.topMeasurements,
+          bottomMeasurements: measurementToSave.bottomMeasurements,
+          note: measurementToSave.note
         }
       } else if (isAddingMeasurement && !isEditingClient) {
         const measurementData = {
           id: Date.now(),
-          product,
-          topMeasurements,
-          bottomMeasurements,
-          note,
+          ...measurementToSave,
           createdAt: new Date().toISOString()
         }
         updatedClient.measurements.push(measurementData)
@@ -175,55 +268,18 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
 
         const measurementData = {
           id: Date.now(),
-          product,
-          topMeasurements,
-          bottomMeasurements,
-          note,
+          ...measurementToSave,
           createdAt: new Date().toISOString()
         }
         updatedClient.measurements.push(measurementData)
       }
 
-      // existingClients[clientIndex] = updatedClient
-      // localStorage.setItem('clients', JSON.stringify(existingClients))
-      // setClientsList(existingClients)
-      
-      // Use the global saveClient to sync to Supabase
-      if (saveClient) {
-        saveClient(updatedClient);
-      } else {
-        // Fallback for safety
-        const saved = JSON.parse(localStorage.getItem('clients') || '[]');
-        const idx = saved.findIndex(c => c.id === updatedClient.id);
-        if (idx >= 0) saved[idx] = updatedClient;
-        else saved.push(updatedClient);
-        localStorage.setItem('clients', JSON.stringify(saved));
-        if (setClients) setClients(saved);
-      }
-
-      setSelectedClient(updatedClient)
-
-      if (isAddingMeasurement) {
-        setSelectedMeasurementIndex(updatedClient.measurements.length - 1)
-        setIsAddingMeasurement(false)
-      }
-
-      if (isEditingClient) {
-        setIsEditingClient(false)
-        if (setClientDetailMode) setClientDetailMode('view')
-      }
-
-      if (showGlobalToast) {
-        const action = isEditingClient ? 'Updated' : 'Added measurement for';
-        showGlobalToast(`Client ${isEditingClient ? 'Updated' : 'Measurement Added'}`, `${action} ${updatedClient.name}`);
-      }
+      const newIndex = isAddingMeasurement ? updatedClient.measurements.length - 1 : selectedMeasurementIndex;
+      saveClientAndClose(updatedClient, newIndex, isAddingMeasurement, isEditingClient);
     } else {
       const measurementData = {
         id: Date.now(),
-        product,
-        topMeasurements,
-        bottomMeasurements,
-        note,
+        ...measurementToSave,
         createdAt: new Date().toISOString()
       }
 
@@ -236,17 +292,15 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
         measurements: [measurementData]
       }
 
-      // existingClients.push(newClient)
-      // localStorage.setItem('clients', JSON.stringify(existingClients))
-      // setClientsList(existingClients)
-      
+      // Eagerly update local state for zero-lag UI
+      if (setClients) setClients(prev => [...prev, newClient]);
+
       if (saveClient) {
         saveClient(newClient);
       } else {
         const saved = JSON.parse(localStorage.getItem('clients') || '[]');
         saved.push(newClient);
         localStorage.setItem('clients', JSON.stringify(saved));
-        if (setClients) setClients(saved);
       }
 
       setSelectedClient(newClient)
@@ -289,7 +343,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
 
                     // 2. Update local UI (Optimistic)
                     if (setClients) {
-                      setClients(prev => prev.filter(c => c.id !== idToDelete));
+                      setClients(prev => prev.filter(c => String(c.id) !== String(idToDelete)));
                     }
                     setClientToDelete(null)
                     if (showGlobalToast) showGlobalToast('Client Removed', 'Profile and measurements deleted permanently.');
@@ -300,6 +354,94 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                 }}
               >
                 Delete Client
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {measurementToDelete !== null && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-3xl border border-[var(--border)] bg-[var(--surface-strong)] p-6 shadow-2xl">
+            <h3 className="text-xl font-semibold text-[var(--text)]">Delete Measurement</h3>
+            <p className="mt-2 text-sm text-[var(--muted)]">
+              Are you sure you want to delete the <span className="font-semibold text-[var(--text)]">{client.measurements[measurementToDelete]?.product || 'measurement'}</span>? This action cannot be undone.
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-2.5 text-sm font-semibold transition hover:bg-[var(--soft)]"
+                onClick={() => setMeasurementToDelete(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
+                onClick={() => {
+                  const newMeasurements = [...client.measurements];
+                  newMeasurements.splice(measurementToDelete, 1);
+                  const updatedClient = { ...client, measurements: newMeasurements };
+                  
+                  // Eagerly update local state for zero-lag UI
+                  if (setClients) {
+                    setClients(prev => {
+                      const next = [...prev];
+                      const idx = next.findIndex(c => String(c.id) === String(updatedClient.id));
+                      if (idx >= 0) next[idx] = updatedClient;
+                      return next;
+                    });
+                  }
+
+                  if (saveClient) {
+                    saveClient(updatedClient);
+                  } else {
+                    const saved = JSON.parse(localStorage.getItem('clients') || '[]');
+                    const idx = saved.findIndex(c => c.id === updatedClient.id);
+                    if (idx >= 0) saved[idx] = updatedClient;
+                    else saved.push(updatedClient);
+                    localStorage.setItem('clients', JSON.stringify(saved));
+                  }
+                  
+                  setSelectedClient(updatedClient);
+                  setSelectedMeasurementIndex(0);
+                  setMeasurementToDelete(null);
+                  if (showGlobalToast) showGlobalToast('Measurement Deleted', 'The measurement has been removed successfully.');
+                }}
+              >
+                Delete Measurement
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showMergePopup && pendingMeasurementData && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-3xl border border-[var(--border)] bg-[var(--surface-strong)] p-6 shadow-2xl">
+            <h3 className="text-xl font-semibold text-[var(--text)]">Duplicate Product Name</h3>
+            <p className="mt-2 text-sm text-[var(--muted)]">
+              A measurement for <span className="font-semibold text-[var(--text)]">{pendingMeasurementData.product}</span> already exists. Do you want to merge these new measurements with the existing one, or save this as a new record?
+            </p>
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                className="rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-95 w-full shadow-lg shadow-[var(--accent)]/20"
+                onClick={handleMergeMeasurement}
+              >
+                Merge with existing
+              </button>
+              <button
+                className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-5 py-2.5 text-sm font-semibold transition hover:bg-[var(--soft)] w-full"
+                onClick={handleRecordAsNew}
+              >
+                Record as new
+              </button>
+              <button
+                className="mt-2 text-sm font-semibold text-[var(--muted)] transition hover:text-[var(--text)] w-full py-1"
+                onClick={() => {
+                  setShowMergePopup(false);
+                  setPendingMeasurementData(null);
+                }}
+              >
+                Cancel
               </button>
             </div>
           </div>
@@ -462,6 +604,12 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
 
         {(!isAddingMeasurement && !isEditingClient) ? (
           <>
+            {isEmptyMeasurement && (
+              <section className="rounded-[24px] border border-orange-500/20 bg-orange-50/50 p-6 shadow-sm backdrop-blur mb-6">
+                <p className="text-center text-orange-800 font-medium">No measurements have been recorded for this product yet.</p>
+              </section>
+            )}
+
             {/* Read-Only View */}
             {measurements.length > 1 && (
               <section className="relative z-9 rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
@@ -488,28 +636,41 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                   {showMeasurementDropdown && (
                     <div className="absolute left-0 right-0 z-20 mt-2 max-h-60 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] shadow-xl shadow-black/10">
                       {measurements.map((measurement, index) => (
-                        <button
-                          key={measurement.id || index}
-                          onClick={() => {
-                            setSelectedMeasurementIndex(index)
-                            setShowMeasurementDropdown(false)
-                          }}
-                          className={`flex w-full items-center justify-between px-4 py-3 text-left transition hover:bg-[var(--soft)] ${selectedMeasurementIndex === index ? 'bg-[var(--soft)] border-l-4 border-[var(--accent)]' : 'border-l-4 border-transparent'
-                            }`}
-                          type="button"
-                        >
-                          <div>
-                            <span className={`block text-sm font-semibold ${selectedMeasurementIndex === index ? 'text-[var(--accent)]' : 'text-[var(--text)]'}`}>
-                              {measurement.product || `Product ${index + 1}`}
-                            </span>
-                            <span className="block text-xs text-[var(--muted)]">
-                              {formatDateDDMMYY(measurement.createdAt || client.createdAt)}
-                            </span>
-                          </div>
-                          {selectedMeasurementIndex === index && (
-                            <div className="h-2 w-2 rounded-full bg-[var(--accent)]"></div>
-                          )}
-                        </button>
+                        <div key={measurement.id || index} className="flex items-stretch w-full group relative">
+                          <button
+                            onClick={() => {
+                              setSelectedMeasurementIndex(index)
+                              setShowMeasurementDropdown(false)
+                            }}
+                            className={`flex-1 flex items-center justify-between px-4 py-3 text-left transition hover:bg-[var(--soft)] ${selectedMeasurementIndex === index ? 'bg-[var(--soft)] border-l-4 border-[var(--accent)]' : 'border-l-4 border-transparent'
+                              }`}
+                            type="button"
+                          >
+                            <div>
+                              <span className={`block text-sm font-semibold ${selectedMeasurementIndex === index ? 'text-[var(--accent)]' : 'text-[var(--text)]'}`}>
+                                {measurement.product || `Product ${index + 1}`}
+                              </span>
+                              <span className="block text-xs text-[var(--muted)]">
+                                {formatDateDDMMYY(measurement.createdAt || client.createdAt)}
+                              </span>
+                            </div>
+                            {selectedMeasurementIndex === index && (
+                              <div className="h-2 w-2 rounded-full bg-[var(--accent)] mr-8"></div>
+                            )}
+                          </button>
+                          <button
+                            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-red-500 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMeasurementToDelete(index);
+                              setShowMeasurementDropdown(false);
+                            }}
+                            title="Delete Measurement"
+                            type="button"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   )}

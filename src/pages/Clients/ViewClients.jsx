@@ -90,7 +90,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
       console.error("Cloud delete failed:", err);
     }
 
-    const updatedClients = clients.filter(c => c.id !== idToDelete);
+    const updatedClients = clients.filter(c => String(c.id) !== String(idToDelete));
     setClients(updatedClients);
     setClientToDelete(null);
     if (showGlobalToast) showGlobalToast('Client Deleted', `Client "${client.name}" removed.`);
@@ -106,7 +106,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
     const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
     await supabase.from('erp_clients').upsert([{ id: recentlyDeletedClient.id.toString(), data: clean(recentlyDeletedClient) }]);
 
-    setClients(prev => prev.some(c => c.id === recentlyDeletedClient.id) ? prev : [...prev, recentlyDeletedClient]);
+    setClients(prev => prev.some(c => String(c.id) === String(recentlyDeletedClient.id)) ? prev : [...prev, recentlyDeletedClient]);
     if (showGlobalToast) showGlobalToast('Restored', `Client "${recentlyDeletedClient.name}" has been restored.`);
     setRecentlyDeletedClient(null);
     if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);

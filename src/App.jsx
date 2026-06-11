@@ -26,10 +26,13 @@ function App() {
   const [expenseCategories, setExpenseCategories] = useState(() => { try { return JSON.parse(localStorage.getItem('expenseCategories') || '["Rent", "Salaries", "Materials & Fabric", "Utilities", "Marketing", "Maintenance", "Other", "Staff Salary", "Overtime Payment"]') } catch (e) { return ["Rent", "Salaries", "Materials & Fabric", "Utilities", "Marketing", "Maintenance", "Other", "Staff Salary", "Overtime Payment"] } })
   const [staffList, setStaffList] = useState(() => { try { return JSON.parse(localStorage.getItem('staffList') || '[]') } catch (e) { return [] } })
   const [cloudLoaded, setCloudLoaded] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [user, setUser] = useState(null)
   const [syncError, setSyncError] = useState(null)
 
   // REAL-TIME SYNC FROM SUPABASE
   useEffect(() => {
+    if (!isLoggedIn) return;
     let isMounted = true;
     const fetchData = async () => {
       try {
@@ -109,7 +112,7 @@ function App() {
       isMounted = false;
       channels.forEach(channel => supabase.removeChannel(channel));
     };
-  }, []);
+  }, [isLoggedIn]);
 
   // LOCAL PERSISTENCE
   useEffect(() => { localStorage.setItem('erp_users', JSON.stringify(users)) }, [users])
@@ -127,8 +130,6 @@ function App() {
   useEffect(() => { localStorage.setItem('expenseCategories', JSON.stringify(expenseCategories)) }, [expenseCategories])
   useEffect(() => { localStorage.setItem('staffList', JSON.stringify(staffList)) }, [staffList])
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [user, setUser] = useState(null)
 
   // 1. RECOVER SUPABASE SESSION
   useEffect(() => {
@@ -138,11 +139,26 @@ function App() {
         
         if (session) {
           // Fetch profile from erp_users to get Name/Role
-          const { data: profileData } = await supabase
+          const { data: profileData, error: profileError } = await supabase
             .from('erp_users')
             .select('*')
             .eq('id', session.user.email)
             .single();
+
+          if (profileError && (profileError.code === 'PGRST301' || profileError.message?.toLowerCase().includes('jwt'))) {
+            console.warn("Session token appears invalid/expired. Attempting manual refresh...");
+            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshError || !refreshData.session) {
+              console.error("Session refresh failed, signing out.");
+              await supabase.auth.signOut();
+              setUser(null);
+              setIsLoggedIn(false);
+              setIsAuthLoading(false);
+              return;
+            }
+            // If refresh succeeded, it will trigger onAuthStateChange which will handle the rest.
+            return;
+          }
 
           if (profileData) {
             const profile = profileData.data || profileData;
