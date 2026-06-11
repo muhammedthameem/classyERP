@@ -713,18 +713,18 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                   <thead>
                     <tr>
-                      <th style={{ padding: '12px 15px', backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb', color: '#4b5563', fontSize: '14px', fontWeight: '600', borderRadius: '8px 0 0 8px' }}>Description</th>
-                      <th style={{ padding: '12px 15px', backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb', color: '#4b5563', fontSize: '14px', fontWeight: '600' }}>Type</th>
-                      <th style={{ padding: '12px 15px', backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb', color: '#4b5563', fontSize: '14px', fontWeight: '600', textAlign: 'center' }}>Qty</th>
-                      <th style={{ padding: '12px 15px', backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb', color: '#4b5563', fontSize: '14px', fontWeight: '600', textAlign: 'right', borderRadius: '0 8px 8px 0' }}>Total</th>
+                      <th style={{ padding: '12px 15px', borderTop: '2px solid #111827', borderBottom: '2px solid #111827', color: '#111827', fontSize: '14px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Description</th>
+                      <th style={{ padding: '12px 15px', borderTop: '2px solid #111827', borderBottom: '2px solid #111827', color: '#111827', fontSize: '14px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Type</th>
+                      <th style={{ padding: '12px 15px', borderTop: '2px solid #111827', borderBottom: '2px solid #111827', color: '#111827', fontSize: '14px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>Qty</th>
+                      <th style={{ padding: '12px 15px', borderTop: '2px solid #111827', borderBottom: '2px solid #111827', color: '#111827', fontSize: '14px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td style={{ padding: '20px 15px', borderBottom: '1px solid #f3f4f6', fontSize: '16px', fontWeight: '600', color: '#111827' }}>{viewOrder.product}</td>
-                      <td style={{ padding: '20px 15px', borderBottom: '1px solid #f3f4f6', fontSize: '15px', color: '#4b5563' }}>{viewOrder.orderType || '-'}</td>
-                      <td style={{ padding: '20px 15px', borderBottom: '1px solid #f3f4f6', fontSize: '15px', color: '#4b5563', textAlign: 'center' }}>{viewOrder.size || '1'}</td>
-                      <td style={{ padding: '20px 15px', borderBottom: '1px solid #f3f4f6', fontSize: '16px', fontWeight: '600', color: '#111827', textAlign: 'right' }}>₹{parseFloat(viewOrder.price || 0).toFixed(2)}</td>
+                      <td style={{ padding: '20px 15px', borderBottom: '1px solid #e5e7eb', fontSize: '16px', fontWeight: '600', color: '#111827' }}>{viewOrder.product}</td>
+                      <td style={{ padding: '20px 15px', borderBottom: '1px solid #e5e7eb', fontSize: '15px', color: '#4b5563' }}>{viewOrder.orderType || '-'}</td>
+                      <td style={{ padding: '20px 15px', borderBottom: '1px solid #e5e7eb', fontSize: '15px', color: '#4b5563', textAlign: 'center' }}>{viewOrder.size || '1'}</td>
+                      <td style={{ padding: '20px 15px', borderBottom: '1px solid #e5e7eb', fontSize: '16px', fontWeight: '600', color: '#111827', textAlign: 'right' }}>₹{parseFloat(viewOrder.price || 0).toFixed(2)}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -732,7 +732,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
 
               {/* Financial Summary */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '50px' }}>
-                <div style={{ width: '380px', backgroundColor: '#f9fafb', padding: '25px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+                <div style={{ width: '380px', padding: '25px 15px 0 15px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', fontSize: '16px' }}>
                     <span style={{ color: '#4b5563' }}>Subtotal:</span>
                     <span style={{ fontWeight: '600', color: '#111827' }}>₹{parseFloat(viewOrder.price || 0).toFixed(2)}</span>
@@ -743,7 +743,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                       <span style={{ fontWeight: '600', color: '#059669' }}>- ₹{parseFloat(viewOrder.advance || 0).toFixed(2)}</span>
                     </div>
                   )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px', paddingTop: '20px', borderTop: '2px dashed #d1d5db', fontSize: '22px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px', paddingTop: '20px', borderTop: '2px solid #111827', fontSize: '22px' }}>
                     <span style={{ fontWeight: '800', color: '#111827' }}>Balance Due:</span>
                     <span style={{ fontWeight: '800', color: '#111827' }}>₹{(parseFloat(viewOrder.price || 0) - parseFloat(viewOrder.advance || 0)).toFixed(2)}</span>
                   </div>
