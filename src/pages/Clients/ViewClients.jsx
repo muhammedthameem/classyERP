@@ -76,10 +76,10 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
     if (!clientToDelete) return;
     const idToDelete = clientToDelete.id;
     const client = { ...clientToDelete };
-    
+
     setRecentlyDeletedClient(client);
     if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
-    
+
     try {
       if (deleteClient) {
         await deleteClient(idToDelete);
@@ -102,7 +102,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
 
   const handleUndoDelete = async () => {
     if (!recentlyDeletedClient) return;
-    
+
     const clean = (obj) => JSON.parse(JSON.stringify(obj, (k, v) => v === "" ? undefined : v));
     await supabase.from('erp_clients').upsert([{ id: recentlyDeletedClient.id.toString(), data: clean(recentlyDeletedClient) }]);
 
@@ -125,7 +125,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
     let html = `
       <div style="border-bottom: 2px solid #8e4431; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
         <div style="display: flex; align-items: center; gap: 15px;">
-          <img src="/logo-black.png" style="width: 60px; height: 60px; object-fit: contain;" />
+          <img src="/logo-black.png" style="width: 56px; height: 60px; object-fit: contain;" />
           <div>
             <h1 style="font-size: 24px; font-weight: 800; color: #8e4431; margin: 0; letter-spacing: -0.5px;">CLASSY COUTURE</h1>
             <p style="font-size: 10px; color: #6b7280; margin: 2px 0 0 0; text-transform: uppercase; letter-spacing: 1px;">Be Unique, Be Classy</p>
@@ -292,7 +292,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
           </p>
           <div className="flex items-center gap-3">
             <h1 className="text-h1">View Clients</h1>
-              <span className="rounded-full bg-[var(--soft)] px-3 py-1 text-sm font-bold text-[var(--text)] border border-[var(--border)]">{displayClients ? displayClients.length : 0} Total</span>
+            <span className="rounded-full bg-[var(--soft)] px-3 py-1 text-sm font-bold text-[var(--text)] border border-[var(--border)]">{displayClients ? displayClients.length : 0} Total</span>
           </div>
           <p className="text-para text-[var(--muted)] mt-2">Manage and search all client records</p>
         </div>
