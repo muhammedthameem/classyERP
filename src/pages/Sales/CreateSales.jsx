@@ -221,8 +221,20 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       return;
     }
 
+    const hasEmptyCustomItem = cart.some(item => item.type === 'custom' && !item.productName.trim());
+    if (hasEmptyCustomItem) {
+      if (showGlobalToast) showGlobalToast('Missing Description', 'Please enter a description for all custom items.');
+      setCartAlert({
+        title: 'Missing Description',
+        message: 'One or more custom items are missing a description. Please enter a description before completing the sale.',
+        type: 'error'
+      });
+      return;
+    }
+
     const hasZeroPriceItem = cart.some(item => {
       const price = parseFloat(item.finalPrice);
+      if (item.type === 'custom') return isNaN(price) || price < 0; // Allow 0 price for alterations
       return isNaN(price) || price <= 0;
     });
 
@@ -1286,6 +1298,27 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
             </div>
 
             {/* Quick Add Client Orders */}
+            <div className="flex justify-end mb-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setCart([...cart, {
+                    id: `CUSTOM-${Date.now()}`,
+                    productId: '',
+                    productName: '',
+                    qty: 1,
+                    unit: 'nos',
+                    finalPrice: 0,
+                    discount: 0,
+                    advancePaid: 0,
+                    type: 'custom',
+                  }]);
+                }}
+                className="flex items-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-bold text-white shadow-md transition hover:brightness-95"
+              >
+                <Plus size={16} /> Add Custom Item / Alteration
+              </button>
+            </div>
 
             <div className="erp-table-container scrollbar-hide" ref={tableContainerRef}>
               <table className="erp-table">
@@ -1303,7 +1336,17 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                   {cart.length > 0 ? cart.map((item) => (
                     <tr key={item.id} className="group">
                       <td>
-                        <p className="font-bold text-[var(--text)]">{item.productName}</p>
+                        {item.type === 'custom' ? (
+                          <input
+                            type="text"
+                            placeholder="Enter description (e.g. Alteration)"
+                            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-1.5 font-bold text-[var(--text)] text-sm outline-none focus:border-[var(--accent)]"
+                            value={item.productName}
+                            onChange={(e) => setCart(cart.map(i => i.id === item.id ? { ...i, productName: e.target.value } : i))}
+                          />
+                        ) : (
+                          <p className="font-bold text-[var(--text)]">{item.productName}</p>
+                        )}
                         <div className="flex flex-col gap-0.5 mt-1">
                           {item.productId && (
                             <p className="text-[10px] text-[var(--muted)] uppercase tracking-tight font-semibold">
@@ -1319,13 +1362,19 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
                       </td>
                       <td>
                         <div className="flex items-center gap-2">
-                          {item.type === 'inventory' ? (
+                          {item.type === 'inventory' || item.type === 'custom' ? (
                             <input
                               type="number"
                               step="any"
                               className="w-16 rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] px-2 py-1 font-bold text-[var(--text)] text-sm"
                               value={item.qty}
-                              onChange={(e) => updateQty(item.id, parseFloat(e.target.value) || 0)}
+                              onChange={(e) => {
+                                if (item.type === 'custom') {
+                                  setCart(cart.map(i => i.id === item.id ? { ...i, qty: parseFloat(e.target.value) || 0 } : i));
+                                } else {
+                                  updateQty(item.id, parseFloat(e.target.value) || 0);
+                                }
+                              }}
                             />
                           ) : <span className="font-bold text-[var(--text)]">{item.qty}</span>}
                           <span className="text-[10px] font-bold text-[var(--muted)] uppercase">{item.unit}</span>
