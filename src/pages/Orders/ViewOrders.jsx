@@ -17,7 +17,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
   const [recentlyDeletedOrder, setRecentlyDeletedOrder] = useState(null)
   const undoTimeoutRef = useRef(null)
   const [viewOrder, setViewOrder] = useState(null)
-  const [sortConfig, setSortConfig] = useState({ key: 'orderDate', direction: 'desc' })
+  const [sortConfig, setSortConfig] = useState({ key: 'updatedAt', direction: 'desc' })
   const [dateFilter, setDateFilter] = useState('All') // All, Today, Tomorrow, Week, Custom
   const [customDate, setCustomDate] = useState(getIndianDate())
   const [showWaPopup, setShowWaPopup] = useState(false)
@@ -134,7 +134,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
   const handleStatusChange = async (id, newStatus) => {
     const updated = orders.map(o => {
       if (o.id === id) {
-        let newData = { ...o, status: newStatus }
+        let newData = { ...o, status: newStatus, updatedAt: new Date().toISOString() }
         if (newStatus === 'In Progress' && !o.startDate) {
           newData.startDate = getIndianDate()
         }
@@ -256,7 +256,10 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
       let valA = a[sortConfig.key] || ''
       let valB = b[sortConfig.key] || ''
 
-      if (sortConfig.key === 'orderDate' || sortConfig.key === 'deliveryDate') {
+      if (sortConfig.key === 'updatedAt') {
+        valA = a.updatedAt ? new Date(a.updatedAt).getTime() : new Date(a.orderDate || 0).getTime()
+        valB = b.updatedAt ? new Date(b.updatedAt).getTime() : new Date(b.orderDate || 0).getTime()
+      } else if (sortConfig.key === 'orderDate' || sortConfig.key === 'deliveryDate') {
         valA = new Date(valA || 0).getTime()
         valB = new Date(valB || 0).getTime()
       }
@@ -287,7 +290,10 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
           if (a.status !== 'Closed' && b.status === 'Closed') return -1;
           let valA = a[sortConfig.key] || ''
           let valB = b[sortConfig.key] || ''
-          if (sortConfig.key === 'orderDate' || sortConfig.key === 'deliveryDate') {
+          if (sortConfig.key === 'updatedAt') {
+            valA = a.updatedAt ? new Date(a.updatedAt).getTime() : new Date(a.orderDate || 0).getTime()
+            valB = b.updatedAt ? new Date(b.updatedAt).getTime() : new Date(b.orderDate || 0).getTime()
+          } else if (sortConfig.key === 'orderDate' || sortConfig.key === 'deliveryDate') {
             valA = new Date(valA || 0).getTime()
             valB = new Date(valB || 0).getTime()
           }
@@ -681,7 +687,8 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                     <p style={{ margin: '5px 0 0 0', fontSize: '15px', color: '#6b7280' }}>Be Unique, Be Classy</p>
 
                   </div>
-                  <div style={{ textAlign: 'right' }}>
+                </div>
+                <div style={{ textAlign: 'right' }}>
                     <h2 style={{ margin: 0, fontSize: '28px', color: '#111827', fontWeight: '700', letterSpacing: '2px' }}>INVOICE</h2>
                     <p style={{ margin: '8px 0 0 0', fontSize: '15px', color: '#4b5563', fontWeight: '600' }}>Order #{viewOrder.id}</p>
                     <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280' }}>Date: {viewOrder.orderDate || 'N/A'}</p>
@@ -934,7 +941,9 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                 <div className="mt-6 flex justify-end gap-3">
                   <button type="button" className="rounded-xl px-4 py-2 font-semibold hover:bg-[var(--soft)] transition" onClick={() => setEditOrder(null)}>Cancel</button>
                   <button type="button" className="rounded-xl bg-[var(--accent)] px-4 py-2 font-semibold text-white shadow-lg transition hover:brightness-95" onClick={() => {
-                    saveOrders(orders.map(o => o.id === editOrder.id ? editOrder : o))
+                    const finalOrder = { ...editOrder, updatedAt: new Date().toISOString() }
+                    saveOrders(orders.map(o => o.id === finalOrder.id ? finalOrder : o))
+                    if (saveOrder) saveOrder(finalOrder)
                     setEditOrder(null)
                     if (showGlobalToast) showGlobalToast('Success', 'Order updated successfully.')
                   }}>Save Changes</button>
