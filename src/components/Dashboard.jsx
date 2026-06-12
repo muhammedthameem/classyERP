@@ -359,10 +359,10 @@ function Dashboard({
   const allSales = sales
 
   const liveStats = [
-    { label: 'Total Revenue', value: `₹${allSales.reduce((acc, s) => acc + (parseFloat(s.total) || parseFloat(s.totalAmount) || parseFloat(s.paidAmount) || 0), 0).toLocaleString()}`, note: 'Real-time sales', icon: TrendingUp, adminOnly: true },
-    { label: 'Active Orders', value: allOrders.filter(o => o.status !== 'Closed' && o.status !== 'Sold' && o.status !== 'Completed').length, note: 'In production', icon: ShoppingBag },
-    { label: 'Studio Clients', value: allClients.length, note: 'Registered profiles', icon: UsersRound },
-    { label: 'Stock Items', value: allInventory.length, note: 'Inventory items', icon: Package },
+    { label: 'Total Revenue', value: `₹${allSales.reduce((acc, s) => acc + (parseFloat(s.total) || parseFloat(s.totalAmount) || parseFloat(s.paidAmount) || 0), 0).toLocaleString()}`, note: 'Real-time sales', icon: TrendingUp, adminOnly: true, link: 'view-sales' },
+    { label: 'Active Orders', value: allOrders.filter(o => o.status !== 'Closed' && o.status !== 'Sold' && o.status !== 'Completed').length, note: 'In production', icon: ShoppingBag, link: 'view-orders' },
+    { label: 'Studio Clients', value: allClients.length, note: 'Registered profiles', icon: UsersRound, link: 'view-clients' },
+    { label: 'Stock Items', value: allInventory.length, note: 'Inventory items', icon: Package, link: 'view-inventory' },
   ].filter(s => !s.adminOnly || user?.role === 'Admin')
 
   const liveRecentOrders = [...allOrders].sort((a, b) => new Date(b.orderDate || 0) - new Date(a.orderDate || 0)).slice(0, 5)
@@ -580,7 +580,7 @@ function Dashboard({
                             liveStats.map((stat) => {
                               const Icon = stat.icon
                               return (
-                                <article key={stat.label} className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur transition hover:-translate-y-0.5">
+                                <article key={stat.label} onClick={() => stat.link && setCurrentPage(stat.link)} className={`rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur transition hover:-translate-y-0.5 ${stat.link ? 'cursor-pointer hover:border-[var(--accent)] hover:shadow-md' : ''}`}>
                                   <div className="mb-5 flex items-center justify-between">
                                     <span className="grid h-11 w-11 place-items-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
                                       <Icon size={21} />
@@ -805,7 +805,8 @@ function Dashboard({
                               <div className="rounded-md bg-white/10 p-4" key={act.id}>
                                 <p className="text-sm text-[#cce0da]">{new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                 <p className="font-semibold">{act.title}</p>
-                                <p className="text-sm text-[#dfeee9]">{act.actor || 'System'}</p>
+                                <p className="text-sm text-[#cce0da] mt-1">{act.description}</p>
+                                <p className="text-sm text-[#dfeee9] mt-2 font-medium">By {act.actor || 'System'}</p>
                               </div>
                             ))}
                           </div>

@@ -99,12 +99,35 @@ function App() {
     fetchData();
 
     // Set up Realtime Subscriptions
+    const handlePayload = (payload, setState) => {
+      if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+        const newData = payload.new.data || payload.new;
+        setState(prev => {
+           const existing = prev.findIndex(item => {
+             const itemId = item.id || item.clientId || item.productId || item.saleId || item.email;
+             return itemId && itemId.toString() === payload.new.id.toString();
+           });
+           if (existing >= 0) {
+             const next = [...prev];
+             next[existing] = newData;
+             return next;
+           }
+           return [...prev, newData];
+        });
+      } else if (payload.eventType === 'DELETE') {
+        setState(prev => prev.filter(item => {
+           const itemId = item.id || item.clientId || item.productId || item.saleId || item.email;
+           return itemId && itemId.toString() !== payload.old.id.toString();
+        }));
+      }
+    };
+
     const channels = [
-      supabase.channel('erp_users').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_users' }, () => fetchData()).subscribe(),
-      supabase.channel('erp_clients').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_clients' }, () => fetchData()).subscribe(),
-      supabase.channel('erp_orders').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_orders' }, () => fetchData()).subscribe(),
-      supabase.channel('erp_sales').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_sales' }, () => fetchData()).subscribe(),
-      supabase.channel('erp_inventory').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_inventory' }, () => fetchData()).subscribe(),
+      supabase.channel('erp_users').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_users' }, (p) => handlePayload(p, setUsers)).subscribe(),
+      supabase.channel('erp_clients').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_clients' }, (p) => handlePayload(p, setClients)).subscribe(),
+      supabase.channel('erp_orders').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_orders' }, (p) => handlePayload(p, setOrders)).subscribe(),
+      supabase.channel('erp_sales').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_sales' }, (p) => handlePayload(p, setSales)).subscribe(),
+      supabase.channel('erp_inventory').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_inventory' }, (p) => handlePayload(p, setInventory)).subscribe(),
       supabase.channel('erp_config').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_config' }, () => fetchData()).subscribe()
     ];
 

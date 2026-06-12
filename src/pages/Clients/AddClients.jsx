@@ -127,7 +127,7 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
     }
 
     console.log('Client data saved:', measurementData)
-    if (showGlobalToast) showGlobalToast('Success!', 'Client added successfully.')
+    if (showGlobalToast) showGlobalToast('Client Added', `Client "${personalDetails.name}" added successfully.`)
 
     if (isConverting) {
       localStorage.setItem('prefillOrderClientName', personalDetails.name)
