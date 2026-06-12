@@ -12,7 +12,7 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
 
   const isDataLoading = !cloudLoaded || !inventory;
 
-  const displayInventory = (inventory || []).filter(inv => inv.id !== recentlyDeletedInventory?.id);
+  const displayInventory = (inventory || []).filter(inv => !recentlyDeletedInventory || inv.id !== recentlyDeletedInventory.id);
 
   const filteredInventory = useMemo(() => {
     return [...displayInventory]

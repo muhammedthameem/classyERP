@@ -115,7 +115,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
     if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
   }
 
-  const displaySales = sales.filter(s => String(s.id) !== String(recentlyDeletedSale?.id));
+  const displaySales = sales.filter(s => !recentlyDeletedSale || String(s.id) !== String(recentlyDeletedSale.id));
 
   const filteredSales = useMemo(() => {
     return displaySales.filter(s => {
@@ -141,7 +141,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
       if (searchQuery !== '') setSearchQuery('');
 
       setTimeout(() => {
-        const currentSorted = [...sales.filter(s => String(s.id) !== String(recentlyDeletedSale?.id))].sort((a, b) => {
+        const currentSorted = [...sales.filter(s => !recentlyDeletedSale || String(s.id) !== String(recentlyDeletedSale.id))].sort((a, b) => {
           const timeA = new Date(a.timestamp || a.id || 0).getTime();
           const timeB = new Date(b.timestamp || b.id || 0).getTime();
           return timeB - timeA;

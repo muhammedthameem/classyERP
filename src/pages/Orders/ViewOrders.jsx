@@ -194,7 +194,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
 
   const [activeFilter, setActiveFilter] = useState('All')
 
-  const displayOrders = orders.filter(o => String(o.id) !== String(recentlyDeletedOrder?.id));
+  const displayOrders = orders.filter(o => !recentlyDeletedOrder || String(o.id) !== String(recentlyDeletedOrder.id));
 
   const filteredOrders = displayOrders.filter(o => {
     const matchesSearch = (o.clientName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -288,7 +288,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
       // Use a timeout to allow state updates (filters) to apply and render
       setTimeout(() => {
         // Recalculate index based on the unfiltered orders
-        const currentSorted = [...orders.filter(o => String(o.id) !== String(recentlyDeletedOrder?.id))].sort((a, b) => {
+        const currentSorted = [...orders.filter(o => !recentlyDeletedOrder || String(o.id) !== String(recentlyDeletedOrder.id))].sort((a, b) => {
           if (a.status === 'Closed' && b.status !== 'Closed') return 1;
           if (a.status !== 'Closed' && b.status === 'Closed') return -1;
           let valA = a[sortConfig.key] || ''

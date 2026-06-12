@@ -17,7 +17,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
 
   const isDataLoading = !cloudLoaded || !currentUser || !clients;
 
-  const displayClients = (clients || []).filter(c => String(c.id) !== String(recentlyDeletedClient?.id));
+  const displayClients = (clients || []).filter(c => !recentlyDeletedClient || String(c.id) !== String(recentlyDeletedClient.id));
 
   const filteredClients = useMemo(() => {
     return displayClients.filter(client =>
@@ -44,7 +44,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
       if (searchQuery !== '') setSearchQuery('');
 
       setTimeout(() => {
-        const currentDisplay = (clients || []).filter(c => String(c.id) !== String(recentlyDeletedClient?.id));
+        const currentDisplay = (clients || []).filter(c => !recentlyDeletedClient || String(c.id) !== String(recentlyDeletedClient.id));
         const currentSorted = [...currentDisplay].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
         const index = currentSorted.findIndex(c => String(c.id) === String(highlightClientId));
