@@ -81,10 +81,17 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
     if (showGlobalToast) showGlobalToast('Success', 'User details updated successfully.')
   }
 
-  const filteredUsers = users.filter(u =>
-    u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.designation.toLowerCase().includes(searchTerm.toLowerCase())
+  const uniqueUsersMap = new Map()
+  users.forEach(u => {
+    if (!uniqueUsersMap.has(u.email) || (u.updatedAt && new Date(u.updatedAt) > new Date(uniqueUsersMap.get(u.email).updatedAt || 0))) {
+      uniqueUsersMap.set(u.email, u)
+    }
+  })
+
+  const filteredUsers = Array.from(uniqueUsersMap.values()).filter(u =>
+    (u.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (u.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (u.designation || '').toLowerCase().includes(searchTerm.toLowerCase())
   ).sort((a, b) => {
     // 1. MOVE CURRENT USER TO TOP
     if (currentUser) {
@@ -93,7 +100,7 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
     }
     
     // 2. TIE-BREAKER: Sort everyone else alphabetically by name
-    return a.name.localeCompare(b.name);
+    return (a.name || '').localeCompare(b.name || '');
   })
 
   return (

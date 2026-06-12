@@ -102,6 +102,7 @@ function App() {
     const handlePayload = (payload, setState) => {
       if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
         const newData = payload.new.data || payload.new;
+        if (!newData.id) newData.id = payload.new.id;
         setState(prev => {
            const existing = prev.findIndex(item => {
              const itemId = item.id || item.clientId || item.productId || item.saleId || item.email;
