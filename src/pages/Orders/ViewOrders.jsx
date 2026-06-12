@@ -165,7 +165,10 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
       saveOrder(changedOrder);
     }
 
-    if (showGlobalToast) showGlobalToast('Status Updated', `Order status changed to ${newStatus}`)
+    if (showGlobalToast) {
+      const clientName = changedOrder?.clientName || 'Client';
+      showGlobalToast('Status Updated', `Order status for ${clientName} changed to ${newStatus}`);
+    }
 
     // Send WhatsApp notification when order is completed
     if (newStatus === 'Completed' && changedOrder) {
