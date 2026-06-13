@@ -19,6 +19,8 @@ const AddIncomePage = lazy(() => import('../pages/Accounts/AddIncome'))
 const AddExpensePage = lazy(() => import('../pages/Accounts/AddExpense'))
 const ViewAccountsPage = lazy(() => import('../pages/Accounts/ViewAccounts'))
 const StaffManagementPage = lazy(() => import('../pages/Accounts/StaffManagement'))
+const CreateDesignPage = lazy(() => import('../pages/Bridal/CreateDesign'))
+const DesignLibraryPage = lazy(() => import('../pages/Bridal/DesignLibrary'))
 import AccountDetailsModal from './AccountDetailsModal'
 
 import supabase from '../supabase'
@@ -200,6 +202,7 @@ function Dashboard({
   const [highlightClientId, setHighlightClientId] = useState(null)
   const [highlightStaffId, setHighlightStaffId] = useState(null)
   const [highlightAccountId, setHighlightAccountId] = useState(null)
+  const [editingDesign, setEditingDesign] = useState(null)
 
   useEffect(() => {
     const handleGlobalNav = (e) => {
@@ -1494,6 +1497,8 @@ function Dashboard({
               {currentPage === 'reports' && <ReportsPage themeStyle={themeStyle} showGlobalToast={showGlobalToast} currentUser={user} sales={sales} orders={orders} clients={clients} inventory={inventory} cloudLoaded={cloudLoaded} />}
               {currentPage === 'create-user' && <CreateUserPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} users={users} setUsers={setUsers} designations={designations} setDesignations={setDesignations} currentUser={user} saveUser={saveUser} cloudLoaded={cloudLoaded} />}
               {currentPage === 'view-users' && <ViewUsersPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} users={users} setUsers={setUsers} designations={designations} setDesignations={setDesignations} currentUser={user} cloudLoaded={cloudLoaded} />}
+              {currentPage === 'create-design' && <CreateDesignPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} editingDesign={editingDesign} setEditingDesign={setEditingDesign} />}
+              {currentPage === 'design-library' && <DesignLibraryPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} setEditingDesign={setEditingDesign} />}
             </Suspense>
             {syncError && (
               <div className="mt-6 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-500 flex items-center gap-3">

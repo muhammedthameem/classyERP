@@ -1,4 +1,4 @@
-import { Bell, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CircleDollarSign, ClipboardList, Crown, Gem, LayoutDashboard, LogOut, Menu, Moon, Package, Palette, Search, Settings, ShieldCheck, ShoppingBag, Sparkles, Sun, TrendingUp, UsersRound, Eye, Pencil, Trash2, Download, ShoppingCart, CheckCircle, Clock, Play, Pause, CheckCircle2, BarChart3 } from 'lucide-react'
+import { Bell, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CircleDollarSign, ClipboardList, Crown, Gem, LayoutDashboard, LogOut, Menu, Moon, Package, Palette, Search, Settings, ShieldCheck, ShoppingBag, Sparkles, Sun, TrendingUp, UsersRound, Eye, Pencil, Trash2, Download, ShoppingCart, CheckCircle, Clock, Play, Pause, CheckCircle2, BarChart3, Image as ImageIcon, PenTool } from 'lucide-react'
 
 export const formatDateDDMMYY = (dateInput) => {
   if (!dateInput) return ''
@@ -148,6 +148,16 @@ export const navItems = [
       { label: 'Add Expense', id: 'add-expense' },
       { label: 'Staff Payroll', id: 'staff-management' },
       { label: 'View Accounts', id: 'view-accounts' }
+    ]
+  },
+  {
+    label: 'Pattern Customisation',
+    icon: Crown,
+    id: 'pattern-customisation',
+    hasSubmenu: true,
+    submenu: [
+      { label: 'Create Design', id: 'create-design' },
+      { label: 'Library', id: 'design-library' }
     ]
   },
   { label: 'Reports', icon: BarChart3, id: 'reports' },
