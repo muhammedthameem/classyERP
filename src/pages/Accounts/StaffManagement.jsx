@@ -150,7 +150,56 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
     }
   }
 
-  const generatePayslip = () => {
+  const handleDownloadPdf = () => {
+    if (!payslipData.staffId) {
+      if (showGlobalToast) showGlobalToast('Error', 'Please select a staff member.');
+      return;
+    }
+    if (!payslipData.amount && !payslipData.overtime) {
+      if (showGlobalToast) showGlobalToast('Error', 'No salary or overtime logged for this staff in the selected period. You must log the expense first to generate a payslip.');
+      return;
+    }
+    const staff = staffList.find(s => s.id === payslipData.staffId);
+    if (!staff) return;
+
+    if (payslipData.type === 'Custom' && (!payslipData.startDate || !payslipData.endDate)) {
+      if (showGlobalToast) showGlobalToast('Error', 'Please select both start and end dates.');
+      return;
+    }
+
+    setActiveStaffForPdf({
+      ...staff,
+      payslipType: payslipData.type,
+      payslipMonth: payslipData.month,
+      payslipStartDate: payslipData.startDate,
+      payslipEndDate: payslipData.endDate,
+      payslipAmount: payslipData.amount,
+      payslipOvertime: payslipData.overtime
+    });
+    
+    setTimeout(async () => {
+      try {
+        const element = document.getElementById('payslip-template');
+        if (!element) return;
+        const opt = {
+          margin: 0.5,
+          filename: `Payslip_${staff.name.replace(/\s+/g, '_')}_${payslipData.month}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+
+        await html2pdf().set(opt).from(element).save();
+        setActiveStaffForPdf(null);
+        if (showGlobalToast) showGlobalToast('Success', 'Payslip downloaded successfully.');
+      } catch (error) {
+        console.error("Payslip generation error:", error);
+        if (showGlobalToast) showGlobalToast('Error', 'Failed to generate payslip.');
+      }
+    }, 500);
+  }
+
+  const handleSendWhatsApp = () => {
     if (!payslipData.staffId) {
       if (showGlobalToast) showGlobalToast('Error', 'Please select a staff member.');
       return;
@@ -231,6 +280,8 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
           text += `*Classy Couture*`;
 
           window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(text)}`, '_blank');
+        } else {
+          if (showGlobalToast) showGlobalToast('Warning', 'Payslip uploaded, but staff has no valid phone number for WhatsApp. Link: ' + finalAppUrl);
         }
       } catch (error) {
         console.error("Payslip generation error:", error);
@@ -690,14 +741,22 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
               </select>
             </label>
           </div>
-          <div className="mt-auto pt-6 flex justify-end">
+          <div className="mt-auto pt-6 flex flex-col sm:flex-row justify-end gap-3">
             <button
               type="button"
-              className={`flex items-center gap-2 rounded-xl bg-[var(--accent)] px-8 py-3.5 font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:bg-[var(--accent)]/90 cursor-pointer ${(!payslipData.staffId || isSendingPdf) ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={generatePayslip}
+              className={`flex items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-6 py-3.5 font-bold text-[var(--text)] transition hover:bg-[var(--soft)] cursor-pointer ${(!payslipData.staffId || isSendingPdf) ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={handleDownloadPdf}
               disabled={!payslipData.staffId || isSendingPdf}
             >
-              <Download size={18} /> {isSendingPdf ? 'Generating...' : 'Download PDF'}
+              <Download size={18} /> Download PDF
+            </button>
+            <button
+              type="button"
+              className={`flex items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-8 py-3.5 font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:bg-[var(--accent)]/90 cursor-pointer ${(!payslipData.staffId || isSendingPdf) ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={handleSendWhatsApp}
+              disabled={!payslipData.staffId || isSendingPdf}
+            >
+              <FileText size={18} /> {isSendingPdf ? 'Generating...' : 'Send WhatsApp Link'}
             </button>
           </div>
         </section>
