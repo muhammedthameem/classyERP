@@ -25,6 +25,11 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
   const [ledgerStaff, setLedgerStaff] = useState(null)
   const [activeStaffForPdf, setActiveStaffForPdf] = useState(null)
 
+  const formatNoteDates = (note) => {
+    if (!note) return '';
+    return note.replace(/(\d{4})-(\d{2})-(\d{2})/g, '$3/$2/$1');
+  };
+
   const [payslipData, setPayslipData] = useState({
     type: 'Monthly', // or 'Custom'
     staffId: '',
@@ -49,21 +54,37 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
     if (staff) {
       const overtimeExpenses = allAccounts.filter(acc => {
         if (acc.type !== 'Expense' || acc.category !== 'Overtime Payment' || acc.reference !== `Overtime - ${staff.name}` || !acc.date) return false;
+        let dateMatches = false;
         if (payslipData.type === 'Monthly') {
-          return payslipData.month && acc.date.startsWith(payslipData.month);
+          dateMatches = payslipData.month && acc.date.startsWith(payslipData.month);
         } else {
-          return payslipData.startDate && payslipData.endDate && acc.date >= payslipData.startDate && acc.date <= payslipData.endDate;
+          dateMatches = payslipData.startDate && payslipData.endDate && acc.date >= payslipData.startDate && acc.date <= payslipData.endDate;
+          if (!dateMatches && acc.notes && payslipData.startDate && payslipData.endDate) {
+            const match = acc.notes.match(/Weekly Payment:\s*([\d-]+)\s*to\s*([\d-]+)/);
+            if (match && match[1] >= payslipData.startDate && match[2] <= payslipData.endDate) {
+              dateMatches = true;
+            }
+          }
         }
+        return dateMatches;
       });
       monthlyOvertimeSum = overtimeExpenses.reduce((sum, acc) => sum + parseFloat(acc.amount || 0), 0);
 
       const salaryExpenses = allAccounts.filter(acc => {
         if (acc.type !== 'Expense' || acc.reference !== `Salary - ${staff.name}` || !acc.date) return false;
+        let dateMatches = false;
         if (payslipData.type === 'Monthly') {
-          return payslipData.month && acc.date.startsWith(payslipData.month);
+          dateMatches = payslipData.month && acc.date.startsWith(payslipData.month);
         } else {
-          return payslipData.startDate && payslipData.endDate && acc.date >= payslipData.startDate && acc.date <= payslipData.endDate;
+          dateMatches = payslipData.startDate && payslipData.endDate && acc.date >= payslipData.startDate && acc.date <= payslipData.endDate;
+          if (!dateMatches && acc.notes && payslipData.startDate && payslipData.endDate) {
+            const match = acc.notes.match(/Weekly Payment:\s*([\d-]+)\s*to\s*([\d-]+)/);
+            if (match && match[1] >= payslipData.startDate && match[2] <= payslipData.endDate) {
+              dateMatches = true;
+            }
+          }
         }
+        return dateMatches;
       });
       monthlySalarySum = salaryExpenses.reduce((sum, acc) => sum + parseFloat(acc.amount || 0), 0);
     }
@@ -86,14 +107,14 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
       return;
     }
 
-    setActiveStaffForPdf({ 
-      ...staff, 
+    setActiveStaffForPdf({
+      ...staff,
       payslipType: payslipData.type,
-      payslipMonth: payslipData.month, 
+      payslipMonth: payslipData.month,
       payslipStartDate: payslipData.startDate,
       payslipEndDate: payslipData.endDate,
-      payslipAmount: payslipData.amount, 
-      payslipOvertime: payslipData.overtime 
+      payslipAmount: payslipData.amount,
+      payslipOvertime: payslipData.overtime
     });
     if (showGlobalToast) showGlobalToast('Generating', 'Preparing payslip for download...');
     setTimeout(() => {
@@ -109,11 +130,11 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
       html2pdf().set(opt).from(element).save().then(() => {
         setActiveStaffForPdf(null);
         if (showGlobalToast) showGlobalToast('Success', 'Payslip downloaded successfully.');
-        
+
         // Open WhatsApp
         const phone = staff.phone.replace(/\D/g, '');
         if (phone) {
-          const periodStr = payslipData.type === 'Monthly' 
+          const periodStr = payslipData.type === 'Monthly'
             ? new Date(payslipData.month + '-01').toLocaleString('default', { month: 'long', year: 'numeric' })
             : `${payslipData.startDate} to ${payslipData.endDate}`;
           const text = encodeURIComponent(`Hello ${staff.name},\n\nYour payslip for ${periodStr} has been generated. Please find the PDF document attached below.\n\nTotal Paid: ₹${(parseFloat(payslipData.amount || 0) + parseFloat(payslipData.overtime || 0)).toLocaleString()}`);
@@ -171,7 +192,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
   const handleConfirmDelete = () => {
     if (!staffToDelete) return
     const id = staffToDelete.id
-    
+
     const staff = { ...staffToDelete }
     setRecentlyDeletedStaff(staff)
     if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current)
@@ -329,14 +350,14 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
                 <X size={24} />
               </button>
             </div>
-            
+
             <div className="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
               <table className="w-full text-left text-sm">
                 <thead className="sticky top-0 bg-[var(--soft)] z-10">
                   <tr className="border-b border-[var(--border)] text-[var(--muted)]">
                     <th className="py-3 px-2 font-medium">Date</th>
                     <th className="py-3 px-2 font-medium">Category</th>
-                    <th className="py-3 px-2 font-medium">Notes</th>
+                    <th className="py-3 px-2 font-medium">Note</th>
                     <th className="py-3 px-2 text-right font-medium">Amount</th>
                   </tr>
                 </thead>
@@ -345,16 +366,20 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
                     .sort((a, b) => new Date(b.date) - new Date(a.date))
                     .map((acc, idx) => (
                       <tr key={idx} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--soft)] transition">
-                        <td className="py-3 px-2 text-[var(--text)] whitespace-nowrap">{new Date(acc.date).toLocaleDateString()}</td>
+                        <td className="py-3 px-2 text-[var(--text)] whitespace-nowrap">
+                          {acc.date ? `${String(new Date(acc.date).getDate()).padStart(2, '0')}/${String(new Date(acc.date).getMonth() + 1).padStart(2, '0')}/${new Date(acc.date).getFullYear()}` : '-'}
+                        </td>
                         <td className="py-3 px-2">
                           <span className={`px-2 py-0.5 rounded text-xs font-semibold ${acc.category === 'Overtime Payment' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
                             {acc.category === 'Overtime Payment' ? 'Overtime' : 'Salary'}
                           </span>
                         </td>
-                        <td className="py-3 px-2 text-[var(--muted)] max-w-[250px] truncate" title={acc.notes}>{acc.notes || '-'}</td>
+                        <td className="py-3 px-2 text-[var(--muted)] text-xs leading-relaxed" style={{ wordBreak: 'break-word', whiteSpace: 'normal', minWidth: '200px' }}>
+                          {formatNoteDates(acc.notes) || '-'}
+                        </td>
                         <td className="py-3 px-2 text-right font-bold text-green-600">₹{parseFloat(acc.amount || 0).toLocaleString()}</td>
                       </tr>
-                  ))}
+                    ))}
                   {allAccounts.filter(acc => acc.type === 'Expense' && (acc.reference === `Salary - ${ledgerStaff.name}` || acc.reference === `Overtime - ${ledgerStaff.name}`)).length === 0 && (
                     <tr>
                       <td colSpan="4" className="py-8 text-center text-[var(--muted)]">No payment history found for this staff.</td>
@@ -637,9 +662,9 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
                       <div className="flex flex-col gap-1 items-start">
                         <span className="text-green-600">₹{getDynamicTotalPaid(staff).toLocaleString()}</span>
                         {checkPaidStatus(staff) ? (
-                           <span className="w-fit rounded bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">Paid {tableMonthFilter ? '' : '(This Month)'}</span>
+                          <span className="w-fit rounded bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">Paid {tableMonthFilter ? '' : '(This Month)'}</span>
                         ) : (
-                           <span className="w-fit rounded bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">Unpaid {tableMonthFilter ? '' : '(This Month)'}</span>
+                          <span className="w-fit rounded bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">Unpaid {tableMonthFilter ? '' : '(This Month)'}</span>
                         )}
                       </div>
                     </td>
@@ -705,7 +730,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
                   <td style={{ padding: '8px 0' }}>{activeStaffForPdf.designation}</td>
                   <td style={{ padding: '8px 0', fontWeight: 'bold' }}>Payslip Period:</td>
                   <td style={{ padding: '8px 0' }}>
-                    {activeStaffForPdf.payslipType === 'Monthly' 
+                    {activeStaffForPdf.payslipType === 'Monthly'
                       ? new Date(activeStaffForPdf.payslipMonth + '-01').toLocaleString('default', { month: 'long', year: 'numeric' })
                       : `${activeStaffForPdf.payslipStartDate} to ${activeStaffForPdf.payslipEndDate}`}
                   </td>
