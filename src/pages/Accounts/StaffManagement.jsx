@@ -211,11 +211,11 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
         const element = document.getElementById('payslip-template');
         if (!element) return;
         const opt = {
-          margin: 0.5,
+          margin: 0.2,
           filename: `Payslip_${staff.name.replace(/\s+/g, '_')}_${payslipData.month}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
         };
 
         await html2pdf().set(opt).from(element).save();
@@ -262,11 +262,11 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
         const element = document.getElementById('payslip-template');
         if (!element) return;
         const opt = {
-          margin: 0.5,
+          margin: 0.2,
           filename: `Payslip_${staff.name.replace(/\s+/g, '_')}_${payslipData.month}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
         };
 
         const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
