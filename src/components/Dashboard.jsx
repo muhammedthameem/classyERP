@@ -300,6 +300,26 @@ function Dashboard({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  useEffect(() => {
+    if (!flyoutMenu) return;
+    const handleClose = (e) => {
+      if (e && e.type === 'mousedown' && e.target && e.target.closest && e.target.closest('#flyout-menu')) {
+        return;
+      }
+      setFlyoutMenu(null);
+    };
+    // Add a slight delay so the current event doesn't trigger immediate closure
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClose);
+      document.addEventListener('wheel', handleClose, { passive: true });
+    }, 10);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClose);
+      document.removeEventListener('wheel', handleClose);
+    };
+  }, [flyoutMenu]);
+
   // Auto scroll to top on page change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1707,8 +1727,8 @@ function Dashboard({
       {/* Global Flyout Menu for Collapsed Sidebar */}
       {flyoutMenu && (
         <>
-          <div className="fixed inset-0 z-[190]" onClick={() => setFlyoutMenu(null)} />
           <div
+            id="flyout-menu"
             className="fixed z-[200] w-48 rounded-2xl bg-[var(--surface-strong)] shadow-2xl shadow-black/20 border border-[var(--border)] overflow-hidden py-2 animate-in fade-in slide-in-from-left-2"
             style={{ top: flyoutMenu.top, left: '5.5rem' }}
           >

@@ -82,9 +82,9 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
     let finalNotes = formData.notes;
     if (selectedStaff && formData.salaryType) {
       if (formData.salaryType === 'Weekly Payment') {
-         finalNotes = `Weekly Payment: ${formData.weekStartDate} to ${formData.weekEndDate}${finalNotes ? ' | ' + finalNotes : ''}`;
+        finalNotes = `Weekly Payment: ${formData.weekStartDate} to ${formData.weekEndDate}${finalNotes ? ' | ' + finalNotes : ''}`;
       } else if (formData.salaryType !== 'Monthly Payment') {
-         finalNotes = `${formData.salaryType}${finalNotes ? ' | ' + finalNotes : ''}`;
+        finalNotes = `${formData.salaryType}${finalNotes ? ' | ' + finalNotes : ''}`;
       }
     }
 
@@ -278,10 +278,10 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
                   {inventory
                     .filter(i => !linkedInventoryIds.includes((i.productId || i.id)?.toString()))
                     .map(i => (
-                    <option key={i.productId || i.id} value={i.productId || i.id}>
-                      Item #{i.productId || i.id} - {i.productName} (Qty: {i.initialQuantity || i.quantity} {i.unit} @ ₹{i.purchasePrice || 0})
-                    </option>
-                  ))}
+                      <option key={i.productId || i.id} value={i.productId || i.id}>
+                        Item #{i.productId || i.id} - {i.productName} (Qty: {i.initialQuantity || i.quantity} {i.unit} @ ₹{i.purchasePrice || 0})
+                      </option>
+                    ))}
                 </select>
               </label>
             )}
@@ -432,11 +432,11 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
                     if (days && selectedStaff.salaryPerDay) {
                       const calculated = parseFloat(days) * parseFloat(selectedStaff.salaryPerDay);
                       newExpected = calculated.toString();
-                      
+
                       const pendingBalance = parseFloat(selectedStaff.balanceDue || 0);
                       let suggestedAmount = calculated + pendingBalance;
                       if (suggestedAmount < 0) suggestedAmount = 0;
-                      
+
                       newAmount = suggestedAmount.toString();
                     }
                     setFormData({ ...formData, daysWorked: days, amount: newAmount, expectedAmount: newExpected });
@@ -476,7 +476,7 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
                     )}
                     {selectedStaff.balanceDue && parseFloat(selectedStaff.balanceDue) !== 0 && (
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${parseFloat(selectedStaff.balanceDue) > 0 ? 'text-red-600 bg-red-100' : 'text-green-600 bg-green-100'}`}>
-                        Pending Balance: ₹{parseFloat(selectedStaff.balanceDue)}
+                        PB: ₹{parseFloat(selectedStaff.balanceDue)}
                       </span>
                     )}
                   </div>
