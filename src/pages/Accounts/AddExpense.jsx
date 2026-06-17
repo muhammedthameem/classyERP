@@ -11,8 +11,21 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
     payment_mode: 'Bank Transfer',
     reference: '',
     notes: '',
-    linked_inventory_id: ''
+    linked_inventory_id: '',
+    salaryType: 'Monthly Payment',
+    weekStartDate: '',
+    weekEndDate: ''
   })
+
+  const [salaryTypes, setSalaryTypes] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('erp_salaryTypes') || '["Monthly Payment", "Weekly Payment"]') } catch (e) { return ["Monthly Payment", "Weekly Payment"] }
+  })
+  const [showSalaryTypeDropdown, setShowSalaryTypeDropdown] = useState(false)
+  const [salaryTypeSearch, setSalaryTypeSearch] = useState('')
+
+  useEffect(() => {
+    localStorage.setItem('erp_salaryTypes', JSON.stringify(salaryTypes))
+  }, [salaryTypes])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [selectedStaff, setSelectedStaff] = useState(null)
@@ -57,7 +70,21 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
       return;
     }
 
+    if (formData.salaryType === 'Weekly Payment' && selectedStaff && (!formData.weekStartDate || !formData.weekEndDate)) {
+      if (showGlobalToast) showGlobalToast('Dates Required', 'Please select both start and end dates for the weekly payment.');
+      return;
+    }
+
     setIsSubmitting(true)
+
+    let finalNotes = formData.notes;
+    if (selectedStaff && formData.salaryType) {
+      if (formData.salaryType === 'Weekly Payment') {
+         finalNotes = `Weekly Payment: ${formData.weekStartDate} to ${formData.weekEndDate}${finalNotes ? ' | ' + finalNotes : ''}`;
+      } else if (formData.salaryType !== 'Monthly Payment') {
+         finalNotes = `${formData.salaryType}${finalNotes ? ' | ' + finalNotes : ''}`;
+      }
+    }
 
     try {
       const { data, error } = await supabase
@@ -69,7 +96,7 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
           amount: parseFloat(formData.amount),
           payment_mode: formData.payment_mode,
           reference: formData.linked_inventory_id ? `Inventory #${formData.linked_inventory_id}` : formData.reference,
-          notes: formData.notes
+          notes: finalNotes
         }])
 
       if (error) throw error;
@@ -135,7 +162,10 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
           ...prev,
           amount: fillAmt.toString(),
           reference: `${formData.category === 'Overtime Payment' ? 'Overtime' : 'Salary'} - ${staff.name}`,
-          notes: noteStr
+          notes: noteStr,
+          salaryType: 'Monthly Payment',
+          weekStartDate: '',
+          weekEndDate: ''
         }));
       }
     } else {
@@ -248,21 +278,122 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
             )}
 
             {(formData.category?.toLowerCase().includes('staff') || formData.category?.toLowerCase().includes('salary') || formData.category === 'Overtime Payment') && (
-              <label className="block sm:col-span-2 pt-2">
-                <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><Link size={16} /> Select Staff Member</span>
-                <select
-                  className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
-                  onChange={handleStaffSelect}
-                  value={selectedStaff ? selectedStaff.id : ""}
-                >
-                  <option value="" disabled>-- Select a staff member --</option>
-                  {staffList.map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} - {s.designation}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <>
+                <label className="block sm:col-span-2 pt-2">
+                  <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><Link size={16} /> Select Staff Member</span>
+                  <select
+                    className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                    onChange={handleStaffSelect}
+                    value={selectedStaff ? selectedStaff.id : ""}
+                  >
+                    <option value="" disabled>-- Select a staff member --</option>
+                    {staffList.map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} - {s.designation}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {selectedStaff && (
+                  <div className="relative sm:col-span-2 pt-2">
+                    <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><Tag size={16} /> Salary Type</span>
+                    <input
+                      className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                      type="text"
+                      value={salaryTypeSearch || formData.salaryType}
+                      onChange={(e) => {
+                        setSalaryTypeSearch(e.target.value)
+                        setFormData({ ...formData, salaryType: e.target.value })
+                        setShowSalaryTypeDropdown(true)
+                      }}
+                      onFocus={() => {
+                        setSalaryTypeSearch('')
+                        setShowSalaryTypeDropdown(true)
+                      }}
+                      onBlur={() => setTimeout(() => setShowSalaryTypeDropdown(false), 200)}
+                      placeholder="e.g., Monthly Payment, Weekly Payment..."
+                    />
+                    {showSalaryTypeDropdown && (
+                      <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] shadow-lg">
+                        {salaryTypes
+                          .filter(c => c.toLowerCase().includes(salaryTypeSearch.toLowerCase()))
+                          .map((c) => (
+                            <div key={c} className="flex items-center group w-full px-4 py-1 hover:bg-[var(--soft)]">
+                              <button
+                                className="flex-1 py-1.5 text-left text-sm text-[var(--text)] transition"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  setSalaryTypeSearch('')
+                                  setFormData({ ...formData, salaryType: c })
+                                  setShowSalaryTypeDropdown(false)
+                                }}
+                                type="button"
+                              >
+                                {c}
+                              </button>
+                              <button
+                                type="button"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  const updated = salaryTypes.filter(item => item !== c);
+                                  setSalaryTypes(updated);
+                                }}
+                                className="p-1.5 text-red-400 hover:text-red-600 opacity-60 hover:opacity-100 transition-opacity"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          ))}
+                        {salaryTypeSearch && !salaryTypes.some(c => c.toLowerCase() === salaryTypeSearch.toLowerCase()) && (
+                          <button
+                            className="w-full px-4 py-2 text-left text-sm font-semibold text-[var(--accent)] transition hover:bg-[var(--soft)]"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              const newType = salaryTypeSearch.trim()
+                              if (newType) {
+                                const updated = [...salaryTypes, newType]
+                                setSalaryTypes(updated);
+                                setFormData({ ...formData, salaryType: newType })
+                                setSalaryTypeSearch('')
+                                setShowSalaryTypeDropdown(false)
+                              }
+                            }}
+                            type="button"
+                          >
+                            + Add "{salaryTypeSearch}"
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {selectedStaff && formData.salaryType === 'Weekly Payment' && (
+                  <div className="grid grid-cols-2 gap-4 sm:col-span-2 pt-2">
+                    <label className="block">
+                      <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><Calendar size={16} /> Week Start</span>
+                      <input
+                        className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                        type="date"
+                        value={formData.weekStartDate}
+                        onChange={(e) => setFormData({ ...formData, weekStartDate: e.target.value })}
+                        required
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><Calendar size={16} /> Week End</span>
+                      <input
+                        className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                        type="date"
+                        value={formData.weekEndDate}
+                        onChange={(e) => setFormData({ ...formData, weekEndDate: e.target.value })}
+                        required
+                      />
+                    </label>
+                  </div>
+                )}
+              </>
             )}
 
             <label className="block pt-2">
