@@ -915,7 +915,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
                   <td style={{ padding: '8px 0' }}>
                     {activeStaffForPdf.payslipType === 'Monthly'
                       ? new Date(activeStaffForPdf.payslipMonth + '-01').toLocaleString('default', { month: 'long', year: 'numeric' })
-                      : `${activeStaffForPdf.payslipStartDate} to ${activeStaffForPdf.payslipEndDate}`}
+                      : `${activeStaffForPdf.payslipStartDate.split('-').reverse().join('/')} to ${activeStaffForPdf.payslipEndDate.split('-').reverse().join('/')}`}
                   </td>
                 </tr>
               </tbody>
@@ -956,7 +956,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '60px', paddingTop: '20px', borderTop: '1px solid #eee' }}>
               <div style={{ textAlign: 'center' }}>
-                <img src="/signature.png" alt="Signature" style={{ height: '60px', objectFit: 'contain', display: 'block', margin: '0 auto -5px auto', position: 'relative', zIndex: 1 }} />
+                <img src="/sign-removebg-preview.png" alt="Signature" style={{ height: '60px', objectFit: 'contain', display: 'block', margin: '0 auto -5px auto', position: 'relative', zIndex: 1 }} />
                 <p style={{ marginTop: '0', borderTop: '1px solid #000', paddingTop: '10px', width: '200px', fontWeight: 'bold', position: 'relative', zIndex: 2 }}>Employer Signature</p>
               </div>
               <div style={{ textAlign: 'center' }}>
