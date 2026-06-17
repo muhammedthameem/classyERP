@@ -203,9 +203,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
       payslipStartDate: payslipData.startDate,
       payslipEndDate: payslipData.endDate,
       payslipAmount: payslipData.amount,
-      payslipOvertime: payslipData.overtime,
-      payslipExpectedAmount: payslipData.expectedAmount,
-      payslipDaysWorked: payslipData.daysWorked
+      payslipOvertime: payslipData.overtime
     });
     
     setTimeout(async () => {
@@ -224,13 +222,6 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
         setActiveStaffForPdf(null);
         if (showGlobalToast) showGlobalToast('Success', 'Payslip downloaded successfully.');
 
-        // Update staff balance automatically
-        if (payslipData.expectedAmount) {
-          const balance = parseFloat(payslipData.expectedAmount || 0) - (parseFloat(payslipData.amount || 0) + parseFloat(payslipData.overtime || 0));
-          const updatedStaffList = staffList.map(s => s.id === staff.id ? { ...s, balanceDue: balance.toString() } : s);
-          setStaffList(updatedStaffList);
-          if (saveConfig) saveConfig('staffList', updatedStaffList);
-        }
       } catch (error) {
         console.error("Payslip generation error:", error);
         if (showGlobalToast) showGlobalToast('Error', 'Failed to generate payslip.');
@@ -262,9 +253,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
       payslipStartDate: payslipData.startDate,
       payslipEndDate: payslipData.endDate,
       payslipAmount: payslipData.amount,
-      payslipOvertime: payslipData.overtime,
-      payslipExpectedAmount: payslipData.expectedAmount,
-      payslipDaysWorked: payslipData.daysWorked
+      payslipOvertime: payslipData.overtime
     });
     if (showGlobalToast) showGlobalToast('Generating', 'Uploading payslip to secure server...');
     setIsSendingPdf(true);
@@ -301,14 +290,6 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
 
         setActiveStaffForPdf(null);
         if (showGlobalToast) showGlobalToast('Success', 'Payslip uploaded successfully.');
-
-        // Update staff balance automatically
-        if (payslipData.expectedAmount) {
-          const balance = parseFloat(payslipData.expectedAmount || 0) - (parseFloat(payslipData.amount || 0) + parseFloat(payslipData.overtime || 0));
-          const updatedStaffList = staffList.map(s => s.id === staff.id ? { ...s, balanceDue: balance.toString() } : s);
-          setStaffList(updatedStaffList);
-          if (saveConfig) saveConfig('staffList', updatedStaffList);
-        }
 
         // Open WhatsApp
         const phone = staff.phone.replace(/\D/g, '');
@@ -729,34 +710,13 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
 
               return (
                 <>
-                  <label className="block sm:col-span-1">
-                    <span className="text-sm font-medium text-[var(--text)]">Days Worked <span className="text-[11px] text-[var(--muted)]">- For Balance</span></span>
+                  <label className="block sm:col-span-2">
+                    <span className="text-sm font-medium text-[var(--text)]">Current Pending Balance (₹)</span>
                     <input
-                      type="number"
-                      className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
-                      value={payslipData.daysWorked || ''}
-                      onChange={e => {
-                        const days = e.target.value;
-                        const perDay = staff ? parseFloat(staff.salaryPerDay || 0) : 0;
-                        setPayslipData(prev => ({ 
-                          ...prev, 
-                          daysWorked: days, 
-                          expectedAmount: (days && perDay) ? (days * perDay).toString() : prev.expectedAmount 
-                        }));
-                      }}
-                      disabled={!payslipData.staffId}
-                      placeholder="e.g., 6"
-                    />
-                  </label>
-                  <label className="block sm:col-span-1">
-                    <span className="text-sm font-medium text-[var(--text)]">Total Expected Salary (₹)</span>
-                    <input
-                      type="number"
-                      className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
-                      value={payslipData.expectedAmount || ''}
-                      onChange={e => setPayslipData(prev => ({ ...prev, expectedAmount: e.target.value }))}
-                      disabled={!payslipData.staffId}
-                      placeholder="e.g., 6000"
+                      type="text"
+                      className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none opacity-80"
+                      value={staff && staff.balanceDue ? `₹${parseFloat(staff.balanceDue).toLocaleString()}` : '₹0'}
+                      readOnly
                     />
                   </label>
                   <label className="block sm:col-span-1">
@@ -1046,26 +1006,12 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
                       <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 'bold' }}>₹{parseFloat(activeStaffForPdf.payslipOvertime || 0).toLocaleString()}</td>
                     </tr>
                   )}
-                  {activeStaffForPdf.payslipDaysWorked && (
-                    <tr style={{ borderBottom: '1px solid #eee' }}>
-                      <td style={{ padding: '16px 20px' }}>Days Worked</td>
-                      <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 'bold' }}>{activeStaffForPdf.payslipDaysWorked} Days</td>
-                    </tr>
-                  )}
-                  {activeStaffForPdf.payslipExpectedAmount && (
-                    <tr style={{ borderBottom: '1px solid #eee' }}>
-                      <td style={{ padding: '16px 20px' }}>Total Expected Salary</td>
-                      <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 'bold' }}>₹{parseFloat(activeStaffForPdf.payslipExpectedAmount || 0).toLocaleString()}</td>
-                    </tr>
-                  )}
-                  {activeStaffForPdf.payslipExpectedAmount && (
-                    <tr style={{ borderBottom: '1px solid #eee' }}>
-                      <td style={{ padding: '16px 20px' }}>Balance Payment Due</td>
-                      <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 'bold', color: 'red' }}>
-                        ₹{(parseFloat(activeStaffForPdf.payslipExpectedAmount || 0) - (parseFloat(activeStaffForPdf.payslipAmount || 0) + parseFloat(activeStaffForPdf.payslipOvertime || 0))).toLocaleString()}
-                      </td>
-                    </tr>
-                  )}
+                  <tr style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ padding: '16px 20px' }}>Total Pending Balance</td>
+                    <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 'bold', color: parseFloat(activeStaffForPdf.balanceDue || 0) > 0 ? 'red' : 'green' }}>
+                      ₹{parseFloat(activeStaffForPdf.balanceDue || 0).toLocaleString()}
+                    </td>
+                  </tr>
                   <tr style={{ borderBottom: '1px solid #eee', background: '#f8f9fa' }}>
                     <td style={{ padding: '16px 20px', fontWeight: 'bold', fontSize: '18px' }}>Total Gross Pay</td>
                     <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 'bold', color: 'green', fontSize: '18px' }}>
