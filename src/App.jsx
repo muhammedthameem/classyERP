@@ -273,7 +273,14 @@ function App() {
     return id?.trim() || null;
   };
 
+  const getInitialPayslipId = () => {
+    if (typeof window === 'undefined') return null;
+    const searchParams = new URLSearchParams(window.location.search);
+    return searchParams.get('payslip');
+  };
+
   const [activeBillId, setActiveBillId] = useState(getInitialBillId);
+  const [activePayslipId] = useState(getInitialPayslipId);
   const [currentPage, setCurrentPage] = useState(() => localStorage.getItem('erp_current_page') || 'overview');
   const [appearance, setAppearance] = useState(() => localStorage.getItem('erp_appearance') || 'light')
   const [themeName, setThemeName] = useState(() => localStorage.getItem('erp_theme_name') || 'champagne')
@@ -342,6 +349,12 @@ function App() {
     localStorage.removeItem('active_bill_id');
     setActiveBillId(null);
   };
+
+  if (activePayslipId) {
+    const { data: { publicUrl } } = supabase.storage.from('receipts').getPublicUrl(activePayslipId);
+    window.location.href = publicUrl;
+    return <div style={{ display: 'grid', height: '100vh', placeItems: 'center', fontFamily: 'sans-serif', background: '#f8f9fa' }}><h3 style={{ color: '#333' }}>Loading Payslip Document...</h3></div>;
+  }
 
   if (activeBillId) {
     return <PublicReceipt billId={activeBillId} onClear={clearBill} />;

@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Users, Pencil, Trash2, Search, Plus, Save, X, Download, FileText, ChevronUp, ChevronDown } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
 import UndoToast from '../../components/UndoToast'
+import supabase from '../../supabase'
 
 function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staffList = [], setStaffList, saveConfig, highlightStaffId, setHighlightStaffId, allAccounts = [] }) {
   const rowRefs = useRef({})
+  const [isSendingPdf, setIsSendingPdf] = useState(false);
   const [formData, setFormData] = useState({
     id: '',
     name: '',
@@ -37,13 +39,71 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
     startDate: '',
     endDate: '',
     amount: '',
-    overtime: ''
+    overtime: '',
+    selectedLogId: ''
   })
 
   const handlePayslipStaffChange = (e) => {
     const id = e.target.value;
     const staff = staffList.find(s => s.id === id);
-    setPayslipData(prev => ({ ...prev, staffId: id, amount: '', overtime: '' }));
+    setPayslipData(prev => ({ ...prev, staffId: id, amount: '', overtime: '', selectedLogId: '' }));
+  }
+
+  const handleLoggedPaymentSelect = (e) => {
+    const accId = e.target.value;
+    if (!accId) {
+      setPayslipData(prev => ({ ...prev, amount: '', selectedLogId: '', overtime: '' }));
+      return;
+    }
+    const acc = allAccounts.find(a => String(a.id) === accId);
+    if (acc) {
+      let type = 'Monthly';
+      let startDate = '';
+      let endDate = '';
+      let month = acc.date ? acc.date.slice(0, 7) : '';
+
+      if (acc.notes && acc.notes.includes('Weekly Payment:')) {
+        const match = acc.notes.match(/Weekly Payment:\s*([\d-]+)\s*to\s*([\d-]+)/);
+        if (match) {
+          type = 'Custom';
+          startDate = match[1];
+          endDate = match[2];
+        }
+      }
+
+      // Calculate overtime for this newly selected period
+      const staff = staffList.find(s => s.id === payslipData.staffId);
+      let overtimeSum = 0;
+      if (staff) {
+        const overtimeExpenses = allAccounts.filter(oAcc => {
+          if (oAcc.type !== 'Expense' || oAcc.category !== 'Overtime Payment' || oAcc.reference !== `Overtime - ${staff.name}` || !oAcc.date) return false;
+          if (type === 'Monthly') {
+            return month && oAcc.date.startsWith(month);
+          } else {
+            let dateMatches = startDate && endDate && oAcc.date >= startDate && oAcc.date <= endDate;
+            if (!dateMatches && oAcc.notes && startDate && endDate) {
+              const match = oAcc.notes.match(/Weekly Payment:\s*([\d-]+)\s*to\s*([\d-]+)/);
+              if (match && match[1] >= startDate && match[2] <= endDate) {
+                dateMatches = true;
+              }
+            }
+            return dateMatches;
+          }
+        });
+        overtimeSum = overtimeExpenses.reduce((sum, oAcc) => sum + parseFloat(oAcc.amount || 0), 0);
+      }
+
+      setPayslipData(prev => ({
+        ...prev,
+        type,
+        startDate,
+        endDate,
+        month,
+        amount: acc.amount,
+        selectedLogId: accId,
+        overtime: overtimeSum > 0 ? overtimeSum : ''
+      }));
+    }
   }
 
   // Calculate total overtime & salary logged for selected staff in selected period
@@ -116,31 +176,68 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
       payslipAmount: payslipData.amount,
       payslipOvertime: payslipData.overtime
     });
-    if (showGlobalToast) showGlobalToast('Generating', 'Preparing payslip for download...');
-    setTimeout(() => {
-      const element = document.getElementById('payslip-template');
-      if (!element) return;
-      const opt = {
-        margin: 0.5,
-        filename: `Payslip_${staff.name.replace(/\s+/g, '_')}_${payslipData.month}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-      };
-      html2pdf().set(opt).from(element).save().then(() => {
+    if (showGlobalToast) showGlobalToast('Generating', 'Uploading payslip to secure server...');
+    setIsSendingPdf(true);
+    setTimeout(async () => {
+      try {
+        const element = document.getElementById('payslip-template');
+        if (!element) return;
+        const opt = {
+          margin: 0.5,
+          filename: `Payslip_${staff.name.replace(/\s+/g, '_')}_${payslipData.month}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+
+        const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+        const fileName = `payslips/Payslip_${staff.name.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
+
+        const { data, error: uploadError } = await supabase.storage
+          .from('receipts')
+          .upload(fileName, pdfBlob, {
+            contentType: 'application/pdf',
+            cacheControl: '3600',
+            upsert: true
+          });
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('receipts')
+          .getPublicUrl(fileName);
+
         setActiveStaffForPdf(null);
-        if (showGlobalToast) showGlobalToast('Success', 'Payslip downloaded successfully.');
+        if (showGlobalToast) showGlobalToast('Success', 'Payslip uploaded successfully.');
 
         // Open WhatsApp
         const phone = staff.phone.replace(/\D/g, '');
         if (phone) {
+          const appUrlObj = new URL(window.location.origin);
+          appUrlObj.searchParams.set('payslip', fileName);
+          const finalAppUrl = appUrlObj.toString();
+
+          const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
           const periodStr = payslipData.type === 'Monthly'
             ? new Date(payslipData.month + '-01').toLocaleString('default', { month: 'long', year: 'numeric' })
-            : `${payslipData.startDate} to ${payslipData.endDate}`;
-          const text = encodeURIComponent(`Hello ${staff.name},\n\nYour payslip for ${periodStr} has been generated. Please find the PDF document attached below.\n\nTotal Paid: ₹${(parseFloat(payslipData.amount || 0) + parseFloat(payslipData.overtime || 0)).toLocaleString()}`);
-          window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
+            : `${payslipData.startDate.split('-').reverse().join('/')} to ${payslipData.endDate.split('-').reverse().join('/')}`;
+
+          let text = `Hello *${staff.name}*,\n\n`;
+          text += `Your payslip for *${periodStr}* has been generated.\n\n`;
+          text += `Total Paid: *₹${(parseFloat(payslipData.amount || 0) + parseFloat(payslipData.overtime || 0)).toLocaleString()}*\n\n`;
+          text += `📄 *View & Download Digital Payslip:*\n${finalAppUrl}\n\n`;
+          text += `*Classy Couture*`;
+
+          window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(text)}`, '_blank');
         }
-      });
+      } catch (error) {
+        console.error("Payslip generation error:", error);
+        if (showGlobalToast) showGlobalToast('Error', 'Failed to generate or upload payslip.');
+      } finally {
+        setIsSendingPdf(false);
+      }
     }, 500);
   }
 
@@ -508,52 +605,76 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
                 {staffList.map(s => <option key={s.id} value={s.id}>{s.name} ({s.designation})</option>)}
               </select>
             </label>
-            {payslipData.type === 'Monthly' ? (
-              <label className="block">
-                <span className="text-sm font-medium text-[var(--text)]">Payslip Month</span>
-                <input
-                  type="month"
-                  className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
-                  value={payslipData.month}
-                  onChange={e => setPayslipData(prev => ({ ...prev, month: e.target.value, overtime: '' }))}
-                />
-              </label>
-            ) : (
+
+            {payslipData.staffId && (() => {
+              const staff = staffList.find(s => s.id === payslipData.staffId);
+              const staffSalaryLogs = staff ? allAccounts.filter(acc => acc.type === 'Expense' && acc.reference === `Salary - ${staff.name}`) : [];
+
+              return (
+                <label className="block sm:col-span-2">
+                  <span className="text-sm font-medium text-[var(--text)]">Amount Paid (₹) <span className="text-red-500">*</span></span>
+                  <select
+                    className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                    value={payslipData.selectedLogId || ""}
+                    onChange={handleLoggedPaymentSelect}
+                    disabled={!payslipData.staffId}
+                  >
+                    <option value="">-- Select logged payment --</option>
+                    {staffSalaryLogs.sort((a, b) => new Date(b.date) - new Date(a.date)).map(acc => (
+                      <option key={acc.id} value={acc.id}>
+                        ₹{acc.amount} - {new Date(acc.date).toLocaleDateString()} {acc.notes ? `(${acc.notes.substring(0, 30)}${acc.notes.length > 30 ? '...' : ''})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              );
+            })()}
+
+            {payslipData.selectedLogId && (
               <>
                 <label className="block">
-                  <span className="text-sm font-medium text-[var(--text)]">Start Date</span>
+                  <span className="text-sm font-medium text-[var(--text)]">Payslip Type</span>
                   <input
-                    type="date"
-                    className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
-                    value={payslipData.startDate}
-                    onChange={e => setPayslipData(prev => ({ ...prev, startDate: e.target.value, overtime: '' }))}
+                    type="text"
+                    readOnly
+                    className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none opacity-80"
+                    value={payslipData.type}
                   />
                 </label>
-                <label className="block">
-                  <span className="text-sm font-medium text-[var(--text)]">End Date</span>
-                  <input
-                    type="date"
-                    className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
-                    value={payslipData.endDate}
-                    onChange={e => setPayslipData(prev => ({ ...prev, endDate: e.target.value, overtime: '' }))}
-                  />
-                </label>
+                {payslipData.type === 'Monthly' ? (
+                  <label className="block">
+                    <span className="text-sm font-medium text-[var(--text)]">Payslip Month</span>
+                    <input
+                      type="month"
+                      readOnly
+                      className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none opacity-80"
+                      value={payslipData.month}
+                    />
+                  </label>
+                ) : (
+                  <>
+                    <label className="block">
+                      <span className="text-sm font-medium text-[var(--text)]">Start Date</span>
+                      <input
+                        type="date"
+                        readOnly
+                        className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none opacity-80"
+                        value={payslipData.startDate}
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-sm font-medium text-[var(--text)]">End Date</span>
+                      <input
+                        type="date"
+                        readOnly
+                        className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none opacity-80"
+                        value={payslipData.endDate}
+                      />
+                    </label>
+                  </>
+                )}
               </>
             )}
-            <label className="block">
-              <span className="text-sm font-medium text-[var(--text)]">Amount to Pay (₹)</span>
-              <select
-                className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
-                value={payslipData.amount}
-                onChange={e => setPayslipData(prev => ({ ...prev, amount: e.target.value }))}
-                disabled={!payslipData.staffId}
-              >
-                <option value="">0 (No Salary)</option>
-                {monthlySalarySum > 0 && (
-                  <option value={monthlySalarySum}>₹{monthlySalarySum} (Logged Salary)</option>
-                )}
-              </select>
-            </label>
             <label className="block">
               <span className="text-sm font-medium text-[var(--text)]">Overtime (₹) <span className="text-[11px] text-[var(--muted)]">- Optional</span></span>
               <select
@@ -572,11 +693,11 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
           <div className="mt-auto pt-6 flex justify-end">
             <button
               type="button"
-              className="flex items-center gap-2 rounded-xl bg-[var(--accent)] px-8 py-3.5 font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:bg-[var(--accent)]/90 cursor-pointer disabled:opacity-50"
+              className={`flex items-center gap-2 rounded-xl bg-[var(--accent)] px-8 py-3.5 font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:bg-[var(--accent)]/90 cursor-pointer ${(!payslipData.staffId || isSendingPdf) ? 'opacity-50 cursor-not-allowed' : ''}`}
               onClick={generatePayslip}
-              disabled={!payslipData.staffId}
+              disabled={!payslipData.staffId || isSendingPdf}
             >
-              <Download size={18} /> Download PDF
+              <Download size={18} /> {isSendingPdf ? 'Generating...' : 'Download PDF'}
             </button>
           </div>
         </section>
@@ -712,9 +833,12 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
       {activeStaffForPdf && (
         <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
           <div id="payslip-template" style={{ width: '700px', padding: '40px', boxSizing: 'border-box', background: '#fff', color: '#000', fontFamily: 'sans-serif' }}>
-            <div style={{ textAlign: 'center', borderBottom: '2px solid #eee', paddingBottom: '20px', marginBottom: '30px' }}>
-              <h1 style={{ margin: 0, fontSize: '28px', color: '#111' }}>Classy Couture</h1>
-              <p style={{ margin: '5px 0 0', color: '#666', fontSize: '14px' }}>Official Payslip Record</p>
+            <div style={{ textAlign: 'center', borderBottom: '2px dashed #ccc', paddingBottom: '20px', marginBottom: '30px' }}>
+              <img src="/logo-black.png" alt="Logo" style={{ width: '112px', height: '128px', margin: '0 auto 16px auto', objectFit: 'contain', display: 'block' }} />
+              <h3 style={{ textTransform: 'uppercase', letterSpacing: '-0.025em', fontSize: '24px', fontWeight: '800', margin: '0', color: '#111' }}>Classy Couture</h3>
+              <p style={{ fontSize: '12px', fontWeight: '500', margin: '4px 0 2px' }}>Be Unique, Be Classy</p>
+              <p style={{ margin: '2px 0', fontSize: '12px' }}>Ph : 8606154015</p>
+              <p style={{ margin: '16px 0 0', color: '#444', fontSize: '16px', fontWeight: 'bold', textTransform: 'uppercase' }}>Official Payslip Record</p>
             </div>
 
             <table style={{ width: '100%', marginBottom: '40px', fontSize: '16px', tableLayout: 'fixed', wordWrap: 'break-word' }}>
@@ -773,7 +897,8 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '60px', paddingTop: '20px', borderTop: '1px solid #eee' }}>
               <div style={{ textAlign: 'center' }}>
-                <p style={{ marginTop: '40px', borderTop: '1px solid #000', paddingTop: '10px', width: '200px', fontWeight: 'bold' }}>Employer Signature</p>
+                <img src="/signature.png" alt="Signature" style={{ height: '60px', objectFit: 'contain', display: 'block', margin: '0 auto -5px auto', position: 'relative', zIndex: 1 }} />
+                <p style={{ marginTop: '0', borderTop: '1px solid #000', paddingTop: '10px', width: '200px', fontWeight: 'bold', position: 'relative', zIndex: 2 }}>Employer Signature</p>
               </div>
               <div style={{ textAlign: 'center' }}>
                 <p style={{ marginTop: '40px', borderTop: '1px solid #000', paddingTop: '10px', width: '200px', fontWeight: 'bold' }}>Employee Signature</p>
