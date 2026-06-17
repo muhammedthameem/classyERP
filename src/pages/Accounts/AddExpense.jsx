@@ -14,7 +14,9 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
     linked_inventory_id: '',
     salaryType: 'Monthly Payment',
     weekStartDate: '',
-    weekEndDate: ''
+    weekEndDate: '',
+    daysWorked: '',
+    expectedAmount: ''
   })
 
   const [salaryTypes, setSalaryTypes] = useState(() => {
@@ -102,9 +104,14 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
       if (error) throw error;
 
       if (selectedStaff && saveConfig) {
+        let expectedForThisTransaction = parseFloat(formData.expectedAmount || 0);
+        const amountPaid = parseFloat(formData.amount || 0);
+        const transactionBalance = expectedForThisTransaction - amountPaid;
+
         const updatedStaffList = staffList.map(s => {
           if (s.id === selectedStaff.id) {
-            return { ...s, totalPaid: (parseFloat(s.totalPaid) || 0) + parseFloat(formData.amount) };
+            const newBalance = (parseFloat(s.balanceDue || 0) + transactionBalance).toString();
+            return { ...s, totalPaid: (parseFloat(s.totalPaid) || 0) + amountPaid, balanceDue: newBalance };
           }
           return s;
         });
@@ -165,7 +172,9 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
           notes: noteStr,
           salaryType: 'Monthly Payment',
           weekStartDate: '',
-          weekEndDate: ''
+          weekEndDate: '',
+          daysWorked: '',
+          expectedAmount: fillAmt.toString()
         }));
       }
     } else {
@@ -407,13 +416,70 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
               />
             </label>
 
+            {selectedStaff && (
+              <label className="block pt-2">
+                <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><Calendar size={16} /> Days Worked (Optional)</span>
+                <input
+                  className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  value={formData.daysWorked || ''}
+                  onChange={(e) => {
+                    const days = e.target.value;
+                    let newAmount = formData.amount;
+                    let newExpected = formData.expectedAmount;
+                    if (days && selectedStaff.salaryPerDay) {
+                      const calculated = parseFloat(days) * parseFloat(selectedStaff.salaryPerDay);
+                      newExpected = calculated.toString();
+                      
+                      const pendingBalance = parseFloat(selectedStaff.balanceDue || 0);
+                      let suggestedAmount = calculated + pendingBalance;
+                      if (suggestedAmount < 0) suggestedAmount = 0;
+                      
+                      newAmount = suggestedAmount.toString();
+                    }
+                    setFormData({ ...formData, daysWorked: days, amount: newAmount, expectedAmount: newExpected });
+                  }}
+                  placeholder="e.g., 6"
+                />
+              </label>
+            )}
+
+            {selectedStaff && (
+              <label className="block pt-2">
+                <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><TrendingDown size={16} /> Total Expected Salary (₹)</span>
+                <input
+                  className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.expectedAmount || ''}
+                  onChange={(e) => setFormData({ ...formData, expectedAmount: e.target.value })}
+                  placeholder="e.g., 6000"
+                />
+              </label>
+            )}
+
             <label className="block">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                 <span className="text-sm font-medium text-[var(--text)] flex items-center gap-1"><TrendingDown size={16} /> Amount (₹)</span>
                 {selectedStaff && (
-                  <span className="text-xs font-semibold text-[var(--accent)] bg-[var(--accent-soft)] px-2 py-0.5 rounded-md">
-                    Base Salary: ₹{selectedStaff.salary || 0}
-                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-xs font-semibold text-[var(--accent)] bg-[var(--accent-soft)] px-2 py-0.5 rounded-md">
+                      Monthly: ₹{selectedStaff.salary || 0}
+                    </span>
+                    {selectedStaff.salaryPerDay && (
+                      <span className="text-xs font-semibold text-[var(--accent)] bg-[var(--accent-soft)] px-2 py-0.5 rounded-md">
+                        Per Day: ₹{selectedStaff.salaryPerDay}
+                      </span>
+                    )}
+                    {selectedStaff.balanceDue && parseFloat(selectedStaff.balanceDue) !== 0 && (
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${parseFloat(selectedStaff.balanceDue) > 0 ? 'text-red-600 bg-red-100' : 'text-green-600 bg-green-100'}`}>
+                        Pending Balance: ₹{parseFloat(selectedStaff.balanceDue)}
+                      </span>
+                    )}
+                  </div>
                 )}
                 {formData.linked_inventory_id && (
                   (() => {

@@ -6,6 +6,7 @@ import supabase from '../../supabase'
 
 function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staffList = [], setStaffList, saveConfig, highlightStaffId, setHighlightStaffId, allAccounts = [] }) {
   const rowRefs = useRef({})
+  const tableContainerRef = useRef(null);
   const [isSendingPdf, setIsSendingPdf] = useState(false);
   const [formData, setFormData] = useState({
     id: '',
@@ -13,6 +14,8 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
     designation: '',
     phone: '',
     salary: '',
+    salaryPerDay: '',
+    balanceDue: '',
     overtimeType: 'Hourly',
     overtimeRate: '0'
   })
@@ -40,13 +43,38 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
     endDate: '',
     amount: '',
     overtime: '',
-    selectedLogId: ''
+    selectedLogId: '',
+    expectedAmount: '',
+    daysWorked: ''
   })
+
+  // Horizontal scroll for table via mouse wheel
+  useEffect(() => {
+    const handleWheel = (e) => {
+      const container = tableContainerRef.current;
+      if (!container) return;
+      if (e.deltaY !== 0 && container.scrollWidth > container.clientWidth) {
+        const isAtLeft = container.scrollLeft === 0 && e.deltaY < 0;
+        const isAtRight = Math.abs(container.scrollWidth - container.clientWidth - container.scrollLeft) <= 1 && e.deltaY > 0;
+        if (!isAtLeft && !isAtRight) {
+          e.preventDefault();
+          container.scrollLeft += e.deltaY;
+        }
+      }
+    };
+    const elem = tableContainerRef.current;
+    if (elem) {
+      elem.addEventListener('wheel', handleWheel, { passive: false });
+    }
+    return () => {
+      if (elem) elem.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
 
   const handlePayslipStaffChange = (e) => {
     const id = e.target.value;
     const staff = staffList.find(s => s.id === id);
-    setPayslipData(prev => ({ ...prev, staffId: id, amount: '', overtime: '', selectedLogId: '' }));
+    setPayslipData(prev => ({ ...prev, staffId: id, amount: '', overtime: '', selectedLogId: '', expectedAmount: '', daysWorked: '' }));
   }
 
   const handleLoggedPaymentSelect = (e) => {
@@ -101,7 +129,8 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
         month,
         amount: acc.amount,
         selectedLogId: accId,
-        overtime: overtimeSum > 0 ? overtimeSum : ''
+        overtime: overtimeSum > 0 ? overtimeSum : '',
+        expectedAmount: ''
       }));
     }
   }
@@ -174,7 +203,9 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
       payslipStartDate: payslipData.startDate,
       payslipEndDate: payslipData.endDate,
       payslipAmount: payslipData.amount,
-      payslipOvertime: payslipData.overtime
+      payslipOvertime: payslipData.overtime,
+      payslipExpectedAmount: payslipData.expectedAmount,
+      payslipDaysWorked: payslipData.daysWorked
     });
     
     setTimeout(async () => {
@@ -192,6 +223,14 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
         await html2pdf().set(opt).from(element).save();
         setActiveStaffForPdf(null);
         if (showGlobalToast) showGlobalToast('Success', 'Payslip downloaded successfully.');
+
+        // Update staff balance automatically
+        if (payslipData.expectedAmount) {
+          const balance = parseFloat(payslipData.expectedAmount || 0) - (parseFloat(payslipData.amount || 0) + parseFloat(payslipData.overtime || 0));
+          const updatedStaffList = staffList.map(s => s.id === staff.id ? { ...s, balanceDue: balance.toString() } : s);
+          setStaffList(updatedStaffList);
+          if (saveConfig) saveConfig('staffList', updatedStaffList);
+        }
       } catch (error) {
         console.error("Payslip generation error:", error);
         if (showGlobalToast) showGlobalToast('Error', 'Failed to generate payslip.');
@@ -223,7 +262,9 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
       payslipStartDate: payslipData.startDate,
       payslipEndDate: payslipData.endDate,
       payslipAmount: payslipData.amount,
-      payslipOvertime: payslipData.overtime
+      payslipOvertime: payslipData.overtime,
+      payslipExpectedAmount: payslipData.expectedAmount,
+      payslipDaysWorked: payslipData.daysWorked
     });
     if (showGlobalToast) showGlobalToast('Generating', 'Uploading payslip to secure server...');
     setIsSendingPdf(true);
@@ -260,6 +301,14 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
 
         setActiveStaffForPdf(null);
         if (showGlobalToast) showGlobalToast('Success', 'Payslip uploaded successfully.');
+
+        // Update staff balance automatically
+        if (payslipData.expectedAmount) {
+          const balance = parseFloat(payslipData.expectedAmount || 0) - (parseFloat(payslipData.amount || 0) + parseFloat(payslipData.overtime || 0));
+          const updatedStaffList = staffList.map(s => s.id === staff.id ? { ...s, balanceDue: balance.toString() } : s);
+          setStaffList(updatedStaffList);
+          if (saveConfig) saveConfig('staffList', updatedStaffList);
+        }
 
         // Open WhatsApp
         const phone = staff.phone.replace(/\D/g, '');
@@ -320,7 +369,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
     if (saveConfig) saveConfig('staffList', updatedList)
 
     // Reset form
-    setFormData({ id: '', name: '', designation: '', phone: '', salary: '', overtimeType: 'Hourly', overtimeRate: '0' })
+    setFormData({ id: '', name: '', designation: '', phone: '', salary: '', salaryPerDay: '', balanceDue: '', overtimeType: 'Hourly', overtimeRate: '0' })
     setIsEditing(false)
   }
 
@@ -353,7 +402,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
     if (saveConfig) saveConfig('staffList', updatedList)
     if (showGlobalToast) showGlobalToast('Deleted', `${staff.name} removed.`)
     if (isEditing && formData.id === id) {
-      setFormData({ id: '', name: '', designation: '', phone: '', salary: '', overtimeType: 'Hourly', overtimeRate: '0' })
+      setFormData({ id: '', name: '', designation: '', phone: '', salary: '', salaryPerDay: '', balanceDue: '', overtimeType: 'Hourly', overtimeRate: '0' })
       setIsEditing(false)
     }
     setStaffToDelete(null)
@@ -370,7 +419,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
   }
 
   const cancelEdit = () => {
-    setFormData({ id: '', name: '', designation: '', phone: '', salary: '', overtimeType: 'Hourly', overtimeRate: '0' })
+    setFormData({ id: '', name: '', designation: '', phone: '', salary: '', salaryPerDay: '', balanceDue: '', overtimeType: 'Hourly', overtimeRate: '0' })
     setIsEditing(false)
   }
 
@@ -493,6 +542,11 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
               <div>
                 <h3 className="text-2xl font-bold text-[var(--text)]">Payment History</h3>
                 <p className="mt-1 text-[var(--muted)] text-sm">Showing all salary and overtime records for <span className="font-bold text-[var(--text)]">{ledgerStaff.name}</span>.</p>
+                {ledgerStaff.balanceDue && parseFloat(ledgerStaff.balanceDue) !== 0 && (
+                  <p className="mt-3 text-sm font-bold text-red-600 bg-red-50 inline-block px-3 py-1 rounded-full border border-red-200">
+                    Balance Payment Due: ₹{parseFloat(ledgerStaff.balanceDue).toLocaleString()}
+                  </p>
+                )}
               </div>
               <button onClick={() => setLedgerStaff(null)} className="rounded-full p-2 hover:bg-[var(--soft)] transition text-[var(--text)]">
                 <X size={24} />
@@ -606,6 +660,18 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
                   placeholder="e.g., 5000"
                 />
               </label>
+              <label className="block">
+                <span className="text-sm font-medium text-[var(--text)]">Salary Per Day (₹) <span className="text-[11px] text-[var(--muted)]">- Optional</span></span>
+                <input
+                  name="salaryPerDay"
+                  className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                  type="number"
+                  min="0"
+                  value={formData.salaryPerDay || ''}
+                  onChange={handleInputChange}
+                  placeholder="e.g., 1000"
+                />
+              </label>
             </div>
 
             <div className="mt-auto pt-6 flex justify-end gap-3">
@@ -662,22 +728,54 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
               const staffSalaryLogs = staff ? allAccounts.filter(acc => acc.type === 'Expense' && acc.reference === `Salary - ${staff.name}`) : [];
 
               return (
-                <label className="block sm:col-span-2">
-                  <span className="text-sm font-medium text-[var(--text)]">Amount Paid (₹) <span className="text-red-500">*</span></span>
-                  <select
-                    className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
-                    value={payslipData.selectedLogId || ""}
-                    onChange={handleLoggedPaymentSelect}
-                    disabled={!payslipData.staffId}
-                  >
-                    <option value="">-- Select logged payment --</option>
-                    {staffSalaryLogs.sort((a, b) => new Date(b.date) - new Date(a.date)).map(acc => (
-                      <option key={acc.id} value={acc.id}>
-                        ₹{acc.amount} - {new Date(acc.date).toLocaleDateString()} {acc.notes ? `(${acc.notes.substring(0, 30)}${acc.notes.length > 30 ? '...' : ''})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <>
+                  <label className="block sm:col-span-1">
+                    <span className="text-sm font-medium text-[var(--text)]">Days Worked <span className="text-[11px] text-[var(--muted)]">- For Balance</span></span>
+                    <input
+                      type="number"
+                      className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                      value={payslipData.daysWorked || ''}
+                      onChange={e => {
+                        const days = e.target.value;
+                        const perDay = staff ? parseFloat(staff.salaryPerDay || 0) : 0;
+                        setPayslipData(prev => ({ 
+                          ...prev, 
+                          daysWorked: days, 
+                          expectedAmount: (days && perDay) ? (days * perDay).toString() : prev.expectedAmount 
+                        }));
+                      }}
+                      disabled={!payslipData.staffId}
+                      placeholder="e.g., 6"
+                    />
+                  </label>
+                  <label className="block sm:col-span-1">
+                    <span className="text-sm font-medium text-[var(--text)]">Total Expected Salary (₹)</span>
+                    <input
+                      type="number"
+                      className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                      value={payslipData.expectedAmount || ''}
+                      onChange={e => setPayslipData(prev => ({ ...prev, expectedAmount: e.target.value }))}
+                      disabled={!payslipData.staffId}
+                      placeholder="e.g., 6000"
+                    />
+                  </label>
+                  <label className="block sm:col-span-1">
+                    <span className="text-sm font-medium text-[var(--text)]">Amount Paid (₹) <span className="text-red-500">*</span></span>
+                    <select
+                      className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                      value={payslipData.selectedLogId || ""}
+                      onChange={handleLoggedPaymentSelect}
+                      disabled={!payslipData.staffId}
+                    >
+                      <option value="">-- Select logged payment --</option>
+                      {staffSalaryLogs.sort((a, b) => new Date(b.date) - new Date(a.date)).map(acc => (
+                        <option key={acc.id} value={acc.id}>
+                          ₹{acc.amount} - {new Date(acc.date).toLocaleDateString()} {acc.notes ? `(${acc.notes.substring(0, 30)}${acc.notes.length > 30 ? '...' : ''})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </>
               );
             })()}
 
@@ -796,7 +894,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
           </div>
         </div>
 
-        <div className="erp-table-container">
+        <div className="erp-table-container" ref={tableContainerRef}>
           <table className="erp-table">
             <thead>
               <tr>
@@ -817,7 +915,9 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
                   </div>
                 </th>
                 <th>Phone</th>
-                <th>Salary</th>
+                <th>Salary (Monthly)</th>
+                <th>Salary / Day</th>
+                <th>Balance Payment Due</th>
                 <th>Total Paid (₹)</th>
                 <th className="text-right">Action</th>
               </tr>
@@ -838,6 +938,8 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
                     </td>
                     <td className="text-[var(--text)]">{staff.phone}</td>
                     <td className="font-semibold text-[var(--text)]">₹{parseFloat(staff.salary || 0).toLocaleString()}</td>
+                    <td className="font-semibold text-[var(--text)]">{staff.salaryPerDay ? `₹${parseFloat(staff.salaryPerDay).toLocaleString()}` : '-'}</td>
+                    <td className="font-bold text-red-500">{staff.balanceDue && parseFloat(staff.balanceDue) !== 0 ? `₹${parseFloat(staff.balanceDue).toLocaleString()}` : '-'}</td>
                     <td className="font-bold">
                       <div className="flex flex-col gap-1 items-start">
                         <span className="text-green-600">₹{getDynamicTotalPaid(staff).toLocaleString()}</span>
@@ -942,6 +1044,26 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
                     <tr style={{ borderBottom: '1px solid #eee' }}>
                       <td style={{ padding: '16px 20px' }}>Overtime Pay</td>
                       <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 'bold' }}>₹{parseFloat(activeStaffForPdf.payslipOvertime || 0).toLocaleString()}</td>
+                    </tr>
+                  )}
+                  {activeStaffForPdf.payslipDaysWorked && (
+                    <tr style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '16px 20px' }}>Days Worked</td>
+                      <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 'bold' }}>{activeStaffForPdf.payslipDaysWorked} Days</td>
+                    </tr>
+                  )}
+                  {activeStaffForPdf.payslipExpectedAmount && (
+                    <tr style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '16px 20px' }}>Total Expected Salary</td>
+                      <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 'bold' }}>₹{parseFloat(activeStaffForPdf.payslipExpectedAmount || 0).toLocaleString()}</td>
+                    </tr>
+                  )}
+                  {activeStaffForPdf.payslipExpectedAmount && (
+                    <tr style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '16px 20px' }}>Balance Payment Due</td>
+                      <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 'bold', color: 'red' }}>
+                        ₹{(parseFloat(activeStaffForPdf.payslipExpectedAmount || 0) - (parseFloat(activeStaffForPdf.payslipAmount || 0) + parseFloat(activeStaffForPdf.payslipOvertime || 0))).toLocaleString()}
+                      </td>
                     </tr>
                   )}
                   <tr style={{ borderBottom: '1px solid #eee', background: '#f8f9fa' }}>
