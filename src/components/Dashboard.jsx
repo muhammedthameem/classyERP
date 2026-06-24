@@ -238,12 +238,13 @@ function Dashboard({
   }
 
   useEffect(() => {
-    if (migrationRunRef.current || !accountsLoaded || !cloudLoaded || !(user?.role === 'Admin' || user?.role === 'Owner') || sales.length === 0) return;
+    if (migrationRunRef.current || !accountsLoaded || !cloudLoaded || !(user?.role === 'Admin' || user?.role === 'Owner') || (sales.length === 0 && orders.length === 0)) return;
     
     migrationRunRef.current = true;
-    const syncMissingSales = async () => {
+    const syncMissingData = async () => {
       let needsRefresh = false;
       const existingSaleReferences = new Set(allAccounts.filter(a => a.type === 'Income' && a.reference && a.reference.startsWith('Sale #')).map(a => a.reference));
+      const existingAdvanceReferences = new Set(allAccounts.filter(a => a.type === 'Income' && a.reference && a.reference.startsWith('Order Advance #')).map(a => a.reference));
       
       for (const sale of sales) {
         const total = parseFloat(sale.total) || 0;
@@ -271,10 +272,37 @@ function Dashboard({
           }
         }
       }
+
+      for (const order of orders) {
+        const advance = parseFloat(order.advance) || 0;
+        if (advance <= 0) continue;
+        
+        const orderIdRef = `Order Advance #${order.orderId || order.id}`;
+        if (!existingAdvanceReferences.has(orderIdRef)) {
+          const orderDate = order.orderDate || new Date().toISOString().split('T')[0];
+          const clientName = order.clientName || order.client || 'Unknown Client';
+          
+          try {
+            await supabase.from('erp_accounts').insert([{
+              type: 'Income',
+              date: orderDate,
+              category: 'Order Advance',
+              amount: advance,
+              payment_mode: 'Cash',
+              reference: orderIdRef,
+              notes: `Auto-migrated advance for ${clientName}`
+            }]);
+            needsRefresh = true;
+          } catch (err) {
+            console.error("Migration auto-insert failed for order", err);
+          }
+        }
+      }
+
       if (needsRefresh) fetchAllAccountsData();
     };
-    syncMissingSales();
-  }, [cloudLoaded, accountsLoaded, user?.role, sales, allAccounts]);
+    syncMissingData();
+  }, [cloudLoaded, accountsLoaded, user?.role, sales, orders, allAccounts]);
 
   useEffect(() => {
     fetchAllAccountsData();
