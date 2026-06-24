@@ -5,7 +5,7 @@ import { formatDateDDMMYY } from '../../utils/constants'
 import html2pdf from 'html2pdf.js'
 import CustomDatePicker from '../../components/CustomDatePicker'
 
-function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightAccountId, setHighlightAccountId, refreshAccounts }) {
+function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightAccountId, setHighlightAccountId, refreshAccounts, setHighlightOrderId, setHighlightSaleId }) {
   const rowRefs = useRef({})
   const tabsContainerRef = useRef(null)
   const [activeTab, setActiveTab] = useState('All') // 'All', 'Income', 'Expense', 'Cashbook'
@@ -28,6 +28,76 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
   const [filterStartDate, setFilterStartDate] = useState('')
   const [filterEndDate, setFilterEndDate] = useState('')
   const itemsPerPage = 10
+
+  const LinkableText = ({ text }) => {
+    if (!text) return '-';
+    const regex = /(Order(?: Advance)? #[0-9]+|Sale #SALE-[0-9]+|#SALE-[0-9]+|#[0-9]+)/gi;
+    const parts = text.split(regex);
+    
+    return (
+      <>
+        {parts.map((part, i) => {
+          if (part.match(/Sale #SALE-[0-9]+/i) || part.match(/^#SALE-[0-9]+$/i)) {
+            const id = part.split('#')[1];
+            return (
+              <button 
+                key={i} 
+                className="text-[var(--accent)] hover:underline font-semibold"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setCurrentPage('view-sales');
+                  if (setHighlightSaleId) setHighlightSaleId(id);
+                }}
+              >
+                {part}
+              </button>
+            );
+          } else if (part.match(/Order(?: Advance)? #[0-9]+/i) || part.match(/^#[0-9]+$/i)) {
+            const id = part.split('#')[1];
+            return (
+              <button 
+                key={i} 
+                className="text-[var(--accent)] hover:underline font-semibold"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setCurrentPage('view-orders');
+                  if (setHighlightOrderId) setHighlightOrderId(id);
+                }}
+              >
+                {part}
+              </button>
+            );
+          }
+          return <span key={i}>{part}</span>;
+        })}
+      </>
+    );
+  };
+
+  const extractCustomerName = (item) => {
+    if (!item) return '-';
+    if (item.category === 'Sales' && item.notes) {
+      const match = item.notes.match(/for\s+(.*?)(?:\s+\(Split|$)/i);
+      if (match && match[1]) return match[1].trim();
+    }
+    if (item.type === 'Income' && item.notes && item.notes.includes('Advance for') && item.notes.includes('(') && item.notes.includes(')')) {
+      const match = item.notes.match(/\(([^)]+)\)$/);
+      if (match && match[1]) return match[1].trim();
+    }
+    if (item.type === 'Income') {
+      if (item.reference && !item.reference.startsWith('Sale #') && !item.reference.startsWith('Order Advance #')) {
+        return item.reference;
+      }
+    }
+    if (item.type === 'Expense' && item.reference && !item.reference.startsWith('Inventory #')) {
+      if (item.reference.startsWith('Salary - ')) return item.reference.replace('Salary - ', '');
+      if (item.reference.startsWith('Overtime - ')) return item.reference.replace('Overtime - ', '');
+      return item.reference;
+    }
+    return '-';
+  };
 
   const fetchAccounts = async () => {
     setIsLoading(true)
@@ -61,6 +131,25 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
 
   useEffect(() => {
     fetchAccounts()
+
+    const channel = supabase.channel('erp_accounts_view')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'erp_accounts' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setAccounts(prev => {
+            if (prev.some(a => a.id === payload.new.id)) return prev;
+            return [payload.new, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date));
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          setAccounts(prev => prev.map(acc => acc.id === payload.new.id ? payload.new : acc).sort((a, b) => new Date(b.date) - new Date(a.date)));
+        } else if (payload.eventType === 'DELETE') {
+          setAccounts(prev => prev.filter(acc => acc.id !== payload.old.id));
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const handleDeleteClick = (id) => {
@@ -542,7 +631,7 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
                 <tr>
                   <th className="p-4 font-semibold">Date</th>
                   <th className="p-4 font-semibold">Type</th>
-                  <th className="p-4 font-semibold">Customer</th>
+                  <th className="p-4 font-semibold">Customer / Payee</th>
                   <th className="p-4 font-semibold">Category</th>
                   <th className="p-4 font-semibold hidden md:table-cell">Reference</th>
                   <th className="p-4 font-semibold hidden sm:table-cell">Mode</th>
@@ -615,13 +704,7 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
                         </span>
                       </td>
                       <td className="p-4 font-bold text-[var(--text)]">
-                        {(() => {
-                          if (item.category === 'Sales' && item.notes) {
-                            const match = item.notes.match(/for\s+(.*?)(?:\s+\(Split|$)/i);
-                            if (match && match[1]) return match[1].trim();
-                          }
-                          return '-';
-                        })()}
+                        {extractCustomerName(item)}
                       </td>
                       <td className="p-4">
                         <span className="inline-flex items-center rounded-md bg-[var(--accent-soft)] px-2 py-1 text-xs font-medium text-[var(--accent)]">
@@ -629,7 +712,7 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
                         </span>
                       </td>
                       <td className="p-4 text-[var(--muted)] max-w-xs truncate hidden md:table-cell" title={item.reference || item.notes}>
-                        {item.reference || '-'}
+                        <LinkableText text={item.reference || '-'} />
                       </td>
                       <td className="p-4 text-[var(--text)] hidden sm:table-cell">{item.payment_mode}</td>
                       <td className={`p-4 text-right font-bold whitespace-nowrap ${item.type === 'Income' ? 'text-green-600' : 'text-red-600'}`}>
@@ -986,15 +1069,9 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
                   </p>
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-[var(--muted)]">Customer Name</label>
+                  <label className="mb-1 block text-sm font-semibold text-[var(--muted)]">Customer / Payee</label>
                   <p className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2.5 text-[var(--text)] font-bold">
-                    {(() => {
-                      if (viewModalData.category === 'Sales' && viewModalData.notes) {
-                        const match = viewModalData.notes.match(/for\s+(.*?)(?:\s+\(Split|$)/i);
-                        if (match && match[1]) return match[1].trim();
-                      }
-                      return '-';
-                    })()}
+                    {extractCustomerName(viewModalData)}
                   </p>
                 </div>
                 <div>
@@ -1012,13 +1089,13 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-[var(--muted)]">Reference / Link</label>
                   <p className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2.5 text-[var(--text)] font-medium">
-                    {viewModalData.reference || '-'}
+                    <LinkableText text={viewModalData.reference || '-'} />
                   </p>
                 </div>
                 <div className="col-span-2">
                   <label className="mb-1 block text-sm font-semibold text-[var(--muted)]">Notes</label>
                   <div className="w-full min-h-[80px] rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2.5 text-[var(--text)] whitespace-pre-wrap">
-                    {viewModalData.notes || '-'}
+                    <LinkableText text={viewModalData.notes || '-'} />
                   </div>
                 </div>
               </div>

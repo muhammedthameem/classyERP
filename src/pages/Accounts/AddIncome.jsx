@@ -61,6 +61,13 @@ function AddIncomePage({ themeStyle, setCurrentPage, showGlobalToast, incomeCate
     setIsSubmitting(true)
     
     try {
+      let finalNotes = formData.notes;
+      if (formData.linked_sale_id && formData.reference) {
+         finalNotes = `Sale for ${formData.reference}${finalNotes ? ' | ' + finalNotes : ''}`;
+      } else if (formData.linked_order_id && formData.reference) {
+         finalNotes = `Advance for Order (${formData.reference})${finalNotes ? ' | ' + finalNotes : ''}`;
+      }
+
       const { data, error } = await supabase
         .from('erp_accounts')
         .insert([{
@@ -70,7 +77,7 @@ function AddIncomePage({ themeStyle, setCurrentPage, showGlobalToast, incomeCate
           amount: parseFloat(formData.amount),
           payment_mode: formData.payment_mode,
           reference: formData.linked_sale_id ? `Sale #${formData.linked_sale_id}` : (formData.linked_order_id ? `Order Advance #${formData.linked_order_id}` : formData.reference),
-          notes: formData.notes
+          notes: finalNotes
         }])
 
       if (error) throw error;

@@ -35,6 +35,7 @@ function AddOrderPage({
       orderType: '',
       price: '',
       advance: '',
+      paymentMode: 'Cash',
       quantity: '',
       unit: 'nos',
       sourceOfMaterial: 'Outside',
@@ -137,6 +138,7 @@ function AddOrderPage({
       orderType: '',
       price: '',
       advance: '',
+      paymentMode: 'Cash',
       quantity: '',
       unit: 'nos',
       sourceOfMaterial: 'Outside',
@@ -291,7 +293,7 @@ function AddOrderPage({
       date: o.orderDate || getIndianDate(),
       category: 'Order Advance',
       amount: o.advance,
-      payment_mode: 'Cash',
+      payment_mode: o.paymentMode || 'Cash',
       reference: `Order Advance #${o.id}`,
       notes: `Advance for ${o.product} (${clientName})`
     }));
@@ -901,8 +903,8 @@ function AddOrderPage({
                       </div>
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-3 mb-4">
-                      <div>
+                    <div className="grid gap-4 sm:grid-cols-12 mb-4">
+                      <div className="sm:col-span-4">
                         <span className="mb-2 block text-sm font-medium text-[var(--text)]">Quantity</span>
                         <div className="flex gap-2">
                           <input
@@ -1003,7 +1005,7 @@ function AddOrderPage({
                           </div>
                         </div>
                       </div>
-                      <div>
+                      <div className="sm:col-span-3">
                         <div className="mb-2">
                           <span className="text-sm font-medium text-[var(--text)]">Cost (Est.)</span>
                         </div>
@@ -1018,19 +1020,32 @@ function AddOrderPage({
                           />
                         </div>
                       </div>
-                      <div>
-                        <div className="mb-2">
+                      <div className="sm:col-span-5">
+                        <div className="mb-2 flex items-center justify-between">
                           <span className="text-sm font-medium text-[var(--text)]">Advance Paid</span>
                         </div>
-                        <div className="relative">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-[var(--muted)]">₹</span>
-                          <input
-                            type="number"
-                            placeholder="0.00"
-                            className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] py-2.5 pl-9 pr-4 text-sm font-semibold text-green-600 outline-none transition focus:border-[var(--accent)]"
-                            value={item.advance}
-                            onChange={(e) => updateOrderItem(idx, { advance: e.target.value })}
-                          />
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-[var(--muted)]">₹</span>
+                            <input
+                              type="number"
+                              placeholder="0.00"
+                              className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] py-2.5 pl-9 pr-2 text-sm font-semibold text-green-600 outline-none transition focus:border-[var(--accent)]"
+                              value={item.advance}
+                              onChange={(e) => updateOrderItem(idx, { advance: e.target.value })}
+                            />
+                          </div>
+                          <select
+                            className="w-[100px] rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-2 py-2.5 text-xs outline-none transition focus:border-[var(--accent)] cursor-pointer"
+                            value={item.paymentMode || 'Cash'}
+                            onChange={(e) => updateOrderItem(idx, { paymentMode: e.target.value })}
+                          >
+                            <option value="Cash">Cash</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="UPI">UPI</option>
+                            <option value="Card">Card</option>
+                            <option value="Cheque">Cheque</option>
+                          </select>
                         </div>
                       </div>
                     </div>

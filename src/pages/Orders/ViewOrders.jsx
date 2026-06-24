@@ -782,7 +782,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
 
       {editOrder && (
         <div className="fixed inset-0 z-[2000] grid place-items-center bg-black/50 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-2xl rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-semibold mb-4">Edit Order #{editOrder.id}</h2>
             <div className="space-y-4">
               <label className="block">
@@ -803,8 +803,8 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                   onChange={(e) => setEditOrder({ ...editOrder, product: e.target.value })}
                 />
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <label className="block">
+              <div className="grid grid-cols-2 sm:grid-cols-12 gap-4">
+                <label className="block sm:col-span-3">
                   <span className="mb-1 block text-sm font-medium text-[var(--text)]">Order Type</span>
                   <input
                     type="text"
@@ -813,7 +813,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                     onChange={(e) => setEditOrder({ ...editOrder, orderType: e.target.value })}
                   />
                 </label>
-                <label className="block">
+                <label className="block sm:col-span-2">
                   <span className="mb-1 block text-sm font-medium text-[var(--text)]">Quantity</span>
                   <input
                     type="text"
@@ -822,7 +822,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                     onChange={(e) => setEditOrder({ ...editOrder, size: e.target.value })}
                   />
                 </label>
-                <label className="block">
+                <label className="block sm:col-span-3">
                   <span className="mb-1 block text-sm font-medium text-[var(--text)]">Est. Cost</span>
                   <input
                     type="text"
@@ -831,14 +831,27 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                     onChange={(e) => setEditOrder({ ...editOrder, price: e.target.value })}
                   />
                 </label>
-                <label className="block">
+                <label className="block sm:col-span-4">
                   <span className="mb-1 block text-sm font-medium text-[var(--text)]">Advance Paid</span>
-                  <input
-                    type="number"
-                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2 outline-none transition focus:border-[var(--accent)] text-green-600 font-semibold"
-                    value={editOrder.advance || ''}
-                    onChange={(e) => setEditOrder({ ...editOrder, advance: e.target.value })}
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2 outline-none transition focus:border-[var(--accent)] text-green-600 font-semibold"
+                      value={editOrder.advance || ''}
+                      onChange={(e) => setEditOrder({ ...editOrder, advance: e.target.value })}
+                    />
+                    <select
+                      className="w-[100px] rounded-xl border border-[var(--border)] bg-[var(--surface)] px-2 py-2 text-xs outline-none transition focus:border-[var(--accent)] cursor-pointer"
+                      value={editOrder.paymentMode || 'Cash'}
+                      onChange={(e) => setEditOrder({ ...editOrder, paymentMode: e.target.value })}
+                    >
+                      <option value="Cash">Cash</option>
+                      <option value="Bank Transfer">Bank Transfer</option>
+                      <option value="UPI">UPI</option>
+                      <option value="Card">Card</option>
+                      <option value="Cheque">Cheque</option>
+                    </select>
+                  </div>
                 </label>
               </div>
 
@@ -943,10 +956,37 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button type="button" className="rounded-xl px-4 py-2 font-semibold hover:bg-[var(--soft)] transition" onClick={() => setEditOrder(null)}>Cancel</button>
-              <button type="button" className="rounded-xl bg-[var(--accent)] px-4 py-2 font-semibold text-white shadow-lg transition hover:brightness-95" onClick={() => {
+              <button type="button" className="rounded-xl bg-[var(--accent)] px-4 py-2 font-semibold text-white shadow-lg transition hover:brightness-95" onClick={async () => {
                 const finalOrder = { ...editOrder, updatedAt: new Date().toISOString() }
                 saveOrders(orders.map(o => o.id === finalOrder.id ? finalOrder : o))
                 if (saveOrder) saveOrder(finalOrder)
+                
+                // Sync advance update to Accounts
+                const advanceAmount = parseFloat(finalOrder.advance) || 0;
+                const ref = `Order Advance #${finalOrder.id}`;
+                if (advanceAmount > 0) {
+                  const { data: existing } = await supabase.from('erp_accounts').select('id').eq('reference', ref).single();
+                  if (existing) {
+                    await supabase.from('erp_accounts').update({
+                      amount: advanceAmount,
+                      payment_mode: finalOrder.paymentMode || 'Cash',
+                      date: finalOrder.orderDate || getIndianDate()
+                    }).eq('id', existing.id);
+                  } else {
+                    await supabase.from('erp_accounts').insert([{
+                      type: 'Income',
+                      date: finalOrder.orderDate || getIndianDate(),
+                      category: 'Order Advance',
+                      amount: advanceAmount,
+                      payment_mode: finalOrder.paymentMode || 'Cash',
+                      reference: ref,
+                      notes: `Advance for ${finalOrder.product} (${finalOrder.clientName})`
+                    }]);
+                  }
+                } else {
+                  await supabase.from('erp_accounts').delete().eq('reference', ref);
+                }
+
                 setEditOrder(null)
                 if (showGlobalToast) showGlobalToast('Success', 'Order updated successfully.')
               }}>Save Changes</button>
