@@ -285,6 +285,23 @@ function AddOrderPage({
       newOrders.forEach(o => saveOrder(o));
     }
 
+    // Instant Accounts Sync for Advances
+    const advanceAccounts = newOrders.filter(o => o.advance > 0).map(o => ({
+      type: 'Income',
+      date: o.orderDate || getIndianDate(),
+      category: 'Order Advance',
+      amount: o.advance,
+      payment_mode: 'Cash',
+      reference: `Order Advance #${o.id}`,
+      notes: `Advance for ${o.product} (${clientName})`
+    }));
+
+    if (advanceAccounts.length > 0) {
+      supabase.from('erp_accounts').insert(advanceAccounts).then(({error}) => {
+        if (error) console.error("Advance sync failed:", error);
+      });
+    }
+
     if (showGlobalToast) showGlobalToast('Success', `${orderItems.length} product(s) added for ${clientName}`);
 
     // Reset form
