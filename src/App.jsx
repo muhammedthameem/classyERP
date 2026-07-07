@@ -8,6 +8,7 @@ import { boutiqueThemes, appearanceTokens } from './utils/constants'
 import supabase from './supabase'
 import IOSInstallPrompt from './components/IOSInstallPrompt';
 import PwaUpdateModal from './components/PwaUpdateModal';
+import PushPermissionModal from './components/PushPermissionModal';
 
 function App() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);

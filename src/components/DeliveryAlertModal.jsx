@@ -33,33 +33,8 @@ function DeliveryAlertModal({ orders }) {
       }
     }
 
-    // Request notification permission and subscribe to Web Push
-    if ('Notification' in window && 'serviceWorker' in navigator) {
-      Notification.requestPermission().then(async (permission) => {
-        if (permission === 'granted') {
-          try {
-            const registration = await navigator.serviceWorker.ready;
-            const existingSubscription = await registration.pushManager.getSubscription();
-            
-            if (!existingSubscription) {
-              const VAPID_PUBLIC_KEY = "BH-uiaZXOxtpYiydH9LHpPpc_8H_eGWePFk7nGOmGp-D4n8FizuiuhyPMNDwaJuGtv0nrrawXkzzEj4QaNUl1t8";
-              const subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-              });
-              
-              // Save to Supabase
-              await supabase.from('erp_push_subscriptions').insert([
-                { subscription: subscription.toJSON() }
-              ]);
-              console.log("Push Notification Subscription saved to Supabase.");
-            }
-          } catch (e) {
-            console.error("Failed to subscribe for push notifications", e);
-          }
-        }
-      });
-    }
+    // Note: Push subscription is now handled by PushPermissionModal
+    // to ensure we get a valid user gesture.
   }, []);
 
   // 1. SOUND LOGIC
