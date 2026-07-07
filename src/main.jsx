@@ -4,9 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 
-import { registerSW } from 'virtual:pwa-register'
-
-registerSW({ immediate: true })
+// PWA registration is now handled by PwaUpdateModal in App.jsx
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

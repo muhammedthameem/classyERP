@@ -7,6 +7,7 @@ import ClassyAI from './components/ClassyAI'
 import { boutiqueThemes, appearanceTokens } from './utils/constants'
 import supabase from './supabase'
 import IOSInstallPrompt from './components/IOSInstallPrompt';
+import PwaUpdateModal from './components/PwaUpdateModal';
 
 function App() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -503,6 +504,7 @@ function App() {
           </>
         )}
         <IOSInstallPrompt />
+        <PwaUpdateModal />
       </main>
     </div>
   )
