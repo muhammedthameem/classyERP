@@ -506,6 +506,7 @@ function App() {
         )}
         <IOSInstallPrompt />
         <PwaUpdateModal />
+        <PushPermissionModal />
       </main>
     </div>
   )

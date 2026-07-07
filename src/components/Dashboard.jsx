@@ -213,6 +213,17 @@ function Dashboard({
       }
     };
     window.addEventListener('erp-global-nav', handleGlobalNav);
+    
+    // Check URL for direct order links from Push Notifications
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get('openOrder');
+    if (orderId) {
+      setCurrentPage('view-orders');
+      setHighlightOrderId(orderId);
+      // Clean up URL so a refresh doesn't trigger it again
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     return () => window.removeEventListener('erp-global-nav', handleGlobalNav);
   }, [setCurrentPage]);
 
