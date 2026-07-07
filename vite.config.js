@@ -9,7 +9,13 @@ export default defineConfig({
     tailwindcss(),
 
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       registerType: 'autoUpdate',
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+      },
       includeAssets: ['logo-black.png', 'logo192.png', 'logo512.png'],
       manifest: {
         name: 'Classy Boutique ERP',

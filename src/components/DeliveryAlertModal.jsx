@@ -1,13 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BellRing, X, Clock, BellOff, Volume2 } from 'lucide-react';
 
+import supabase from '../supabase';
+
+const urlBase64ToUint8Array = (base64String) => {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+};
+
 function DeliveryAlertModal({ orders }) {
   const [currentAlert, setCurrentAlert] = useState(null);
   const [dismissedIds, setDismissedIds] = useState([]);
   const [snoozed, setSnoozed] = useState({}); // { id: wakeupTimestamp }
   const audioRef = useRef(null);
 
-  // 0. INITIALIZE PERSISTENT DISMISSALS
+  // 0. INITIALIZE PERSISTENT DISMISSALS AND NOTIFICATION PERMISSION
   useEffect(() => {
     const todayStr = new Date().toDateString();
     const stored = localStorage.getItem('erp_dismissed_alerts');
@@ -18,6 +31,34 @@ function DeliveryAlertModal({ orders }) {
       } else {
         localStorage.removeItem('erp_dismissed_alerts');
       }
+    }
+
+    // Request notification permission and subscribe to Web Push
+    if ('Notification' in window && 'serviceWorker' in navigator) {
+      Notification.requestPermission().then(async (permission) => {
+        if (permission === 'granted') {
+          try {
+            const registration = await navigator.serviceWorker.ready;
+            const existingSubscription = await registration.pushManager.getSubscription();
+            
+            if (!existingSubscription) {
+              const VAPID_PUBLIC_KEY = "BH-uiaZXOxtpYiydH9LHpPpc_8H_eGWePFk7nGOmGp-D4n8FizuiuhyPMNDwaJuGtv0nrrawXkzzEj4QaNUl1t8";
+              const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+              });
+              
+              // Save to Supabase
+              await supabase.from('erp_push_subscriptions').insert([
+                { subscription: subscription.toJSON() }
+              ]);
+              console.log("Push Notification Subscription saved to Supabase.");
+            }
+          } catch (e) {
+            console.error("Failed to subscribe for push notifications", e);
+          }
+        }
+      });
     }
   }, []);
 
@@ -69,6 +110,31 @@ function DeliveryAlertModal({ orders }) {
         setCurrentAlert(nextOne);
         if (nextOne) {
           audioRef.current?.play().catch(e => console.warn("Audio play blocked:", e));
+          
+          // Trigger System Notification
+          if ('Notification' in window && Notification.permission === 'granted') {
+            const dDate = new Date(nextOne.deliveryDate);
+            dDate.setHours(0, 0, 0, 0);
+            const diffDays = Math.ceil((dDate.getTime() - todayObj.getTime()) / (1000 * 60 * 60 * 24));
+            const statusText = diffDays === 0 ? "TODAY" : (diffDays === 1 ? "TOMORROW" : "IN 2 DAYS");
+            
+            try {
+              const notification = new Notification(`Delivery Due ${statusText}`, {
+                body: `Order #${nextOne.id} for ${nextOne.clientName} - ${nextOne.product}`,
+                icon: '/icon-192x192.png',
+                tag: `delivery-alert-${nextOne.id}`,
+                requireInteraction: true
+              });
+              
+              notification.onclick = () => {
+                window.focus();
+                window.dispatchEvent(new CustomEvent('erp-global-nav', { detail: { type: 'order', id: nextOne.id } }));
+                notification.close();
+              };
+            } catch (error) {
+              console.error("System notification failed", error);
+            }
+          }
         } else {
           audioRef.current?.pause();
         }
