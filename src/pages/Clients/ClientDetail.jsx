@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ChevronDown, ChevronLeft, Package, Search, Settings, ShoppingBag, UsersRound, Pencil, Trash2, Plus } from 'lucide-react'
+import { ImageIcon, ChevronDown, ChevronLeft, Package, Search, Settings, ShoppingBag, UsersRound, Pencil, Trash2, Plus } from 'lucide-react'
 import { formatDateDDMMYY, formatDateTimeDDMMYY, products } from '../../utils/constants'
 import supabase from '../../supabase'
 
@@ -19,7 +19,9 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
     }
   }, [])
 
-  const [selectedMeasurementIndex, setSelectedMeasurementIndex] = useState(0)
+  const [selectedMeasurementIndex, setSelectedMeasurementIndex] = useState(() => {
+    return client?.measurements?.length > 0 ? client.measurements.length - 1 : 0;
+  })
   const [showMeasurementDropdown, setShowMeasurementDropdown] = useState(false)
 
   const defaultTop = { length: '', upChestLength: '', upChestRound: '', chestLength: '', chestRound: '', bustLength: '', bustRound: '', waistLength: '', waistRound: '', hipLength: '', hipRound: '', shoulderLength: '', shoulderRound: '', armRoundLength: '', armRoundRound: '', yokeLength: '', yokeRound: '', frontLength: '', frontRound: '', backLength: '', backRound: '', neckFLength: '', neckFRound: '', neckBLength: '', neckBRound: '', halfSleevesLength: '', halfSleevesRound: '', fullSleevesLength: '', fullSleevesRound: '', threeQuarterSleevesLength: '', threeQuarterSleevesRound: '', elbowLength: '', elbowRound: '' }
@@ -46,6 +48,8 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
   const [topMeasurements, setTopMeasurements] = useState(defaultTop)
   const [bottomMeasurements, setBottomMeasurements] = useState(defaultBottom)
   const [note, setNote] = useState('')
+  const [photoFile, setPhotoFile] = useState(null)
+  const [isUploading, setIsUploading] = useState(false)
 
   const [measurementToDelete, setMeasurementToDelete] = useState(null)
   const [showMergePopup, setShowMergePopup] = useState(false)
@@ -216,8 +220,10 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
     setSelectedMeasurementIndex(newIndex)
 
     setIsAddingMeasurement(false)
+                    setPhotoFile(null)
     setIsEditingClient(false)
     if (setClientDetailMode) setClientDetailMode('view')
+                    setPhotoFile(null)
 
     if (showGlobalToast) {
       const action = wasEditing ? 'Updated' : 'Added measurement for';
@@ -238,6 +244,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
           topMeasurements: updatedClient.topMeasurements || {},
           bottomMeasurements: updatedClient.bottomMeasurements || {},
           note: updatedClient.note,
+          photoUrl: updatedClient.photoUrl,
           createdAt: updatedClient.createdAt || new Date().toISOString()
         }]
       }
@@ -306,8 +313,10 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
       setSelectedClient(newClient)
       setSelectedMeasurementIndex(0)
       setIsAddingMeasurement(false)
+                    setPhotoFile(null)
       setIsEditingClient(false)
       if (setClientDetailMode) setClientDetailMode('view')
+                    setPhotoFile(null)
 
       if (showGlobalToast) showGlobalToast('New Client Created', `Successfully registered ${newClient.name}`);
     }
@@ -453,9 +462,11 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
           onClick={() => {
             if (isAddingMeasurement) {
               setIsAddingMeasurement(false)
+                    setPhotoFile(null)
             } else if (isEditingClient) {
               setIsEditingClient(false)
               if (setClientDetailMode) setClientDetailMode('view')
+                    setPhotoFile(null)
             } else {
               setCurrentPage('view-clients')
             }
@@ -502,8 +513,10 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                       setSelectedMeasurementIndex(0)
                       setShowClientDropdown(false)
                       if (setClientDetailMode) setClientDetailMode('view')
+                    setPhotoFile(null)
                       setIsEditingClient(false)
                       setIsAddingMeasurement(false)
+                    setPhotoFile(null)
                     }}
                   >
                     <div>
@@ -811,6 +824,22 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
             </section>
             )}
 
+            
+            <section className="flex-1 rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur mb-6">
+                <h2 className="text-h2 mb-4 flex items-center gap-2">
+                  <ImageIcon size={20} /> Measurement Photo
+                </h2>
+                {currentMeasurement.photoUrl ? (
+                <a href={currentMeasurement.photoUrl} target="_blank" rel="noopener noreferrer" className="block max-w-[200px] border-4 border-white shadow-md rounded-lg overflow-hidden transition-transform hover:scale-105">
+                  <img src={currentMeasurement.photoUrl} alt="Measurement" className="w-full h-auto object-cover" />
+                </a>
+                ) : (
+                  <div className="flex flex-col items-start gap-2">
+                    <p className="text-sm text-[var(--muted)] italic">No measurement photo uploaded.</p>
+                  </div>
+                )}
+              </section>
+
             {currentMeasurement.note && (
               <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur">
                 <h2 className="text-h2 mb-4 flex items-center gap-2">
@@ -1054,6 +1083,49 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
               )}
             </section>
 
+            
+            {/* Photo Upload Section */}
+            <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur mb-6">
+              <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold">
+                <ImageIcon size={20} /> Measurement Photo
+              </h2>
+              <div className="relative group">
+                <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-[var(--border)] rounded-xl bg-[var(--surface-strong)] transition-all group-hover:border-[var(--accent)] group-hover:bg-[var(--accent)]/5">
+                {photoFile ? (
+                   <div className="flex flex-col items-center gap-2">
+                     <img src={URL.createObjectURL(photoFile)} alt="Preview" className="h-20 w-20 object-cover rounded-lg border border-[var(--border)] shadow-sm" />
+                     <button type="button" onClick={() => setPhotoFile(null)} className="text-[10px] font-bold uppercase tracking-wider text-red-500 hover:text-red-700 transition z-10 relative">Remove</button>
+                   </div>
+                ) : isEditingClient && !isAddingMeasurement && client.measurements?.[selectedMeasurementIndex]?.photoUrl ? (
+                   <div className="flex flex-col items-center gap-2">
+                     <img src={client.measurements[selectedMeasurementIndex].photoUrl} alt="Existing" className="h-20 w-20 object-cover rounded-lg border border-[var(--border)] shadow-sm" />
+                     <button type="button" onClick={() => {
+                          const newMeasurements = [...client.measurements];
+                          newMeasurements[selectedMeasurementIndex].photoUrl = null;
+                          saveClientAndClose({...client, measurements: newMeasurements}, selectedMeasurementIndex, false, true);
+                     }} className="text-[10px] font-bold uppercase tracking-wider text-red-500 hover:text-red-700 transition z-10 relative">Remove Existing</button>
+                   </div>
+                ) : (
+                  <>
+                    <ImageIcon size={24} className="text-[var(--muted)] mb-2 group-hover:text-[var(--accent)] transition-colors" />
+                    <span className="text-sm font-medium text-[var(--text)]">Click to upload photo</span>
+                    <span className="text-xs text-[var(--muted)] mt-1">JPEG, PNG, WebP</span>
+                  </>
+                )}
+                </div>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setPhotoFile(e.target.files[0])
+                    }
+                  }}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-0"
+                />
+              </div>
+            </section>
+
             {/* Note Section */}
             <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur">
               <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold">
@@ -1078,8 +1150,10 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                   if (isEditingClient) {
                     setIsEditingClient(false)
                     if (setClientDetailMode) setClientDetailMode('view')
+                    setPhotoFile(null)
                   } else {
                     setIsAddingMeasurement(false)
+                    setPhotoFile(null)
                   }
                 }}
               >
@@ -1089,7 +1163,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                 className="w-full sm:w-auto rounded-xl bg-[var(--accent)] px-6 py-3 font-semibold text-white shadow-lg shadow-[var(--accent)]/25 transition hover:brightness-95 cursor-pointer text-center justify-center flex items-center"
                 type="submit"
               >
-                {isEditingClient ? 'Update Measurement' : 'Save Measurement'}
+                {isUploading ? "Saving..." : (isEditingClient ? 'Update Measurement' : 'Save Measurement')}
               </button>
             </div>
           </form>

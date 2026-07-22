@@ -609,7 +609,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                 </div>
               )}
 
-              <div className="flex flex-wrap gap-4">
+              <div className="flex flex-wrap gap-4 mt-6">
                 {viewOrder.photo && (
                   <div>
                     <p className="text-sm font-medium text-[var(--muted)] mb-1">Design Reference</p>
@@ -621,6 +621,13 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                   <div>
                     <p className="text-sm font-medium text-[var(--muted)] mb-1">Material Photo</p>
                     <img src={viewOrder.materialPhoto} alt="Mat" className="h-24 w-24 rounded-xl object-cover border border-[var(--border)] cursor-pointer hover:opacity-80 transition" onClick={() => setImagePopup(viewOrder.materialPhoto)} />
+                  </div>
+                )}
+
+                {viewOrder.measurementPhotoUrl && (
+                  <div>
+                    <p className="text-sm font-medium text-[var(--muted)] mb-1">Measurement Photo</p>
+                    <img src={viewOrder.measurementPhotoUrl} alt="Meas" className="h-24 w-24 rounded-xl object-cover border border-[var(--border)] cursor-pointer hover:opacity-80 transition" onClick={() => setImagePopup(viewOrder.measurementPhotoUrl)} />
                   </div>
                 )}
               </div>

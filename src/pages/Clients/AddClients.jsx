@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ChevronDown, Package, Search, Settings, UsersRound, Trash2 } from 'lucide-react'
+import { ChevronDown, Package, Search, Settings, UsersRound, Trash2, Image as ImageIcon } from 'lucide-react'
+import supabase from '../../supabase'
 
 function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, setClients, saveClient, currentUser, productTypes = [], setProductTypes, saveConfig }) {
   const [personalDetails, setPersonalDetails] = useState(() => {
@@ -14,6 +15,8 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
   const [showBottomMeasurements, setShowBottomMeasurements] = useState(false)
   const [isConverting, setIsConverting] = useState(false)
   const [product, setProduct] = useState('')
+  const [photoFile, setPhotoFile] = useState(null)
+  const [isUploading, setIsUploading] = useState(false)
   const [showProductDropdown, setShowProductDropdown] = useState(false)
   const [productSearch, setProductSearch] = useState('')
   const commonProducts = productTypes.length > 0 ? productTypes : [
@@ -78,7 +81,7 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
   // Safety check for non-admin or uninitialized users
   if (!clients) return <div className="p-10 text-center">Loading clients...</div>;
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
 
     // --- FORM VALIDATION ---
@@ -95,12 +98,38 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
       return;
     }
 
+    let photoUrl = null;
+    if (photoFile) {
+      setIsUploading(true);
+      try {
+        const fileExt = photoFile.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const { error } = await supabase.storage
+          .from('measurements')
+          .upload(fileName, photoFile);
+          
+        if (error) throw error;
+        
+        const { data } = supabase.storage
+          .from('measurements')
+          .getPublicUrl(fileName);
+          
+        photoUrl = data.publicUrl;
+      } catch (err) {
+        console.error('Error uploading photo:', err);
+        if (showGlobalToast) showGlobalToast('Upload Failed', err.message || 'Could not upload measurement photo.');
+      } finally {
+        setIsUploading(false);
+      }
+    }
+
     const measurementData = {
       id: Date.now(),
       product,
       topMeasurements,
       bottomMeasurements,
       note,
+      photoUrl,
       createdAt: new Date().toISOString()
     }
 
@@ -170,6 +199,7 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
       crotchLength: '', crotchRound: ''
     })
     setNote('')
+    setPhotoFile(null)
   }
 
   return (
@@ -438,20 +468,52 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
           </div>
         </section>
 
-        {/* Note Section */}
+        {/* Note & Photo Section */}
         <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
-          <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold">
-            <Settings size={20} /> Notes
-          </h2>
-          <label className="block">
-            <textarea
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10 resize-none"
-              rows="4"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Add any additional notes about the client..."
-            />
-          </label>
+          <div className="flex flex-col sm:flex-row gap-6">
+            <div className="flex-1">
+              <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold">
+                <Settings size={20} /> Notes
+              </h2>
+              <label className="block">
+                <textarea
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10 resize-none"
+                  rows="4"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Add any additional notes about the client..."
+                />
+              </label>
+            </div>
+            <div className="flex-1">
+              <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold">
+                <ImageIcon size={20} /> Measurement Photo
+              </h2>
+              <div className="flex flex-col items-center justify-center border-2 border-dashed border-[var(--border)] rounded-xl p-4 h-[120px] bg-[var(--surface-strong)] relative">
+                {photoFile ? (
+                   <div className="flex flex-col items-center gap-2">
+                     <img src={URL.createObjectURL(photoFile)} alt="Preview" className="h-20 w-20 object-cover rounded-lg border border-[var(--border)] shadow-sm" />
+                     <button type="button" onClick={() => setPhotoFile(null)} className="text-[10px] font-bold uppercase tracking-wider text-red-500 hover:text-red-700 transition">Remove</button>
+                   </div>
+                ) : (
+                  <>
+                    <ImageIcon size={32} className="text-[var(--muted)] mb-2" />
+                    <span className="text-sm text-[var(--muted)]">Click to upload photo</span>
+                  </>
+                )}
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setPhotoFile(e.target.files[0])
+                    }
+                  }}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+              </div>
+            </div>
+          </div>
         </section>
 
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 w-full mt-8">
@@ -473,11 +535,12 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
             Convert to Order
           </button>
           <button
-            className="w-full sm:w-auto rounded-xl bg-[var(--accent)] px-6 py-3 font-semibold text-white shadow-lg shadow-[var(--accent)]/25 transition hover:brightness-95 cursor-pointer text-center justify-center flex items-center"
+            className="w-full sm:w-auto rounded-xl bg-[var(--accent)] px-6 py-3 font-semibold text-white shadow-lg shadow-[var(--accent)]/25 transition hover:brightness-95 cursor-pointer text-center justify-center flex items-center disabled:opacity-50"
             type="submit"
+            disabled={isUploading}
             onClick={() => setIsConverting(false)}
           >
-            Save Client
+            {isUploading ? "Saving..." : "Save Client"}
           </button>
         </div>
       </form>

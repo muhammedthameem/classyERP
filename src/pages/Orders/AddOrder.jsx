@@ -42,6 +42,7 @@ function AddOrderPage({
       internalItems: [],
       notes: '',
       audioNote: null,
+      measurementPhotoUrl: null,
       showTypeDropdown: false,
       showProductTypeDropdown: false,
       showInventoryDropdown: null,
@@ -120,6 +121,7 @@ function AddOrderPage({
           internalItems: [],
           notes: prefillNotes,
           audioNote: null,
+          measurementPhotoUrl: selectedClientObj?.measurements?.find(m => m.product === prefillProduct)?.photoUrl || null,
           showTypeDropdown: false,
           showProductTypeDropdown: false,
           showInventoryDropdown: null,
@@ -145,6 +147,7 @@ function AddOrderPage({
       internalItems: [],
       notes: '',
       audioNote: null,
+      measurementPhotoUrl: null,
       showTypeDropdown: false,
       showProductTypeDropdown: false,
       showInventoryDropdown: null,
@@ -242,6 +245,7 @@ function AddOrderPage({
       materialPhoto: item.materialPhoto,
       notes: item.notes || notes,
       audioNote: item.audioNote,
+      measurementPhotoUrl: item.measurementPhotoUrl,
       orderDate: item.orderDate,
       deliveryDate: item.deliveryDate,
       photo: photoPreview,
@@ -320,6 +324,7 @@ function AddOrderPage({
       internalItems: [],
       notes: '',
       audioNote: null,
+      measurementPhotoUrl: null,
       showTypeDropdown: false,
       showProductTypeDropdown: false,
       showInventoryDropdown: null,
@@ -666,14 +671,14 @@ function AddOrderPage({
                                     let updates = { showProductTypeDropdown: false };
                                     
                                     // Smart Note Migration for Typed/Searched Products
-                                     const findNotes = (prodName) => {
+                                     const findNotesAndPhoto = (prodName) => {
                                        const selectedClient = (clients || []).find(c => c.name === clientName);
                                        if (selectedClient && selectedClient.measurements) {
                                          const measure = selectedClient.measurements.find(m => m.product === prodName);
                                          // Check for both 'note' (singular) and 'notes' (plural) for safety
-                                         return measure?.note || measure?.notes || '';
+                                         return { notes: measure?.note || measure?.notes || '', photoUrl: measure?.photoUrl || null };
                                        }
-                                       return '';
+                                       return { notes: '', photoUrl: null };
                                      };
 
                                     if (nt && !productTypes.some(t => t.toLowerCase() === nt.toLowerCase())) {
@@ -681,14 +686,18 @@ function AddOrderPage({
                                       setProductTypes(updatedList);
                                       if (saveConfig) saveConfig("productTypes", updatedList);
                                       updates.product = nt;
-                                      updates.notes = findNotes(nt);
+                                      const { notes: foundNotes, photoUrl } = findNotesAndPhoto(nt);
+                                      updates.notes = foundNotes;
+                                      updates.measurementPhotoUrl = photoUrl;
                                       updateOrderItem(idx, updates);
                                       if (showGlobalToast) showGlobalToast('Added', `New product "${nt}" created.`);
                                     } else if (nt) {
                                       const ex = productTypes.find(t => t.toLowerCase().includes(nt.toLowerCase()));
                                       if (ex) {
                                          updates.product = ex;
-                                         updates.notes = findNotes(ex);
+                                         const { notes: foundNotes, photoUrl } = findNotesAndPhoto(ex);
+                                         updates.notes = foundNotes;
+                                         updates.measurementPhotoUrl = photoUrl;
                                          updateOrderItem(idx, updates);
                                       }
                                     }
@@ -708,10 +717,12 @@ function AddOrderPage({
                                         const selectedClient = (clients || []).find(c => c.name === clientName);
                                         if (selectedClient && selectedClient.measurements) {
                                           const measure = selectedClient.measurements.find(m => m.product === t);
-                                          // Check both note and notes for safety
                                           const foundNote = measure?.note || measure?.notes || '';
                                           if (foundNote) {
                                             updates.notes = foundNote;
+                                          }
+                                          if (measure?.photoUrl) {
+                                            updates.measurementPhotoUrl = measure.photoUrl;
                                           }
                                         }
                                         updateOrderItem(idx, updates);
@@ -752,6 +763,7 @@ function AddOrderPage({
                                           const measure = selectedClient.measurements.find(m => m.product === nt);
                                           const foundNote = measure?.note || measure?.notes || '';
                                           if (foundNote) updates.notes = foundNote;
+                                          if (measure?.photoUrl) updates.measurementPhotoUrl = measure.photoUrl;
                                         }
                                         updateOrderItem(idx, updates);
                                         if (showGlobalToast) showGlobalToast('Added', `New product "${nt}" created.`);
@@ -1335,6 +1347,14 @@ function AddOrderPage({
                       </div>
                     )}
                   </div>
+                  {item.measurementPhotoUrl && (
+                    <div className="col-span-1 md:col-span-2">
+                       <span className="mb-2 block text-sm font-medium text-[var(--text)]">Measurement Photo</span>
+                       <a href={item.measurementPhotoUrl} target="_blank" rel="noopener noreferrer" className="block w-24 h-24 border border-[var(--border)] rounded-xl overflow-hidden shadow-sm transition hover:scale-105">
+                         <img src={item.measurementPhotoUrl} alt="Measurement" className="w-full h-full object-cover" />
+                       </a>
+                    </div>
+                  )}
                 </div>
 
               </div>
