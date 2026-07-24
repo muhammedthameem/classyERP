@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ChevronDown, Search, Settings, ShoppingBag, Pencil, Trash2, Plus, Package, Info, Calendar, UsersRound, CheckCircle } from 'lucide-react'
+import { ChevronDown, Search, Settings, ShoppingBag, Pencil, Trash2, Plus, Package, Info, Calendar, UsersRound, CheckCircle, X } from 'lucide-react'
 import { formatDateDDMMYY, getIndianDate } from '../../utils/constants'
 import CustomDatePicker from '../../components/CustomDatePicker'
 import supabase from '../../supabase'
@@ -86,6 +86,8 @@ function AddOrderPage({
   const [unitSearch, setUnitSearch] = useState('')
   const [inventorySearch, setInventorySearch] = useState('')
   const [dropdownLimit, setDropdownLimit] = useState(15)
+
+  const [zoomedPhoto, setZoomedPhoto] = useState(null)
 
   useEffect(() => {
     setClientsList(clients)
@@ -354,6 +356,21 @@ function AddOrderPage({
 
   return (
     <div style={themeStyle} className="relative">
+      {/* Zoomed Photo Modal */}
+      {zoomedPhoto && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm" onClick={() => setZoomedPhoto(null)}>
+          <div className="relative w-full max-w-4xl flex justify-center" onClick={(e) => e.stopPropagation()}>
+            <img src={zoomedPhoto} alt="Zoomed" className="max-w-full max-h-[85vh] rounded-lg shadow-2xl object-contain border-2 border-white/20" />
+            <button 
+              className="absolute -top-12 right-0 md:-right-12 grid h-10 w-10 place-items-center rounded-full bg-red-500/80 text-white hover:bg-red-500 transition-colors"
+              onClick={() => setZoomedPhoto(null)}
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Settings Modal - Kept Same */}
       {showSettingsModal && (
         <div className="fixed inset-0 z-[100] grid place-items-center bg-black/50 px-4 backdrop-blur-sm">
@@ -1350,9 +1367,9 @@ function AddOrderPage({
                   {item.measurementPhotoUrl && (
                     <div className="col-span-1 md:col-span-2">
                        <span className="mb-2 block text-sm font-medium text-[var(--text)]">Measurement Photo</span>
-                       <a href={item.measurementPhotoUrl} target="_blank" rel="noopener noreferrer" className="block w-24 h-24 border border-[var(--border)] rounded-xl overflow-hidden shadow-sm transition hover:scale-105">
+                       <button type="button" onClick={() => setZoomedPhoto(item.measurementPhotoUrl)} className="block w-24 h-24 border border-[var(--border)] rounded-xl overflow-hidden shadow-sm transition hover:scale-105">
                          <img src={item.measurementPhotoUrl} alt="Measurement" className="w-full h-full object-cover" />
-                       </a>
+                       </button>
                     </div>
                   )}
                 </div>

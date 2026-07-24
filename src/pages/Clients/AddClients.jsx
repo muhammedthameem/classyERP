@@ -117,7 +117,17 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
         photoUrl = data.publicUrl;
       } catch (err) {
         console.error('Error uploading photo:', err);
-        if (showGlobalToast) showGlobalToast('Upload Failed', err.message || 'Could not upload measurement photo.');
+        try {
+          const base64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(photoFile);
+          });
+          photoUrl = base64;
+          if (showGlobalToast) showGlobalToast('Storage Upload Failed', 'Falling back to local database storage for image.');
+        } catch (b64Err) {
+          if (showGlobalToast) showGlobalToast('Upload Failed', err.message || 'Could not upload measurement photo.');
+        }
       } finally {
         setIsUploading(false);
       }

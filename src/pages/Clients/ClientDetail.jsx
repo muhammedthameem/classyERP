@@ -54,6 +54,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
   const [measurementToDelete, setMeasurementToDelete] = useState(null)
   const [showMergePopup, setShowMergePopup] = useState(false)
   const [pendingMeasurementData, setPendingMeasurementData] = useState(null)
+  const [imagePopup, setImagePopup] = useState(null)
 
   useEffect(() => {
     setIsEditingClient(initialMode === 'edit')
@@ -119,6 +120,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
     topMeasurements: client.topMeasurements || {},
     bottomMeasurements: client.bottomMeasurements || {},
     note: client.note,
+    photoUrl: client.photoUrl,
     createdAt: client.createdAt
   }]
 
@@ -135,7 +137,23 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
   const displayTop = showTopSection || isEditingClient;
   const displayBottom = showBottomSection || isEditingClient;
 
-  const handleSaveMeasurement = (e) => {
+  const handleDeletePhoto = () => {
+    if (window.confirm("Are you sure you want to delete this measurement photo?")) {
+      const clientListToSearch = clients || [];
+      const clientIndex = clientListToSearch.findIndex(c => String(c.id) === String(client.id));
+      if (clientIndex >= 0) {
+        const updatedClient = { ...clientListToSearch[clientIndex] };
+        if (updatedClient.measurements && updatedClient.measurements[selectedMeasurementIndex]) {
+          updatedClient.measurements[selectedMeasurementIndex].photoUrl = null;
+        } else {
+          updatedClient.photoUrl = null;
+        }
+        saveClientAndClose(updatedClient, selectedMeasurementIndex, false, false);
+      }
+    }
+  }
+
+  const handleSaveMeasurement = async (e) => {
     e.preventDefault()
 
     if (isAddingMeasurement && client.measurements?.length > 0) {
@@ -147,7 +165,36 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
       }
     }
 
-    executeSaveMeasurement({ product, topMeasurements, bottomMeasurements, note });
+    let uploadedPhotoUrl = undefined;
+    if (photoFile) {
+      setIsUploading(true);
+      try {
+        const fileExt = photoFile.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const { error } = await supabase.storage.from('measurements').upload(fileName, photoFile);
+        if (error) throw error;
+        
+        const { data } = supabase.storage.from('measurements').getPublicUrl(fileName);
+        uploadedPhotoUrl = data.publicUrl;
+      } catch (err) {
+        console.error('Error uploading photo:', err);
+        try {
+          const base64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(photoFile);
+          });
+          uploadedPhotoUrl = base64;
+          if (showGlobalToast) showGlobalToast('Storage Upload Failed', 'Falling back to local database storage for image.');
+        } catch (b64Err) {
+          if (showGlobalToast) showGlobalToast('Upload Failed', err.message || 'Could not upload measurement photo.');
+        }
+      } finally {
+        setIsUploading(false);
+      }
+    }
+
+    executeSaveMeasurement({ product, topMeasurements, bottomMeasurements, note, photoUrl: uploadedPhotoUrl });
   }
 
   const handleMergeMeasurement = () => {
@@ -260,6 +307,9 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
           topMeasurements: measurementToSave.topMeasurements,
           bottomMeasurements: measurementToSave.bottomMeasurements,
           note: measurementToSave.note
+        }
+        if (measurementToSave.photoUrl !== undefined) {
+          updatedClient.measurements[selectedMeasurementIndex].photoUrl = measurementToSave.photoUrl;
         }
       } else if (isAddingMeasurement && !isEditingClient) {
         const measurementData = {
@@ -830,15 +880,32 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                   <ImageIcon size={20} /> Measurement Photo
                 </h2>
                 {currentMeasurement.photoUrl ? (
-                <a href={currentMeasurement.photoUrl} target="_blank" rel="noopener noreferrer" className="block max-w-[200px] border-4 border-white shadow-md rounded-lg overflow-hidden transition-transform hover:scale-105">
-                  <img src={currentMeasurement.photoUrl} alt="Measurement" className="w-full h-auto object-cover" />
-                </a>
+                <div className="flex flex-col items-start gap-3">
+                  <div onClick={() => setImagePopup(currentMeasurement.photoUrl)} className="block w-32 h-32 border border-[var(--border)] shadow-md rounded-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer relative group">
+                    <img src={currentMeasurement.photoUrl} alt="Measurement" className="w-full h-full object-cover" />
+                  </div>
+                  <button 
+                    onClick={handleDeletePhoto}
+                    className="flex items-center gap-1 text-sm font-semibold text-red-500 hover:text-red-700 transition"
+                  >
+                    <Trash2 size={16} /> Delete Photo
+                  </button>
+                </div>
                 ) : (
                   <div className="flex flex-col items-start gap-2">
                     <p className="text-sm text-[var(--muted)] italic">No measurement photo uploaded.</p>
                   </div>
                 )}
               </section>
+
+            {imagePopup && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setImagePopup(null)}>
+                <img src={imagePopup} alt="Measurement Popup" className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" onClick={(e) => e.stopPropagation()} />
+                <button className="absolute top-4 right-4 text-white hover:text-gray-300 bg-black/50 p-2 rounded-full transition" onClick={() => setImagePopup(null)}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+              </div>
+            )}
 
             {currentMeasurement.note && (
               <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur">
