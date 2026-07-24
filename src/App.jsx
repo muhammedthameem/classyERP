@@ -449,8 +449,8 @@ function App() {
                 if (error) console.error("Activity Save Failed:", error);
               }}
             />
-            {/* Classy AI Digital Manager - Only for Admin/Owner */}
-            {(user?.role === 'Admin' || user?.role === 'Owner') && (
+            {/* Classy AI Digital Manager - Only for Admin/Owner (Currently Hidden) */}
+            {false && (user?.role === 'Admin' || user?.role === 'Owner') && (
               <ClassyAI
                 user={user}
                 isAdmin={user?.role === 'Admin' || user?.role === 'Owner'}
