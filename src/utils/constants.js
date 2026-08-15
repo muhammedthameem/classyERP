@@ -188,3 +188,70 @@ export const staffActivities = [
   ['12:30', 'Inventory audit', 'Meera (Manager)'],
   ['15:00', 'Client fitting', 'Zara (Staff)'],
 ]
+
+export const PRODUCTION_STAGES = {
+  'Cutting': { name: 'Cutting', estimatedDays: 0.5 },
+  'Handwork': { name: 'Handwork', estimatedDays: 2.0 },
+  'Stitching': { name: 'Stitching', estimatedDays: 1.0 },
+  'QC': { name: 'Quality Check', estimatedDays: 0.25 },
+  'Finished': { name: 'Finished', estimatedDays: 0.5 },
+}
+
+export const DEFAULT_WORKFLOWS = {
+  'Normal Blouse': ['Cutting', 'Stitching', 'QC', 'Finished'],
+  'Handwork Blouse': ['Cutting', 'Handwork', 'Stitching', 'QC', 'Finished'],
+  'Anarkali': ['Cutting', 'Handwork', 'Stitching', 'QC', 'Finished'],
+  'Bridal Anarkali': ['Cutting', 'Handwork', 'Stitching', 'QC', 'Finished'],
+  'Simple Salwar': ['Cutting', 'Stitching', 'QC', 'Finished'],
+  'Bridal lehenga': ['Cutting', 'Handwork', 'Stitching', 'QC', 'Finished'],
+  'Evening gown': ['Cutting', 'Handwork', 'Stitching', 'QC', 'Finished'],
+  'Silk saree blouse': ['Cutting', 'Handwork', 'Stitching', 'QC', 'Finished'],
+  'Reception dress': ['Cutting', 'Handwork', 'Stitching', 'QC', 'Finished'],
+  'Default': ['Cutting', 'Handwork', 'Stitching', 'QC', 'Finished'],
+}
+
+export const calculateProgress = (order) => {
+  if (order.status === 'Completed' || order.status === 'Sold') return 100;
+  if (!order.workflow || !order.productionTasks || order.productionTasks.length === 0) {
+    if (order.status === 'In Progress' || order.status === 'Start') return 50;
+    return 0;
+  }
+  const completed = order.productionTasks.filter(t => t.status === 'Completed').length;
+  const total = order.workflow.length;
+  return total > 0 ? Math.round((completed / total) * 100) : 0;
+}
+
+export const calculateRisk = (order) => {
+  if (order.status === 'Completed' || order.status === 'Sold') return 'Delivered';
+  if (order.status === 'Hold') return 'At Risk';
+  if (!order.deliveryDate) return 'On Track';
+
+  const today = new Date(getIndianDate());
+  today.setHours(0,0,0,0);
+  const delivery = new Date(order.deliveryDate);
+  delivery.setHours(0,0,0,0);
+
+  const diffTime = delivery - today;
+  const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (daysLeft < 0) return 'Delayed';
+
+  // Calculate remaining work
+  let remainingDays = 0;
+  if (order.workflow && order.productionTasks) {
+    order.workflow.forEach(stageName => {
+      const task = order.productionTasks.find(t => t.stage === stageName);
+      if (!task || task.status !== 'Completed') {
+         remainingDays += (PRODUCTION_STAGES[stageName]?.estimatedDays || 0.5);
+      }
+    });
+  } else {
+    remainingDays = order.status === 'In Progress' ? 2 : 4; // Fallback estimate
+  }
+
+  if (daysLeft === 0 && remainingDays > 0) return 'Delayed';
+  if (remainingDays > daysLeft) return 'Delayed';
+  if (remainingDays >= daysLeft - 1) return 'At Risk';
+  
+  return 'On Track';
+}

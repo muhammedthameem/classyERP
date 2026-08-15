@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2, Plus, X, Printer } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
-import { formatDateDDMMYY, getIndianDate, orders } from '../../utils/constants'
+import { formatDateDDMMYY, getIndianDate, orders as dummyOrders, DEFAULT_WORKFLOWS, PRODUCTION_STAGES, calculateProgress, calculateRisk } from '../../utils/constants'
 import { sendWhatsApp } from "../../utils/whatsapp";
 import supabase from '../../supabase'
 import UndoToast from '../../components/UndoToast'
@@ -16,6 +16,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
   const [orderToDelete, setOrderToDelete] = useState(null)
   const [recentlyDeletedOrder, setRecentlyDeletedOrder] = useState(null)
   const undoTimeoutRef = useRef(null)
+  const pendingSaves = useRef({})
   const [viewOrder, setViewOrder] = useState(null)
   const [sortConfig, setSortConfig] = useState({ key: 'updatedAt', direction: 'desc' })
   const [dateFilter, setDateFilter] = useState('All') // All, Today, Tomorrow, Week, Custom
@@ -23,6 +24,17 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
   const [showWaPopup, setShowWaPopup] = useState(false)
   const [waData, setWaData] = useState({ phone: '', name: '', message: '', orderId: '' })
   const [showMeasurements, setShowMeasurements] = useState(false)
+  const [openStagePopoverId, setOpenStagePopoverId] = useState(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (openStagePopoverId && !e.target.closest('.stage-popover-container')) {
+        setOpenStagePopoverId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openStagePopoverId]);
 
   const isDataLoading = !cloudLoaded || !orders;
 
@@ -138,17 +150,44 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
         if (newStatus === 'In Progress' && !o.startDate) {
           newData.startDate = getIndianDate()
         }
-        if (newStatus === 'Completed') {
+        if (newStatus === 'Completed' || newStatus === 'Sold') {
           if (!o.completedDate) {
             newData.completedDate = getIndianDate()
           }
           if (!o.startDate) {
             newData.startDate = getIndianDate()
           }
+          
+          // Auto-sync Production Stage to avoid confusion
+          newData.currentStage = 'Finished';
+          if (newData.productionTasks) {
+             newData.productionTasks = newData.productionTasks.map(task => ({
+                 ...task,
+                 status: 'Completed',
+                 completedAt: task.completedAt || new Date().toISOString(),
+                 startedAt: task.startedAt || new Date().toISOString()
+             }));
+          }
         }
         if (newStatus === 'Not Ready' || newStatus === 'Pending') {
           newData.startDate = null;
           newData.completedDate = null;
+          newData.currentStage = 'Not Started';
+          if (newData.productionTasks) {
+            newData.productionTasks = newData.productionTasks.map(task => ({
+              ...task, status: 'Pending', completedAt: null, startedAt: null
+            }));
+          }
+        }
+        if (newStatus === 'Hold') {
+          if (newData.productionTasks) {
+            newData.productionTasks = newData.productionTasks.map(task => 
+              task.status === 'In Progress' ? { ...task, status: 'Hold' } : task
+            );
+          }
+          if (newData.currentStage && newData.currentStage !== 'Finished' && newData.currentStage !== 'Not Started') {
+             newData.currentStage = `Hold: ${newData.currentStage}`;
+          }
         }
         if (newStatus !== 'Hold') {
           newData.lastActiveStatus = newStatus
@@ -192,6 +231,174 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
     }
   }
 
+  const handleProductionStageChange = async (id, newStage) => {
+    const updated = orders.map(o => {
+      if (o.id === id) {
+        let newData = { ...o, currentStage: newStage, updatedAt: new Date().toISOString() };
+        
+        // Initialize workflow if missing
+        if (!newData.workflow || !newData.productionTasks) {
+          newData.workflow = DEFAULT_WORKFLOWS[newData.product] || DEFAULT_WORKFLOWS['Default'];
+          newData.productionTasks = newData.workflow.map(stage => ({
+            stage,
+            status: 'Pending',
+            startedAt: null,
+            completedAt: null
+          }));
+        }
+
+        // Update production tasks: Mark everything before newStage as Completed, newStage as In Progress
+        if (newStage === 'Not Started') {
+           if (newData.productionTasks) {
+             newData.productionTasks = newData.productionTasks.map(task => ({
+               ...task, status: 'Pending', completedAt: null, startedAt: null
+             }));
+           }
+        } else if (newData.workflow && newData.productionTasks) {
+           let found = false;
+           const now = new Date().toISOString();
+           newData.productionTasks = newData.productionTasks.map(task => {
+             if (task.stage === newStage) {
+               found = true;
+               return { ...task, status: 'In Progress', startedAt: task.startedAt || now };
+             }
+             if (!found) {
+               return { ...task, status: 'Completed', completedAt: task.completedAt || now, startedAt: task.startedAt || now };
+             }
+             return { ...task, status: 'Pending', completedAt: null, startedAt: null };
+           });
+        }
+        
+        // Auto update overall status
+        if (newStage === 'Finished') {
+           newData.status = 'Completed';
+           if (!newData.completedDate) newData.completedDate = getIndianDate();
+           
+           // If they select Finished, mark the Finished task itself as completed
+           if (newData.productionTasks) {
+             newData.productionTasks = newData.productionTasks.map(task => 
+               task.stage === 'Finished' ? { ...task, status: 'Completed', completedAt: task.completedAt || new Date().toISOString(), startedAt: task.startedAt || new Date().toISOString() } : task
+             );
+           }
+        } else if (newData.status === 'Not Ready' || newData.status === 'Pending' || newData.status === 'Completed') {
+           // Revert back to In Progress if it was completed but stage is changed backwards
+           newData.status = 'In Progress';
+           newData.completedDate = null;
+           if (!newData.startDate) newData.startDate = getIndianDate();
+        }
+
+        // Recalculate progress & risk
+        newData.progress = calculateProgress(newData);
+        newData.risk = calculateRisk(newData);
+
+        // Activity History
+        if (!newData.activityHistory) newData.activityHistory = [];
+        newData.activityHistory.push({
+           stage: newStage,
+           action: 'Started',
+           timestamp: new Date().toISOString()
+        });
+
+        return newData;
+      }
+      return o;
+    });
+    saveOrders(updated);
+
+    const changedOrder = updated.find(o => o.id === id);
+    if (changedOrder && saveOrder) {
+      saveOrder(changedOrder);
+    }
+    if (showGlobalToast) {
+      showGlobalToast('Production Updated', `Work moved to ${newStage}`);
+    }
+  }
+
+  const handleTaskStatusChange = async (id, stageName, newStatus) => {
+    setOrders(prevOrders => {
+      let changedOrder = null;
+      const updated = prevOrders.map(o => {
+        if (o.id === id) {
+          let newData = { ...o, updatedAt: new Date().toISOString() };
+          
+          if (!newData.workflow || !newData.productionTasks) {
+            newData.workflow = DEFAULT_WORKFLOWS[newData.product] || DEFAULT_WORKFLOWS['Default'];
+            newData.productionTasks = newData.workflow.map(s => ({
+              stage: s,
+              status: 'Pending',
+              startedAt: null,
+              completedAt: null
+            }));
+          }
+
+          const now = new Date().toISOString();
+          newData.productionTasks = newData.productionTasks.map(task => {
+            if (task.stage === stageName) {
+              return {
+                ...task,
+                status: newStatus,
+                startedAt: newStatus === 'In Progress' && !task.startedAt ? now : task.startedAt,
+                completedAt: newStatus === 'Completed' ? now : (newStatus === 'Pending' ? null : task.completedAt)
+              };
+            }
+            return task;
+          });
+
+          // Determine derived currentStage
+          const activeTasks = newData.productionTasks.filter(t => t.status === 'In Progress');
+          const completedTasks = newData.productionTasks.filter(t => t.status === 'Completed');
+          const holdTasks = newData.productionTasks.filter(t => t.status === 'Hold');
+          
+          if (newData.productionTasks.every(t => t.status === 'Completed')) {
+             newData.currentStage = 'Finished';
+             newData.status = 'Completed';
+             if (!newData.completedDate) newData.completedDate = getIndianDate();
+          } else if (newData.productionTasks.every(t => t.status === 'Pending')) {
+             newData.currentStage = 'Not Started';
+          } else if (activeTasks.length > 0) {
+             newData.currentStage = activeTasks.map(t => t.stage).join(', ');
+          } else if (holdTasks.length > 0) {
+             newData.currentStage = 'Hold';
+          } else if (completedTasks.length > 0) {
+             const lastCompleted = [...newData.productionTasks].reverse().find(t => t.status === 'Completed');
+             newData.currentStage = `${lastCompleted.stage} Done`;
+          }
+
+          if (newStatus === 'In Progress' || newStatus === 'Completed') {
+            if (newData.currentStage !== 'Finished' && newData.status !== 'Hold' && (newData.status === 'Not Ready' || newData.status === 'Pending' || newData.status === 'Completed')) {
+               newData.status = 'In Progress';
+               newData.completedDate = null;
+               if (!newData.startDate) newData.startDate = getIndianDate();
+            }
+          }
+
+          newData.progress = calculateProgress(newData);
+          newData.risk = calculateRisk(newData);
+
+          if (!newData.activityHistory) newData.activityHistory = [];
+          newData.activityHistory.push({
+             stage: stageName,
+             action: `Marked ${newStatus}`,
+             timestamp: now
+          });
+
+          changedOrder = newData;
+          return newData;
+        }
+        return o;
+      });
+
+      if (changedOrder && saveOrder) {
+        if (pendingSaves.current[id]) clearTimeout(pendingSaves.current[id]);
+        pendingSaves.current[id] = setTimeout(() => {
+           saveOrder(changedOrder);
+           delete pendingSaves.current[id];
+        }, 800);
+      }
+      return updated;
+    });
+  };
+
   const [activeFilter, setActiveFilter] = useState('All')
 
   const displayOrders = orders.filter(o => !recentlyDeletedOrder || String(o.id) !== String(recentlyDeletedOrder.id));
@@ -214,6 +421,14 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
       matchesStatus = o.status === 'Completed'
     } else if (activeFilter === 'Not Ready') {
       matchesStatus = o.status === 'Not Ready' || o.status === 'Pending'
+    } else if (Object.keys(PRODUCTION_STAGES).includes(activeFilter)) {
+      matchesStatus = o.currentStage === activeFilter
+    } else if (activeFilter === 'Due Today') {
+      matchesStatus = o.deliveryDate === getIndianDate() && o.status !== 'Completed' && o.status !== 'Sold'
+    } else if (activeFilter === 'Delayed') {
+      matchesStatus = o.risk === 'Delayed' && o.status !== 'Completed' && o.status !== 'Sold'
+    } else if (activeFilter === 'At Risk') {
+      matchesStatus = o.risk === 'At Risk' && o.status !== 'Completed' && o.status !== 'Sold'
     } else if (activeFilter !== 'All') {
       matchesStatus = o.status === activeFilter
     }
@@ -265,6 +480,10 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
       } else if (sortConfig.key === 'orderDate' || sortConfig.key === 'deliveryDate') {
         valA = new Date(valA || 0).getTime()
         valB = new Date(valB || 0).getTime()
+      } else if (sortConfig.key === 'priority') {
+        const pMap = { High: 3, Normal: 2, Low: 1 };
+        valA = pMap[valA] || 2;
+        valB = pMap[valB] || 2;
       }
 
       if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1
@@ -299,6 +518,10 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
           } else if (sortConfig.key === 'orderDate' || sortConfig.key === 'deliveryDate') {
             valA = new Date(valA || 0).getTime()
             valB = new Date(valB || 0).getTime()
+          } else if (sortConfig.key === 'priority') {
+            const pMap = { High: 3, Normal: 2, Low: 1 };
+            valA = pMap[valA] || 2;
+            valB = pMap[valB] || 2;
           }
           if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1
           if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1
@@ -355,13 +578,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
   const paginatedOrders = sortedOrders.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage)
 
   const getProgress = (order) => {
-    const activeStatus = order.status === 'Hold' ? (order.lastActiveStatus || 'Not Ready') : order.status;
-    switch (activeStatus) {
-      case 'Closed': case 'Sold': return 100;
-      case 'Completed': return 100;
-      case 'In Progress': case 'Start': return 50;
-      default: return 0; // Not Ready
-    }
+    return calculateProgress(order);
   }
 
   const totalOrders = displayOrders.length
@@ -482,6 +699,11 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                 <div className="flex flex-wrap items-center gap-3 mt-2.5">
                   {viewOrder.advance > 0 && <span className="text-[11px] text-[var(--muted)] bg-[var(--surface-strong)] px-2 py-0.5 rounded-md border border-[var(--border)]">Adv: <span className="text-emerald-600 font-medium">₹{viewOrder.advance}</span> <span className="opacity-40 mx-1">•</span> Bal: <span className="font-medium">₹{(parseFloat(viewOrder.price || 0) - parseFloat(viewOrder.advance || 0)).toFixed(2)}</span></span>}
                   {viewOrder.size && <span className="text-[11px] text-[var(--muted)] bg-[var(--surface-strong)] px-2 py-0.5 rounded-md border border-[var(--border)]">Qty: <span className="font-medium text-[var(--text)]">{viewOrder.size}</span></span>}
+                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-md border border-[var(--border)] ${
+                    viewOrder.priority === 'High' ? 'bg-red-50 text-red-600 border-red-200' :
+                    viewOrder.priority === 'Low' ? 'bg-gray-50 text-gray-600 border-gray-200' :
+                    'bg-blue-50 text-blue-600 border-blue-200'
+                  }`}>Priority: {viewOrder.priority || 'Normal'}</span>
                 </div>
               </div>
 
@@ -633,48 +855,55 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
               </div>
 
               <div className="col-span-2 bg-[var(--soft)] p-5 rounded-2xl border border-[var(--border)] shadow-inner">
-                <p className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest mb-6 border-b border-[var(--border)] pb-2 flex items-center gap-2">
-                  <Clock size={14} /> Order Timeline
-                </p>
-                <div className="relative flex flex-col sm:flex-row gap-6 sm:gap-0 justify-between w-full">
-                  {/* Horizontal connecting line (hidden on mobile) */}
-                  <div className="hidden sm:block absolute top-5 left-12 right-12 h-0.5 bg-[var(--border)] z-0"></div>
+                <div className="flex justify-between items-center mb-6 border-b border-[var(--border)] pb-2">
+                  <p className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest flex items-center gap-2">
+                    <Clock size={14} /> Production Timeline
+                  </p>
+                  <span className="text-[10px] font-bold text-[var(--text)]">{getProgress(viewOrder)}% Complete</span>
+                </div>
+                <div className="relative flex flex-col gap-4 w-full pl-2">
+                  {/* Vertical connecting line */}
+                  <div className="absolute top-2 bottom-2 left-6 w-0.5 bg-[var(--border)] z-0"></div>
 
-                  {/* Vertical connecting line (mobile only) */}
-                  <div className="sm:hidden absolute top-5 bottom-5 left-5 w-0.5 bg-[var(--border)] z-0"></div>
-
-                  {/* Step 1: Ordered */}
-                  <div className="relative z-10 flex flex-row sm:flex-col items-center sm:items-center gap-4 sm:gap-3 w-full sm:w-1/3">
-                    <div className="h-10 w-10 rounded-full bg-[var(--accent)] text-white flex items-center justify-center shrink-0 shadow-md ring-4 ring-[var(--soft)]">
-                      <CalendarDays size={16} />
+                  <div className="relative z-10 flex items-center gap-4 w-full">
+                    <div className="h-8 w-8 rounded-full bg-[var(--accent)] text-white flex items-center justify-center shrink-0 shadow-md ring-4 ring-[var(--soft)]">
+                      <CalendarDays size={14} />
                     </div>
-                    <div className="flex flex-col sm:items-center text-left sm:text-center w-full bg-[var(--surface-strong)] sm:bg-transparent p-3 sm:p-0 rounded-xl border border-[var(--border)] sm:border-none">
+                    <div className="flex flex-col flex-1 bg-[var(--surface-strong)] p-3 rounded-xl border border-[var(--border)]">
                       <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest">Ordered</span>
                       <span className="text-sm font-black text-[var(--text)] mt-0.5">{viewOrder.orderDate || 'N/A'}</span>
                     </div>
                   </div>
 
-                  {/* Step 2: Started */}
-                  <div className={`relative z-10 flex flex-row sm:flex-col items-center sm:items-center gap-4 sm:gap-3 w-full sm:w-1/3 ${viewOrder.startDate ? '' : 'opacity-70 grayscale-[50%]'}`}>
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 shadow-md ring-4 ring-[var(--soft)] transition-colors ${viewOrder.startDate ? 'bg-indigo-500 text-white' : 'bg-[var(--surface-strong)] text-[var(--muted)] border border-[var(--border)]'}`}>
-                      <Play size={16} />
+                  {viewOrder.productionTasks?.map((task, idx) => (
+                    <div key={idx} className={`relative z-10 flex items-center gap-4 w-full ${task.status === 'Pending' ? 'opacity-50' : ''}`}>
+                      <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 shadow-md ring-4 ring-[var(--soft)] transition-colors ${task.status === 'Completed' ? 'bg-emerald-500 text-white' : task.status === 'In Progress' ? 'bg-indigo-500 text-white' : 'bg-[var(--surface-strong)] text-[var(--muted)] border border-[var(--border)]'}`}>
+                        {task.status === 'Completed' ? <CheckCircle2 size={14} /> : task.status === 'In Progress' ? <Play size={14} /> : <div className="h-2 w-2 rounded-full bg-[var(--muted)]" />}
+                      </div>
+                      <div className="flex flex-col flex-1 bg-[var(--surface-strong)] p-3 rounded-xl border border-[var(--border)]">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest">{task.stage}</span>
+                          <span className={`text-[10px] font-bold ${task.status === 'Completed' ? 'text-emerald-500' : task.status === 'In Progress' ? 'text-indigo-500' : 'text-[var(--muted)]'}`}>{task.status}</span>
+                        </div>
+                        {task.completedAt && <span className="text-[10px] text-[var(--muted)] mt-1">Completed: {formatDateDDMMYY(task.completedAt)}</span>}
+                        {task.status === 'In Progress' && task.startedAt && <span className="text-[10px] text-[var(--muted)] mt-1">Started: {formatDateDDMMYY(task.startedAt)}</span>}
+                      </div>
                     </div>
-                    <div className="flex flex-col sm:items-center text-left sm:text-center w-full bg-[var(--surface-strong)] sm:bg-transparent p-3 sm:p-0 rounded-xl border border-[var(--border)] sm:border-none">
-                      <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest">Started</span>
-                      <span className="text-sm font-black text-[var(--text)] mt-0.5">{viewOrder.startDate || 'Pending'}</span>
-                    </div>
-                  </div>
+                  ))}
 
-                  {/* Step 3: Delivered/Completed */}
-                  <div className={`relative z-10 flex flex-row sm:flex-col items-center sm:items-center gap-4 sm:gap-3 w-full sm:w-1/3 ${viewOrder.completedDate || viewOrder.status === 'Completed' || viewOrder.status === 'Sold' ? '' : 'opacity-70 grayscale-[50%]'}`}>
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 shadow-md ring-4 ring-[var(--soft)] transition-colors ${viewOrder.completedDate || viewOrder.status === 'Completed' || viewOrder.status === 'Sold' ? 'bg-emerald-500 text-white' : 'bg-[var(--surface-strong)] text-[var(--muted)] border border-[var(--border)]'}`}>
-                      <CheckCircle2 size={16} />
+                  <div className={`relative z-10 flex items-center gap-4 w-full ${viewOrder.completedDate || viewOrder.status === 'Completed' || viewOrder.status === 'Sold' ? '' : 'opacity-50'}`}>
+                    <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 shadow-md ring-4 ring-[var(--soft)] transition-colors ${viewOrder.completedDate || viewOrder.status === 'Completed' || viewOrder.status === 'Sold' ? 'bg-emerald-500 text-white' : 'bg-[var(--surface-strong)] text-[var(--muted)] border border-[var(--border)]'}`}>
+                      <CheckCircle2 size={14} />
                     </div>
-                    <div className="flex flex-col sm:items-center text-left sm:text-center w-full bg-[var(--surface-strong)] sm:bg-transparent p-3 sm:p-0 rounded-xl border border-[var(--border)] sm:border-none">
-                      <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest">Delivery</span>
+                    <div className="flex flex-col flex-1 bg-[var(--surface-strong)] p-3 rounded-xl border border-[var(--border)]">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest">Delivery / Ready</span>
+                        <span className={`text-[10px] font-bold ${viewOrder.risk === 'Delayed' ? 'text-red-500' : viewOrder.risk === 'At Risk' ? 'text-orange-500' : 'text-emerald-500'}`}>{viewOrder.risk || 'On Track'}</span>
+                      </div>
                       <span className="text-sm font-black text-[var(--text)] mt-0.5">{viewOrder.deliveryDate || 'N/A'}</span>
                     </div>
                   </div>
+
                 </div>
               </div>
             </div>
@@ -890,6 +1119,77 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                   </div>
                 </div>
               )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-[var(--text)]">Order Status</span>
+                  <select
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2 outline-none transition focus:border-[var(--accent)] text-[var(--text)]"
+                    value={editOrder.status || 'Not Ready'}
+                    onChange={(e) => setEditOrder({ ...editOrder, status: e.target.value })}
+                  >
+                    <option value="Not Ready">Not Ready</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Hold">Hold</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Sold">Sold</option>
+                  </select>
+                </label>
+                <div className="block col-span-1">
+                  <span className="mb-1 block text-sm font-medium text-[var(--text)]">Production Stages</span>
+                  <div className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2 space-y-1 h-[80px] overflow-y-auto custom-scrollbar">
+                    {(!editOrder.workflow || editOrder.workflow.length === 0) && (
+                      <span className="text-xs text-[var(--muted)] px-2">No stages.</span>
+                    )}
+                    {(editOrder.workflow || []).map(stage => {
+                      const task = (editOrder.productionTasks || []).find(t => t.stage === stage) || { status: 'Pending' };
+                      return (
+                        <div key={stage} className="flex items-center justify-between px-2 py-1 hover:bg-[var(--soft)] rounded transition">
+                          <span className="font-medium text-[var(--text)] text-xs truncate max-w-[100px]" title={stage}>{stage}</span>
+                          <div className="flex bg-[var(--surface-strong)] rounded-md border border-[var(--border)] overflow-hidden flex-shrink-0">
+                            <button 
+                              title="Pending"
+                              onClick={() => {
+                                const newTasks = (editOrder.productionTasks || editOrder.workflow.map(s => ({ stage: s, status: 'Pending' }))).map(t => 
+                                  t.stage === stage ? { ...t, status: 'Pending', completedAt: null, startedAt: null } : t
+                                );
+                                setEditOrder({ ...editOrder, productionTasks: newTasks });
+                              }}
+                              className={`p-1 transition ${task.status === 'Pending' ? 'bg-[var(--soft)] text-[var(--muted)]' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+                            >
+                              <Clock size={12} />
+                            </button>
+                            <button 
+                              title="In Progress"
+                              onClick={() => {
+                                const newTasks = (editOrder.productionTasks || editOrder.workflow.map(s => ({ stage: s, status: 'Pending' }))).map(t => 
+                                  t.stage === stage ? { ...t, status: 'In Progress', startedAt: t.startedAt || new Date().toISOString(), completedAt: null } : t
+                                );
+                                setEditOrder({ ...editOrder, productionTasks: newTasks });
+                              }}
+                              className={`p-1 transition ${task.status === 'In Progress' ? 'bg-orange-500/20 text-orange-500' : 'text-[var(--muted)] hover:text-orange-500'}`}
+                            >
+                              <Play size={12} />
+                            </button>
+                            <button 
+                              title="Completed"
+                              onClick={() => {
+                                const newTasks = (editOrder.productionTasks || editOrder.workflow.map(s => ({ stage: s, status: 'Pending' }))).map(t => 
+                                  t.stage === stage ? { ...t, status: 'Completed', startedAt: t.startedAt || new Date().toISOString(), completedAt: new Date().toISOString() } : t
+                                );
+                                setEditOrder({ ...editOrder, productionTasks: newTasks });
+                              }}
+                              className={`p-1 transition ${task.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-500' : 'text-[var(--muted)] hover:text-emerald-500'}`}
+                            >
+                              <CheckCircle2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <label className="block">
                   <span className="mb-1 block text-sm font-medium text-[var(--text)]">Order Date</span>
@@ -964,7 +1264,62 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
             <div className="mt-6 flex justify-end gap-3">
               <button type="button" className="rounded-xl px-4 py-2 font-semibold hover:bg-[var(--soft)] transition" onClick={() => setEditOrder(null)}>Cancel</button>
               <button type="button" className="rounded-xl bg-[var(--accent)] px-4 py-2 font-semibold text-white shadow-lg transition hover:brightness-95" onClick={async () => {
-                const finalOrder = { ...editOrder, updatedAt: new Date().toISOString() }
+                let finalOrder = { ...editOrder, updatedAt: new Date().toISOString() }
+                const originalOrder = orders.find(o => o.id === finalOrder.id);
+                
+                // Auto-apply logic if status was modified via Edit popup
+                if (originalOrder && originalOrder.status !== finalOrder.status) {
+                    if (finalOrder.status === 'In Progress' && !finalOrder.startDate) {
+                        finalOrder.startDate = getIndianDate();
+                    }
+                    if (finalOrder.status === 'Completed' || finalOrder.status === 'Sold') {
+                        if (!finalOrder.completedDate) finalOrder.completedDate = getIndianDate();
+                        if (!finalOrder.startDate) finalOrder.startDate = getIndianDate();
+                        finalOrder.currentStage = 'Finished';
+                        if (finalOrder.productionTasks) {
+                            finalOrder.productionTasks = finalOrder.productionTasks.map(task => ({
+                                ...task, status: 'Completed', completedAt: task.completedAt || new Date().toISOString(), startedAt: task.startedAt || new Date().toISOString()
+                            }));
+                        }
+                    }
+                    if (finalOrder.status === 'Not Ready' || finalOrder.status === 'Pending') {
+                      finalOrder.startDate = null;
+                      finalOrder.completedDate = null;
+                      finalOrder.currentStage = 'Not Started';
+                      if (finalOrder.productionTasks) {
+                        finalOrder.productionTasks = finalOrder.productionTasks.map(task => ({
+                          ...task, status: 'Pending', completedAt: null, startedAt: null
+                        }));
+                      }
+                    }
+                    if (finalOrder.status !== 'Hold') {
+                      finalOrder.lastActiveStatus = finalOrder.status;
+                    }
+                }
+
+                // Derive currentStage based on the modified tasks in the popup
+                if (finalOrder.productionTasks && finalOrder.workflow) {
+                   const activeTasks = finalOrder.productionTasks.filter(t => t.status === 'In Progress');
+                   if (finalOrder.productionTasks.every(t => t.status === 'Completed')) {
+                      finalOrder.currentStage = 'Finished';
+                      finalOrder.status = 'Completed';
+                      if (!finalOrder.completedDate) finalOrder.completedDate = getIndianDate();
+                   } else if (finalOrder.productionTasks.every(t => t.status === 'Pending')) {
+                      finalOrder.currentStage = 'Not Started';
+                   } else if (activeTasks.length > 0) {
+                      finalOrder.currentStage = activeTasks.map(t => t.stage).join(', ');
+                   }
+                   
+                   if (finalOrder.currentStage !== 'Finished' && (finalOrder.status === 'Not Ready' || finalOrder.status === 'Pending' || finalOrder.status === 'Completed')) {
+                      finalOrder.status = 'In Progress';
+                      finalOrder.completedDate = null;
+                      if (!finalOrder.startDate) finalOrder.startDate = getIndianDate();
+                   }
+                   
+                   finalOrder.progress = calculateProgress(finalOrder);
+                   finalOrder.risk = calculateRisk(finalOrder);
+                }
+
                 saveOrders(orders.map(o => o.id === finalOrder.id ? finalOrder : o))
                 if (saveOrder) saveOrder(finalOrder)
                 
@@ -1085,22 +1440,21 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
             { id: 'Hold', label: 'On Hold' },
             { id: 'Completed', label: 'Completed' },
             { id: 'Sold', label: 'Sold/Delivered' },
-          ].map(opt => (
+          ].concat(Object.keys(PRODUCTION_STAGES).map(stage => ({ id: stage, label: stage }))).map(opt => (
             <option key={opt.id} value={opt.id}>{opt.label}</option>
           ))}
         </select>
       </div>
-
-      {/* Stats Dashboard */}
+      {/* Master Stats Dashboard */}
       <div className="mb-6 hidden lg:grid gap-4 xl:grid-cols-7 lg:gap-4">
         {[
           { id: 'All', label: 'Total', value: totalOrders, icon: ClipboardList, color: 'text-stone-700', bgColor: 'bg-stone-50' },
-          { id: 'Upcoming', label: 'Upcoming', value: upcomingDeliveries, icon: CalendarDays, color: 'text-blue-600', bgColor: 'bg-blue-50' },
-          { id: 'Not Ready', label: 'Not Ready', value: pendingCount, icon: Clock, color: 'text-orange-600', bgColor: 'bg-orange-50' },
-          { id: 'In Progress', label: 'Progress', value: progressCount, icon: Play, color: 'text-indigo-600', bgColor: 'bg-indigo-50' },
-          { id: 'Hold', label: 'Hold', value: holdCount, icon: Pause, color: 'text-red-600', bgColor: 'bg-red-50' },
+          { id: 'Due Today', label: 'Due Today', value: displayOrders.filter(o => o.deliveryDate === getIndianDate() && o.status !== 'Completed' && o.status !== 'Sold').length, icon: CalendarDays, color: 'text-rose-600', bgColor: 'bg-rose-50' },
+          { id: 'Delayed', label: 'Delayed', value: displayOrders.filter(o => o.risk === 'Delayed' && o.status !== 'Completed' && o.status !== 'Sold').length, icon: Clock, color: 'text-red-600', bgColor: 'bg-red-50' },
+          { id: 'At Risk', label: 'At Risk', value: displayOrders.filter(o => o.risk === 'At Risk' && o.status !== 'Completed' && o.status !== 'Sold').length, icon: Pause, color: 'text-orange-600', bgColor: 'bg-orange-50' },
+          { id: 'In Progress', label: 'In Progress', value: progressCount, icon: Play, color: 'text-indigo-600', bgColor: 'bg-indigo-50' },
+          { id: 'Hold', label: 'Hold', value: holdCount, icon: Pause, color: 'text-amber-600', bgColor: 'bg-amber-50' },
           { id: 'Completed', label: 'Completed', value: displayOrders.filter(o => o.status === 'Completed').length, icon: CheckCircle2, color: 'text-green-600', bgColor: 'bg-green-50' },
-          { id: 'Sold', label: 'Sold', value: displayOrders.filter(o => o.status === 'Sold').length, icon: CircleDollarSign, color: 'text-emerald-700', bgColor: 'bg-emerald-50' },
         ].map((stat) => (
           <button
             key={stat.id}
@@ -1116,7 +1470,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
               <stat.icon size={22} />
             </div>
             <p className={`text-2xl font-black transition-colors ${activeFilter === stat.id ? 'text-[var(--accent)]' : 'text-[var(--text)]'}`}>{stat.value}</p>
-            <p className="mt-1 font-black uppercase tracking-[0.15em] text-[var(--muted)] group-hover:text-[var(--text)] transition-colors !text-[10px]">{stat.label}</p>
+            <p className="mt-1 font-black uppercase tracking-[0.15em] text-[var(--muted)] group-hover:text-[var(--text)] transition-colors !text-[10px] whitespace-nowrap">{stat.label}</p>
             {activeFilter === stat.id && (
               <div className="absolute -bottom-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-[var(--accent)]"></div>
             )}
@@ -1135,6 +1489,50 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </label>
+        </div>
+        <div className="flex flex-col gap-2 w-full lg:w-auto">
+          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] px-1">Order Status</span>
+          <div className="relative group">
+            <select
+              className="relative z-10 w-full lg:w-40 appearance-none rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2 pr-10 text-[11px] font-bold outline-none transition cursor-pointer hover:border-[var(--accent)] h-11"
+              value={['All', 'Not Ready', 'In Progress', 'Hold', 'Completed', 'Sold'].includes(activeFilter) ? activeFilter : 'All'}
+              onChange={(e) => {
+                setActiveFilter(e.target.value);
+                setCurrentPageNum(1);
+              }}
+            >
+              <option value="All">All Statuses</option>
+              <option value="Not Ready">Not Ready</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Hold">On Hold</option>
+              <option value="Completed">Completed</option>
+              <option value="Sold">Sold / Delivered</option>
+            </select>
+            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] z-10">
+              <ChevronDown size={14} />
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2 w-full lg:w-auto">
+          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] px-1">Production Stage</span>
+          <div className="relative group">
+            <select
+              className="relative z-10 w-full lg:w-40 appearance-none rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2 pr-10 text-[11px] font-bold outline-none transition cursor-pointer hover:border-[var(--accent)] h-11"
+              value={Object.keys(PRODUCTION_STAGES).includes(activeFilter) ? activeFilter : 'All'}
+              onChange={(e) => {
+                setActiveFilter(e.target.value);
+                setCurrentPageNum(1);
+              }}
+            >
+              <option value="All">All Stages</option>
+              {Object.keys(PRODUCTION_STAGES).map(stage => (
+                <option key={stage} value={stage}>{stage}</option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] z-10">
+              <ChevronDown size={14} />
+            </div>
+          </div>
         </div>
         <div className="flex flex-col gap-2 w-full lg:w-auto">
           <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] px-1">Delivery Tracker</span>
@@ -1180,11 +1578,12 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
               <tr>
                 {[
                   { key: 'id', label: 'Order ID' },
-                  { key: 'clientName', label: 'Client' }
+                  { key: 'clientName', label: 'Client' },
+                  { key: 'priority', label: 'Priority' }
                 ].map(header => (
                   <th
                     key={header.key}
-                    className="cursor-pointer transition hover:text-[var(--accent)] group"
+                    className={`cursor-pointer transition hover:text-[var(--accent)] group ${header.key === 'clientName' ? 'sticky left-0 z-20 bg-[var(--surface)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]' : ''}`}
                     onClick={() => {
                       setSortConfig(prev => ({
                         key: header.key,
@@ -1218,7 +1617,8 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                     </span>
                   </div>
                 </th>
-                <th className="min-w-[180px]">Status</th>
+                <th className="min-w-[140px]">Progress & Work</th>
+                <th className="min-w-[130px]">Status</th>
                 <th className="text-right">Actions</th>
               </tr>
             </thead>
@@ -1258,7 +1658,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                   <tr
                     key={order.id}
                     ref={el => rowRefs.current[order.id] = el}
-                    className={`group transition-all duration-1000 ${highlightOrderId === order.id ? 'ring-2 ring-[var(--accent)] ring-inset' : ''}`}
+                    className={`group transition-all duration-1000 ${highlightOrderId === order.id ? 'ring-2 ring-[var(--accent)] ring-inset' : ''} ${order.status === 'Hold' ? '[&_td]:!text-orange-500 [&_span]:!text-orange-500 [&_p]:!text-orange-500 [&_button]:!text-orange-500 [&_select]:!text-orange-500 [&_select]:!border-orange-500/30' : ''}`}
                     style={{
                       background: progress > 0 ? `linear-gradient(to right, ${order.status === 'Completed' || order.status === 'Sold' ? 'rgba(34, 197, 94, 0.04)' :
                         order.status === 'Hold' ? 'rgba(249, 115, 22, 0.04)' :
@@ -1267,7 +1667,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                     }}
                   >
                     <td className="font-medium text-[var(--text)]">#{order.id}</td>
-                    <td>
+                    <td className="sticky left-0 z-10 bg-[var(--surface)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                       <button
                         type="button"
                         onClick={() => {
@@ -1284,6 +1684,15 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                       >
                         {order.clientName}
                       </button>
+                    </td>
+                    <td>
+                      <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${
+                        order.priority === 'High' ? 'bg-red-100 text-red-700' :
+                        order.priority === 'Low' ? 'bg-gray-100 text-gray-700' :
+                        'bg-blue-100 text-blue-700'
+                      }`}>
+                        {order.priority || 'Normal'}
+                      </span>
                     </td>
                     <td>
                       {order.photo ? (
@@ -1320,6 +1729,81 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                       </div>
                     </td>
                     <td>
+                      <div className="flex flex-col gap-1.5 min-w-[120px]">
+                        <div className="flex items-center justify-between text-[10px] font-bold">
+                           <span className={order.risk === 'Delayed' ? 'text-red-500' : order.risk === 'At Risk' ? 'text-orange-500' : 'text-emerald-500'}>{order.risk || 'On Track'}</span>
+                           <span className="text-[var(--text)]">{progress}%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-[var(--border)] rounded-full overflow-hidden">
+                           <div className={`h-full transition-all ${order.risk === 'Delayed' ? 'bg-red-500' : order.risk === 'At Risk' ? 'bg-orange-500' : 'bg-emerald-500'}`} style={{ width: `${progress}%` }}></div>
+                        </div>
+                          <div className="relative mt-1 stage-popover-container">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (order.status === 'Completed' || order.status === 'Sold') return;
+                                setOpenStagePopoverId(openStagePopoverId === order.id ? null : order.id);
+                              }}
+                              className={`w-full flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] px-2 py-1 text-[10px] font-bold outline-none transition ${order.status === 'Completed' || order.status === 'Sold' ? 'cursor-not-allowed opacity-70 text-emerald-600 border-emerald-500/30' : 'cursor-pointer hover:border-[var(--accent)] text-[var(--accent)]'}`}
+                            >
+                              <span className="truncate pr-2">
+                                {(order.status === 'Completed' || order.status === 'Sold') ? 'Finished' : 
+                                  (!order.productionTasks || order.productionTasks.every(t => t.status === 'Pending')) ? 'Not Started' :
+                                  (order.productionTasks.filter(t => t.status === 'In Progress').length > 0 
+                                    ? order.productionTasks.filter(t => t.status === 'In Progress').map(t => t.stage).join(', ') 
+                                    : (order.currentStage || 'Not Started'))}
+                              </span>
+                              <ChevronDown size={12} className="flex-shrink-0" />
+                            </button>
+                            
+                            {openStagePopoverId === order.id && (
+                              <div className="absolute top-full left-0 mt-1 w-64 bg-[var(--surface-strong)] border border-[var(--border)] rounded-xl shadow-xl z-[100] p-2 text-xs flex flex-col gap-1 backdrop-blur-xl">
+                                {(order.workflow || DEFAULT_WORKFLOWS[order.product] || DEFAULT_WORKFLOWS['Default']).map(stage => {
+                                  const task = (order.productionTasks || []).find(t => t.stage === stage) || { status: 'Pending' };
+                                  return (
+                                    <div key={stage} className="flex items-center justify-between p-1.5 hover:bg-[var(--soft)] rounded-lg transition">
+                                      <div className="flex flex-col overflow-hidden pr-2">
+                                        <span className="font-medium text-[var(--text)] truncate max-w-[110px]" title={stage}>{stage}</span>
+                                        {task.startedAt && (
+                                          <span className="text-[9px] text-[var(--muted)] leading-tight mt-0.5">Start: {new Date(task.startedAt).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                        )}
+                                        {task.completedAt && (
+                                          <span className="text-[9px] text-emerald-600 leading-tight">Done: {new Date(task.completedAt).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                        )}
+                                      </div>
+                                      <div className="flex bg-[var(--surface-strong)] rounded-md border border-[var(--border)] overflow-hidden flex-shrink-0">
+                                        <button 
+                                          title="Hold"
+                                          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'Hold'); }}
+                                          className={`p-1.5 transition ${task.status === 'Hold' ? 'bg-red-500/20 text-red-500' : 'text-[var(--muted)] hover:text-red-500'}`}
+                                        >
+                                          <Pause size={12} />
+                                        </button>
+                                        <button 
+                                          title="In Progress"
+                                          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'In Progress'); }}
+                                          className={`p-1.5 transition ${task.status === 'In Progress' ? 'bg-orange-500/20 text-orange-500' : 'text-[var(--muted)] hover:text-orange-500'}`}
+                                        >
+                                          <Play size={12} />
+                                        </button>
+                                        <button 
+                                          title="Completed"
+                                          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'Completed'); }}
+                                          className={`p-1.5 transition ${task.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-500' : 'text-[var(--muted)] hover:text-emerald-500'}`}
+                                        >
+                                          <CheckCircle2 size={12} />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                      </div>
+                    </td>
+                    <td>
                       <div className="flex items-center gap-2">
                         <div className="relative group min-w-[130px]">
                           <select
@@ -1338,7 +1822,6 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                             <ChevronDown size={14} />
                           </div>
                         </div>
-                        <span className="text-xs font-bold text-[var(--muted)] w-8 text-right">{progress}%</span>
                       </div>
                       {order.startDate && order.status !== 'Pending' && (
                         <p className="text-[var(--muted)] mt-1.5 !text-[10px]">Started: {formatDateDDMMYY(order.startDate)}</p>
@@ -1352,18 +1835,12 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                         <button className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white" title="View Order" onClick={() => setViewOrder(order)}>
                           <Eye size={16} />
                         </button>
-                        {currentUser?.role === 'Admin' && (
-                          <>
-                            {order.status !== 'Completed' && order.status !== 'Sold' && (
-                              <button className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white" title="Edit Order" onClick={() => setEditOrder(order)}>
-                                <Pencil size={16} />
-                              </button>
-                            )}
-                            <button className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white" title="Delete Order" onClick={() => setOrderToDelete(order)}>
-                              <Trash2 size={16} />
-                            </button>
-                          </>
-                        )}
+                        <button className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white" title="Edit Order" onClick={() => setEditOrder(order)}>
+                          <Pencil size={16} />
+                        </button>
+                        <button className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white" title="Delete Order" onClick={() => setOrderToDelete(order)}>
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     </td>
                   </tr>

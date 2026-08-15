@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { ChevronDown, Search, Settings, ShoppingBag, Pencil, Trash2, Plus, Package, Info, Calendar, UsersRound, CheckCircle, X } from 'lucide-react'
-import { formatDateDDMMYY, getIndianDate } from '../../utils/constants'
+import { formatDateDDMMYY, getIndianDate, DEFAULT_WORKFLOWS } from '../../utils/constants'
 import CustomDatePicker from '../../components/CustomDatePicker'
 import supabase from '../../supabase'
 
@@ -43,6 +43,7 @@ function AddOrderPage({
       notes: '',
       audioNote: null,
       measurementPhotoUrl: null,
+      priority: 'Normal',
       showTypeDropdown: false,
       showProductTypeDropdown: false,
       showInventoryDropdown: null,
@@ -250,8 +251,20 @@ function AddOrderPage({
       measurementPhotoUrl: item.measurementPhotoUrl,
       orderDate: item.orderDate,
       deliveryDate: item.deliveryDate,
+      priority: item.priority || 'Normal',
       photo: photoPreview,
-      status: 'Not Ready'
+      status: 'Not Ready',
+      workflow: DEFAULT_WORKFLOWS[item.product] || DEFAULT_WORKFLOWS['Default'],
+      productionTasks: (DEFAULT_WORKFLOWS[item.product] || DEFAULT_WORKFLOWS['Default']).map(stage => ({
+        stage,
+        status: 'Pending',
+        startedAt: null,
+        completedAt: null
+      })),
+      currentStage: (DEFAULT_WORKFLOWS[item.product] || DEFAULT_WORKFLOWS['Default'])[0],
+      progress: 0,
+      risk: 'On Track',
+      activityHistory: []
     }))
 
     // Deduct inventory for internal materials
@@ -889,7 +902,7 @@ function AddOrderPage({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="relative">
                         <span className="mb-2 block text-sm font-medium text-[var(--text)]">Order Date</span>
                         <CustomDatePicker
@@ -929,6 +942,18 @@ function AddOrderPage({
                             </div>
                           )}
                         </div>
+                      </div>
+                      <div className="relative">
+                        <span className="mb-2 block text-sm font-medium text-[var(--text)]">Priority</span>
+                        <select
+                          className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 text-[var(--text)] outline-none transition focus:border-[var(--accent)]"
+                          value={item.priority || 'Normal'}
+                          onChange={(e) => updateOrderItem(idx, { priority: e.target.value })}
+                        >
+                          <option value="High">High</option>
+                          <option value="Normal">Normal</option>
+                          <option value="Low">Low</option>
+                        </select>
                       </div>
                     </div>
 
