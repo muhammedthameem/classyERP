@@ -1618,7 +1618,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                 ].map(header => (
                   <th
                     key={header.key}
-                    className={`cursor-pointer transition hover:text-[var(--accent)] group ${header.key === 'clientName' ? 'sticky left-0 z-20 bg-[var(--surface)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]' : ''}`}
+                    className={`cursor-pointer transition hover:text-[var(--accent)] group ${header.key === 'clientName' ? 'sticky left-0 z-20 bg-[var(--surface-strong)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]' : ''}`}
                     onClick={() => {
                       setSortConfig(prev => ({
                         key: header.key,
@@ -1702,7 +1702,22 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                     }}
                   >
                     <td className="font-medium text-[var(--text)]">#{order.id}</td>
-                    <td className="sticky left-0 z-10 bg-[var(--surface)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                    <td 
+                      className="sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+                      style={{
+                        background: progress > 0 
+                          ? `linear-gradient(to right, ${
+                              order.status === 'Completed' || order.status === 'Sold' ? 'rgba(34, 197, 94, 0.04)' :
+                              order.status === 'Hold' ? 'rgba(249, 115, 22, 0.04)' :
+                              'color-mix(in srgb, var(--accent) 4%, transparent)'
+                            }, ${
+                              order.status === 'Completed' || order.status === 'Sold' ? 'rgba(34, 197, 94, 0.04)' :
+                              order.status === 'Hold' ? 'rgba(249, 115, 22, 0.04)' :
+                              'color-mix(in srgb, var(--accent) 4%, transparent)'
+                            }), var(--surface-strong)`
+                          : 'var(--surface-strong)'
+                      }}
+                    >
                       <button
                         type="button"
                         onClick={() => {

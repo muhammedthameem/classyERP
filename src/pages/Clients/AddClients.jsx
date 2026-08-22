@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ChevronDown, Package, Search, Settings, UsersRound, Trash2, Image as ImageIcon } from 'lucide-react'
+import { ChevronDown, Package, Search, Settings, UsersRound, Trash2, Image as ImageIcon, List } from 'lucide-react'
 import supabase from '../../supabase'
 
 function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, setClients, saveClient, currentUser, productTypes = [], setProductTypes, saveConfig }) {
@@ -80,6 +80,24 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
 
   // Safety check for non-admin or uninitialized users
   if (!clients) return <div className="p-10 text-center">Loading clients...</div>;
+
+  const handleCancel = () => {
+    const hasData = 
+      personalDetails.name || 
+      personalDetails.address || 
+      personalDetails.mobile || 
+      product || 
+      note || 
+      photoFile;
+
+    if (hasData) {
+      if (window.confirm('You have unsaved changes. Are you sure you want to cancel and discard them?')) {
+        setCurrentPage('view-clients');
+      }
+    } else {
+      setCurrentPage('view-clients');
+    }
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -212,9 +230,18 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
 
   return (
     <div style={themeStyle} className="relative">
-      <div className="mb-6">
-        <h1 className="text-h1">Add New Client</h1>
-        <p className="text-para text-[var(--muted)] mt-2">Enter client personal details and measurements</p>
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-h1">Add New Client</h1>
+          <p className="text-para text-[var(--muted)] mt-2">Enter client personal details and measurements</p>
+        </div>
+        <button
+          onClick={() => setCurrentPage('view-clients')}
+          className="rounded-xl bg-[var(--accent)] px-6 py-3 font-semibold text-white shadow-lg shadow-[var(--accent)]/25 transition hover:brightness-95 cursor-pointer flex items-center gap-2 shrink-0"
+        >
+          <List size={20} />
+          View Clients
+        </button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -528,10 +555,7 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
           <button
             className="w-full sm:w-auto rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-6 py-3 font-semibold transition hover:bg-[var(--soft)] cursor-pointer text-center justify-center flex items-center"
             type="button"
-            onClick={() => {
-              setPersonalDetails({ name: '', address: '', mobile: '' })
-              setProduct('')
-            }}
+            onClick={handleCancel}
           >
             Cancel
           </button>

@@ -181,6 +181,18 @@ input[type="reset"],
   background-color: color-mix(in srgb, var(--soft), transparent 30%);
 }
 
+/* Ensure sticky columns simulate the row hover effect over their opaque backgrounds */
+.erp-table tr:hover td.sticky {
+  position: sticky;
+}
+.erp-table tr:hover td.sticky::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: color-mix(in srgb, var(--soft), transparent 30%);
+  pointer-events: none;
+}
+
 /* Measurement Grid System */
 .measurement-grid {
   display: flex;
