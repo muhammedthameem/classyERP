@@ -8,6 +8,33 @@ import UndoToast from '../../components/UndoToast'
 
 function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClientDetailMode, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory, clients, saveOrder, deleteOrder, cloudLoaded }) {
   const rowRefs = useRef({});
+  const tableContainerRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+
+  const handleMouseDown = (e) => {
+    setIsDragging(true);
+    setStartX(e.pageX - tableContainerRef.current.offsetLeft);
+    setScrollLeft(tableContainerRef.current.scrollLeft);
+  };
+  
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+  
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+  
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const x = e.pageX - tableContainerRef.current.offsetLeft;
+    const walk = (x - startX) * 2;
+    tableContainerRef.current.scrollLeft = scrollLeft - walk;
+  };
+
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPageNum, setCurrentPageNum] = useState(1)
   const itemsPerPage = 10
@@ -89,16 +116,6 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
       } catch (err) {
         console.error("Cloud delete failed:", err);
       }
-
-      // 3. Optimistic UI update (Instant)
-      const updated = orders.filter(o => o.id !== idToDelete)
-      if (saveOrders) saveOrders(updated)
-      setOrderToDelete(null)
-      if (showGlobalToast) showGlobalToast('Order Deleted', `Order #${order.orderId || order.id} has been removed.`)
-
-      undoTimeoutRef.current = setTimeout(() => {
-        setRecentlyDeletedOrder(null);
-      }, 8000);
     }
   }
 
@@ -349,7 +366,14 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
           const completedTasks = newData.productionTasks.filter(t => t.status === 'Completed');
           const holdTasks = newData.productionTasks.filter(t => t.status === 'Hold');
           
-          if (newData.productionTasks.every(t => t.status === 'Completed')) {
+          if (newStatus === 'Completed' && stageName === 'Finished') {
+             newData.currentStage = 'Finished';
+             newData.status = 'Completed';
+             if (!newData.completedDate) newData.completedDate = getIndianDate();
+             newData.productionTasks = newData.productionTasks.map(t => ({
+                ...t, status: 'Completed', completedAt: t.completedAt || now
+             }));
+          } else if (newData.productionTasks.every(t => t.status === 'Completed')) {
              newData.currentStage = 'Finished';
              newData.status = 'Completed';
              if (!newData.completedDate) newData.completedDate = getIndianDate();
@@ -1143,6 +1167,9 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                     )}
                     {(editOrder.workflow || []).map(stage => {
                       const task = (editOrder.productionTasks || []).find(t => t.stage === stage) || { status: 'Pending' };
+                      const allOtherTasksCompleted = (editOrder.productionTasks || []).filter(t => t.stage !== 'Finished').every(t => t.status === 'Completed');
+                      const isFinishedStage = stage === 'Finished';
+                      const disableCompletedButton = isFinishedStage && !allOtherTasksCompleted;
                       return (
                         <div key={stage} className="flex items-center justify-between px-2 py-1 hover:bg-[var(--soft)] rounded transition">
                           <span className="font-medium text-[var(--text)] text-xs truncate max-w-[100px]" title={stage}>{stage}</span>
@@ -1172,14 +1199,15 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                               <Play size={12} />
                             </button>
                             <button 
-                              title="Completed"
+                              title={disableCompletedButton ? "Complete all other tasks first" : "Completed"}
                               onClick={() => {
+                                if (disableCompletedButton) return;
                                 const newTasks = (editOrder.productionTasks || editOrder.workflow.map(s => ({ stage: s, status: 'Pending' }))).map(t => 
                                   t.stage === stage ? { ...t, status: 'Completed', startedAt: t.startedAt || new Date().toISOString(), completedAt: new Date().toISOString() } : t
                                 );
                                 setEditOrder({ ...editOrder, productionTasks: newTasks });
                               }}
-                              className={`p-1 transition ${task.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-500' : 'text-[var(--muted)] hover:text-emerald-500'}`}
+                              className={`p-1 transition ${task.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-500' : disableCompletedButton ? 'text-[var(--muted)] opacity-50 cursor-not-allowed' : 'text-[var(--muted)] hover:text-emerald-500'}`}
                             >
                               <CheckCircle2 size={12} />
                             </button>
@@ -1572,7 +1600,14 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
             {activeFilter !== 'All' ? activeFilter : 'All Statuses'}
           </p>
         </div>
-        <div className="erp-table-container">
+        <div 
+          className={`erp-table-container overflow-x-auto ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          ref={tableContainerRef}
+          onMouseDown={handleMouseDown}
+          onMouseLeave={handleMouseLeave}
+          onMouseUp={handleMouseUp}
+          onMouseMove={handleMouseMove}
+        >
           <table className="erp-table">
             <thead>
               <tr>
@@ -1761,6 +1796,9 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                               <div className="absolute top-full left-0 mt-1 w-64 bg-[var(--surface-strong)] border border-[var(--border)] rounded-xl shadow-xl z-[100] p-2 text-xs flex flex-col gap-1 backdrop-blur-xl">
                                 {(order.workflow || DEFAULT_WORKFLOWS[order.product] || DEFAULT_WORKFLOWS['Default']).map(stage => {
                                   const task = (order.productionTasks || []).find(t => t.stage === stage) || { status: 'Pending' };
+                                  const allOtherTasksCompleted = (order.productionTasks || []).filter(t => t.stage !== 'Finished').every(t => t.status === 'Completed');
+                                  const isFinishedStage = stage === 'Finished';
+                                  const disableCompletedButton = isFinishedStage && !allOtherTasksCompleted;
                                   return (
                                     <div key={stage} className="flex items-center justify-between p-1.5 hover:bg-[var(--soft)] rounded-lg transition">
                                       <div className="flex flex-col overflow-hidden pr-2">
@@ -1773,28 +1811,35 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                                         )}
                                       </div>
                                       <div className="flex bg-[var(--surface-strong)] rounded-md border border-[var(--border)] overflow-hidden flex-shrink-0">
-                                        <button 
-                                          title="Hold"
-                                          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'Hold'); }}
-                                          className={`p-1.5 transition ${task.status === 'Hold' ? 'bg-red-500/20 text-red-500' : 'text-[var(--muted)] hover:text-red-500'}`}
-                                        >
-                                          <Pause size={12} />
-                                        </button>
-                                        <button 
-                                          title="In Progress"
-                                          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'In Progress'); }}
-                                          className={`p-1.5 transition ${task.status === 'In Progress' ? 'bg-orange-500/20 text-orange-500' : 'text-[var(--muted)] hover:text-orange-500'}`}
-                                        >
-                                          <Play size={12} />
-                                        </button>
-                                        <button 
-                                          title="Completed"
-                                          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'Completed'); }}
-                                          className={`p-1.5 transition ${task.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-500' : 'text-[var(--muted)] hover:text-emerald-500'}`}
-                                        >
-                                          <CheckCircle2 size={12} />
-                                        </button>
-                                      </div>
+                                          {stage !== 'Finished' && (
+                                            <>
+                                              <button 
+                                                title="Hold"
+                                                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'Hold'); }}
+                                                className={`p-1.5 transition ${task.status === 'Hold' ? 'bg-red-500/20 text-red-500' : 'text-[var(--muted)] hover:text-red-500'}`}
+                                              >
+                                                <Pause size={12} />
+                                              </button>
+                                              <button 
+                                                title="In Progress"
+                                                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'In Progress'); }}
+                                                className={`p-1.5 transition ${task.status === 'In Progress' ? 'bg-orange-500/20 text-orange-500' : 'text-[var(--muted)] hover:text-orange-500'}`}
+                                              >
+                                                <Play size={12} />
+                                              </button>
+                                            </>
+                                          )}
+                                          <button 
+                                            title={disableCompletedButton ? "Complete all other tasks first" : "Completed"}
+                                            onPointerDown={(e) => { 
+                                              if (disableCompletedButton) return;
+                                              e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'Completed'); 
+                                            }}
+                                            className={`p-1.5 transition ${task.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-500' : disableCompletedButton ? 'text-[var(--muted)] opacity-50 cursor-not-allowed' : 'text-[var(--muted)] hover:text-emerald-500'}`}
+                                          >
+                                            <CheckCircle2 size={12} />
+                                          </button>
+                                        </div>
                                     </div>
                                   );
                                 })}
@@ -1815,7 +1860,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                             <option value="Not Ready">Not Ready</option>
                             <option value="In Progress">In Progress</option>
                             <option value="Hold">Hold</option>
-                            <option value="Completed">Completed</option>
+                            <option value="Completed" disabled>Completed</option>
                             <option value="Sold" disabled>Sold</option>
                           </select>
                           <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--muted)] z-10">

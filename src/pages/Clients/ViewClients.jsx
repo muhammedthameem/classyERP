@@ -78,7 +78,14 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
     const client = { ...clientToDelete };
 
     setRecentlyDeletedClient(client);
-    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+    const updatedClients = clients.filter(c => String(c.id) !== String(idToDelete));
+    setClients(updatedClients);
+    setClientToDelete(null);
+    if (showGlobalToast) showGlobalToast('Client Deleted', `Client "${client.name}" removed.`);
+
+    undoTimeoutRef.current = setTimeout(() => {
+      setRecentlyDeletedClient(null);
+    }, 8000);
 
     try {
       if (deleteClient) {
@@ -89,15 +96,6 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
     } catch (err) {
       console.error("Cloud delete failed:", err);
     }
-
-    const updatedClients = clients.filter(c => String(c.id) !== String(idToDelete));
-    setClients(updatedClients);
-    setClientToDelete(null);
-    if (showGlobalToast) showGlobalToast('Client Deleted', `Client "${client.name}" removed.`);
-
-    undoTimeoutRef.current = setTimeout(() => {
-      setRecentlyDeletedClient(null);
-    }, 8000);
   };
 
   const handleUndoDelete = async () => {

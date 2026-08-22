@@ -150,20 +150,18 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
     )
 
     if (existingClientIndex >= 0) {
-      existingClients[existingClientIndex].measurements.push(measurementData)
-      existingClients[existingClientIndex].address = personalDetails.address
-      setClients(existingClients)
-      if (saveClient) saveClient(existingClients[existingClientIndex]);
-    } else {
-      const clientData = {
-        id: Date.now(),
-        ...personalDetails,
-        measurements: [measurementData],
-        createdAt: new Date().toISOString()
-      }
-      setClients([...existingClients, clientData])
-      if (saveClient) saveClient(clientData);
+      if (showGlobalToast) showGlobalToast('Duplicate Client', `A client with the name "${personalDetails.name}" and mobile "${personalDetails.mobile}" already exists.`);
+      return;
     }
+    
+    const clientData = {
+      id: Date.now(),
+      ...personalDetails,
+      measurements: [measurementData],
+      createdAt: new Date().toISOString()
+    }
+    setClients([...existingClients, clientData])
+    if (saveClient) saveClient(clientData);
 
     console.log('Client data saved:', measurementData)
     if (showGlobalToast) showGlobalToast('Client Added', `Client "${personalDetails.name}" added successfully.`)

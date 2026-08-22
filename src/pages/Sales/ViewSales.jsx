@@ -43,6 +43,16 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
     setInventory(updatedInventory);
     setOrders(updatedOrders);
 
+    // 1.5 Optimistic UI update (Instant)
+    const updatedSales = sales.filter(s => s.id !== idToDelete);
+    setSales(updatedSales);
+    setSaleToDelete(null);
+    if (showGlobalToast) showGlobalToast('Sale Deleted', `Sales record #${sale.saleId || sale.id} removed.`);
+
+    undoTimeoutRef.current = setTimeout(() => {
+      setRecentlyDeletedSale(null);
+    }, 8000);
+
     // 2. Immediate Background Cloud Sync
     try {
       await supabase.from('erp_sales').delete().eq('id', idToDelete);
@@ -65,16 +75,6 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
     } catch (err) {
       console.error("Cloud delete failed:", err);
     }
-
-    // 3. Optimistic UI update (Instant)
-    const updatedSales = sales.filter(s => s.id !== idToDelete);
-    setSales(updatedSales);
-    setSaleToDelete(null);
-    if (showGlobalToast) showGlobalToast('Sale Deleted', `Sales record #${sale.saleId || sale.id} removed.`);
-
-    undoTimeoutRef.current = setTimeout(() => {
-      setRecentlyDeletedSale(null);
-    }, 8000);
   };
 
   const handleUndoDelete = async () => {

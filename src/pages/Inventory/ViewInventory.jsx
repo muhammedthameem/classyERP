@@ -76,14 +76,6 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
       const item = { ...itemToDelete };
 
       setRecentlyDeletedInventory(item);
-      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
-
-      try {
-        await supabase.from('erp_inventory').delete().eq('id', idToDelete);
-      } catch (err) {
-        console.error("Cloud delete failed:", err);
-      }
-
       // 1. Optimistic UI Update (Instant)
       const updated = inventory.filter(inv => inv.id !== idToDelete);
       setInventory(updated);
@@ -93,6 +85,12 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
       undoTimeoutRef.current = setTimeout(() => {
         setRecentlyDeletedInventory(null);
       }, 8000);
+
+      try {
+        await supabase.from('erp_inventory').delete().eq('id', idToDelete);
+      } catch (err) {
+        console.error("Cloud delete failed:", err);
+      }
     }
   };
 

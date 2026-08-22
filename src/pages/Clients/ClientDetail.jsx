@@ -297,6 +297,17 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
       }
 
       if (isEditingClient && !isAddingMeasurement) {
+        const duplicateIndex = clientListToSearch.findIndex(c => 
+          String(c.id) !== String(client.id) &&
+          c.mobile === editMobile && 
+          (c.name || '').trim().toLowerCase() === (editName || '').trim().toLowerCase()
+        );
+
+        if (duplicateIndex >= 0) {
+          if (showGlobalToast) showGlobalToast('Duplicate Client', `A client with the name "${editName}" and mobile "${editMobile}" already exists.`);
+          return;
+        }
+
         updatedClient.name = editName
         updatedClient.mobile = editMobile
         updatedClient.address = editAddress

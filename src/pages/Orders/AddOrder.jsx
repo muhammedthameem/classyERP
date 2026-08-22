@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ChevronDown, Search, Settings, ShoppingBag, Pencil, Trash2, Plus, Package, Info, Calendar, UsersRound, CheckCircle, X } from 'lucide-react'
+import { ChevronDown, Search, Settings, ShoppingBag, Pencil, Trash2, Plus, Package, Info, Calendar, UsersRound, CheckCircle, X, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { formatDateDDMMYY, getIndianDate, DEFAULT_WORKFLOWS } from '../../utils/constants'
 import CustomDatePicker from '../../components/CustomDatePicker'
 import supabase from '../../supabase'
@@ -79,8 +79,37 @@ function AddOrderPage({
   const [settingsDate, setSettingsDate] = useState("")
   const [settingsDateLimit, setSettingsDateLimit] = useState("")
 
+  const [calendarDate, setCalendarDate] = useState(new Date());
+
+  const deliveryStats = React.useMemo(() => {
+    const counts = {};
+    (orders || []).filter(o => o.status !== 'Sold' && o.status !== 'Closed' && o.status !== 'Completed').forEach(o => {
+      if (o.deliveryDate) {
+        counts[o.deliveryDate] = (counts[o.deliveryDate] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [orders]);
+
   const [settingsGlobalLimit, setSettingsGlobalLimit] = useState(orderLimits?.global || "")
   const [localSpecificLimits, setLocalSpecificLimits] = useState(specificDateLimits)
+
+  const generateCalendarDays = () => {
+    const days = [];
+    const start = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 1);
+    const end = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 0);
+
+    for (let i = 0; i < start.getDay(); i++) {
+      days.push({ day: null });
+    }
+
+    for (let d = 1; d <= end.getDate(); d++) {
+      const dateStr = `${calendarDate.getFullYear()}-${String(calendarDate.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const limit = localSpecificLimits?.[dateStr] !== undefined ? localSpecificLimits[dateStr] : (localSpecificLimits?.global || 999);
+      days.push({ day: d, date: dateStr, count: deliveryStats[dateStr] || 0, limit });
+    }
+    return days;
+  };
 
   const [typeSearch, setTypeSearch] = useState('')
   const [productTypeSearch, setProductTypeSearch] = useState('')
@@ -386,9 +415,9 @@ function AddOrderPage({
 
       {/* Settings Modal - Kept Same */}
       {showSettingsModal && (
-        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/50 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl">
-            <div className="p-6">
+        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/50 px-4 backdrop-blur-sm" onClick={() => setShowSettingsModal(false)}>
+          <div className="w-full max-w-md max-h-[90vh] flex flex-col rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 overflow-y-auto">
               <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
                 <Settings size={20} className="text-[var(--accent)]" /> Order Settings
               </h2>
@@ -405,8 +434,70 @@ function AddOrderPage({
                 </label>
                 <div className="border-t border-[var(--border)] pt-4">
                   <span className="mb-2 block text-sm font-medium text-[var(--text)]">Specific Date Override</span>
+                  
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2 px-1">
+                      <button
+                        type="button"
+                        onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1))}
+                        className="p-1 hover:bg-[var(--soft)] rounded-lg text-[var(--muted)] hover:text-[var(--accent)] transition-colors"
+                      >
+                        <ChevronsLeft size={16} />
+                      </button>
+                      <span className="text-sm font-bold text-[var(--text)]">
+                        {calendarDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1))}
+                        className="p-1 hover:bg-[var(--soft)] rounded-lg text-[var(--muted)] hover:text-[var(--accent)] transition-colors"
+                      >
+                        <ChevronsRight size={16} />
+                      </button>
+                    </div>
+                    
+                    <div className="grid grid-cols-7 gap-1">
+                      {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+                        <div key={d} className="text-center text-[10px] font-black uppercase text-[var(--muted)] py-1">{d}</div>
+                      ))}
+                      {generateCalendarDays().map((d, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            if (d.day) {
+                              setSettingsDate(d.date);
+                            }
+                          }}
+                          disabled={!d.day}
+                          className={`relative aspect-square rounded-xl border flex flex-col items-center justify-center transition-all ${!d.day ? 'bg-transparent border-transparent' : settingsDate === d.date ? 'bg-[var(--accent-soft)] border-[var(--accent)] cursor-pointer scale-95 shadow-inner' : d.count >= d.limit ? 'bg-red-500/10 border-red-500/30 cursor-pointer hover:border-red-500' : d.count >= d.limit * 0.8 ? 'bg-orange-500/10 border-orange-500/30 cursor-pointer hover:border-orange-500' : 'bg-[var(--surface)] border-[var(--border)] cursor-pointer hover:border-[var(--accent)] hover:shadow-sm'}`}
+                        >
+                          {d.day && (
+                            <>
+                              <span className={`text-xs font-bold ${d.count >= d.limit ? 'text-red-500' : d.count >= d.limit * 0.8 ? 'text-orange-500' : 'text-[var(--text)]'}`}>{d.day}</span>
+                              {(d.count > 0 || d.limit < 999) && (
+                                <div className={`mt-0.5 flex items-center justify-center px-1 h-3.5 min-w-[14px] rounded-full text-white text-[8px] font-black shadow-sm ${d.count >= d.limit ? 'bg-red-500' : d.count >= d.limit * 0.8 ? 'bg-orange-500' : d.count > 0 ? 'bg-green-500' : 'bg-[var(--muted)]'}`}>
+                                  {d.limit < 999 ? `${d.count}/${d.limit}` : d.count}
+                                </div>
+                              )}
+                              {d.date === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` && (
+                                <div className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-[var(--accent)] shadow-sm" />
+                              )}
+                            </>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
-                    <CustomDatePicker value={settingsDate} onChange={setSettingsDate} placeholder="Select date" />
+                    <input
+                      type="text"
+                      readOnly
+                      placeholder="Select date from calendar"
+                      className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-3 text-sm outline-none text-[var(--muted)]"
+                      value={settingsDate ? formatDateDDMMYY(settingsDate) : ''}
+                    />
                     <input
                       type="number"
                       placeholder="Limit"
@@ -902,7 +993,7 @@ function AddOrderPage({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                       <div className="relative">
                         <span className="mb-2 block text-sm font-medium text-[var(--text)]">Order Date</span>
                         <CustomDatePicker
@@ -910,43 +1001,60 @@ function AddOrderPage({
                           onChange={(val) => updateOrderItem(idx, { orderDate: val })}
                         />
                       </div>
-                      <div>
-                        <label className="mb-2 block text-xs font-medium text-[var(--text-soft)]">Delivery Date</label>
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1">
-                            <CustomDatePicker
-                              value={item.deliveryDate}
-                              onChange={(val) => updateOrderItem(idx, { deliveryDate: val })}
-                              placeholder="Select date"
-                            />
-                          </div>
-                          {item.deliveryDate && (
-                            <div className="flex items-center gap-2 rounded-xl bg-[var(--soft)] px-3 py-2 border border-[var(--border)]">
-                              <Calendar size={14} className="text-[var(--jewel)]" />
-                              <div className="flex flex-col">
-                                <span className="text-[10px] font-bold uppercase text-[var(--text-soft)] leading-none">Capacity</span>
-                                <span className="text-xs font-semibold text-[var(--text)]">
-                                  {(() => {
-                                    const limits = orderLimits || {};
-                                    const existing = (orders || []).filter(o => o.deliveryDate === item.deliveryDate).length;
-                                    const limit = limits[item.deliveryDate] !== undefined ? limits[item.deliveryDate] : (limits.global || 999);
-                                    const isOverride = limits[item.deliveryDate] !== undefined;
-                                    return (
-                                      <span className={existing >= limit ? 'text-red-500' : isOverride ? 'text-[var(--jewel)]' : ''}>
-                                        {existing} / {limit} {isOverride && '✨'}
-                                      </span>
-                                    );
-                                  })()}
-                                </span>
-                              </div>
+                      <div className="relative">
+                        <label className="mb-2 block text-sm font-medium text-[var(--text)]">Delivery Date</label>
+                        <CustomDatePicker
+                          value={item.deliveryDate}
+                          onChange={(val) => {
+                            if (!val) {
+                              updateOrderItem(idx, { deliveryDate: val });
+                              return;
+                            }
+                            const limits = orderLimits || {};
+                            const existing = (orders || []).filter(o => o.deliveryDate === val).length;
+                            const limit = limits[val] !== undefined ? limits[val] : (limits.global || 999);
+                            if (existing >= limit) {
+                              if (showGlobalToast) showGlobalToast('Capacity Exceeded', `The date ${formatDateDDMMYY(val)} has reached its limit of ${limit} orders. Please select another date.`);
+                              updateOrderItem(idx, { deliveryDate: '' });
+                            } else {
+                              updateOrderItem(idx, { deliveryDate: val });
+                            }
+                          }}
+                          placeholder="Select date"
+                        />
+                      </div>
+                      <div className="relative">
+                        <label className="mb-2 block text-sm font-medium text-[var(--text)]">Capacity</label>
+                        {item.deliveryDate ? (
+                          <div className="flex h-[46px] w-full items-center gap-2 rounded-xl bg-[var(--soft)] px-3 border border-[var(--border)]">
+                            <Calendar size={16} className="text-[var(--jewel)] shrink-0" />
+                            <div className="flex flex-col overflow-hidden">
+                              <span className="text-[10px] font-bold uppercase text-[var(--text-soft)] leading-none truncate">Available</span>
+                              <span className="text-sm font-semibold text-[var(--text)] truncate">
+                                {(() => {
+                                  const limits = orderLimits || {};
+                                  const existing = (orders || []).filter(o => o.deliveryDate === item.deliveryDate).length;
+                                  const limit = limits[item.deliveryDate] !== undefined ? limits[item.deliveryDate] : (limits.global || 999);
+                                  const isOverride = limits[item.deliveryDate] !== undefined;
+                                  return (
+                                    <span className={existing >= limit ? 'text-red-500' : isOverride ? 'text-[var(--jewel)]' : ''}>
+                                      {existing} / {limit} {isOverride && '✨'}
+                                    </span>
+                                  );
+                                })()}
+                              </span>
                             </div>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          <div className="flex h-[46px] w-full items-center justify-center rounded-xl bg-[var(--soft)] border border-[var(--border)] border-dashed text-xs text-[var(--muted)]">
+                            Select date
+                          </div>
+                        )}
                       </div>
                       <div className="relative">
                         <span className="mb-2 block text-sm font-medium text-[var(--text)]">Priority</span>
                         <select
-                          className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 text-[var(--text)] outline-none transition focus:border-[var(--accent)]"
+                          className="w-full h-[46px] rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-[var(--text)] outline-none transition focus:border-[var(--accent)]"
                           value={item.priority || 'Normal'}
                           onChange={(e) => updateOrderItem(idx, { priority: e.target.value })}
                         >
