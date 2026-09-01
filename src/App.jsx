@@ -141,20 +141,28 @@ function App() {
   }, [isLoggedIn]);
 
   // LOCAL PERSISTENCE
-  useEffect(() => { localStorage.setItem('erp_users', JSON.stringify(users)) }, [users])
-  useEffect(() => { localStorage.setItem('erp_designations', JSON.stringify(designations)) }, [designations])
-  useEffect(() => { localStorage.setItem('activities', JSON.stringify(activities)) }, [activities])
-  useEffect(() => { localStorage.setItem('clients', JSON.stringify(clients)) }, [clients])
-  useEffect(() => { localStorage.setItem('orders', JSON.stringify(orders)) }, [orders])
-  useEffect(() => { localStorage.setItem('inventory', JSON.stringify(inventory)) }, [inventory])
-  useEffect(() => { localStorage.setItem('sales', JSON.stringify(sales)) }, [sales])
-  useEffect(() => { localStorage.setItem('orderTypes', JSON.stringify(orderTypes)) }, [orderTypes])
-  useEffect(() => { localStorage.setItem('productTypes', JSON.stringify(productTypes)) }, [productTypes])
-  useEffect(() => { localStorage.setItem('inventoryUnits', JSON.stringify(inventoryUnits)) }, [inventoryUnits])
-  useEffect(() => { localStorage.setItem('orderLimits', JSON.stringify(orderLimits)) }, [orderLimits])
-  useEffect(() => { localStorage.setItem('incomeCategories', JSON.stringify(incomeCategories)) }, [incomeCategories])
-  useEffect(() => { localStorage.setItem('expenseCategories', JSON.stringify(expenseCategories)) }, [expenseCategories])
-  useEffect(() => { localStorage.setItem('staffList', JSON.stringify(staffList)) }, [staffList])
+  const safeSetStorage = (key, value) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+      console.warn(`Failed to save ${key} to localStorage:`, e);
+    }
+  };
+
+  useEffect(() => { safeSetStorage('erp_users', users) }, [users])
+  useEffect(() => { safeSetStorage('erp_designations', designations) }, [designations])
+  useEffect(() => { safeSetStorage('activities', activities) }, [activities])
+  useEffect(() => { safeSetStorage('clients', clients) }, [clients])
+  useEffect(() => { safeSetStorage('orders', orders) }, [orders])
+  useEffect(() => { safeSetStorage('inventory', inventory) }, [inventory])
+  useEffect(() => { safeSetStorage('sales', sales) }, [sales])
+  useEffect(() => { safeSetStorage('orderTypes', orderTypes) }, [orderTypes])
+  useEffect(() => { safeSetStorage('productTypes', productTypes) }, [productTypes])
+  useEffect(() => { safeSetStorage('inventoryUnits', inventoryUnits) }, [inventoryUnits])
+  useEffect(() => { safeSetStorage('orderLimits', orderLimits) }, [orderLimits])
+  useEffect(() => { safeSetStorage('incomeCategories', incomeCategories) }, [incomeCategories])
+  useEffect(() => { safeSetStorage('expenseCategories', expenseCategories) }, [expenseCategories])
+  useEffect(() => { safeSetStorage('staffList', staffList) }, [staffList])
 
 
   // 1. RECOVER SUPABASE SESSION

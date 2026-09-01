@@ -1416,31 +1416,42 @@ function AddOrderPage({
                     ) : (
                       <div className="flex-1 rounded-2xl border border-dashed border-[var(--border)] bg-[var(--soft)]/20 p-6 flex flex-col items-center justify-center text-center group">
                         <div className="mb-4 relative">
-                          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-white shadow-sm border border-[var(--border)] overflow-hidden">
+                          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-white shadow-sm border border-[var(--border)] overflow-hidden group/photo relative">
                             {item.materialPhoto ? (
-                              <img src={item.materialPhoto} className="h-full w-full object-cover" alt="Material" />
+                              <>
+                                <img src={item.materialPhoto} className="h-full w-full object-cover" alt="Material" />
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateOrderItem(idx, { materialPhoto: null }); }}
+                                  className="absolute inset-0 m-auto flex h-8 w-8 items-center justify-center rounded-full bg-red-500/80 text-white opacity-0 transition-opacity group-hover/photo:opacity-100"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </>
                             ) : (
                               <Info size={32} className="text-[var(--accent)] opacity-40" />
                             )}
                           </div>
-                          <label className="absolute -bottom-2 -right-2 grid h-8 w-8 cursor-pointer place-items-center rounded-full bg-[var(--accent)] text-white shadow-lg transition hover:scale-110 active:scale-95">
-                            <Plus size={16} />
-                            <input
-                              type="file"
-                              className="hidden"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files[0];
-                                if (file) {
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                    updateOrderItem(idx, { materialPhoto: reader.result });
-                                  };
-                                  reader.readAsDataURL(file);
-                                }
-                              }}
-                            />
-                          </label>
+                          {!item.materialPhoto && (
+                            <label className="absolute -bottom-2 -right-2 grid h-8 w-8 cursor-pointer place-items-center rounded-full bg-[var(--accent)] text-white shadow-lg transition hover:scale-110 active:scale-95">
+                              <Plus size={16} />
+                              <input
+                                type="file"
+                                className="hidden"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                      updateOrderItem(idx, { materialPhoto: reader.result });
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                              />
+                            </label>
+                          )}
                         </div>
                         <h4 className="text-sm font-bold text-[var(--text)] mb-1 uppercase tracking-wider">Client Material</h4>
                         <p className="text-[10px] text-[var(--muted)] leading-relaxed max-w-[200px] mb-4">
