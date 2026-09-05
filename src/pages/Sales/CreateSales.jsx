@@ -121,6 +121,10 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     if (initDataStr) {
       try {
         const item = JSON.parse(initDataStr);
+
+        // Wait for clients to load before consuming the init data
+        if (!clients || clients.length === 0) return;
+
         const price = parsePrice(item.price);
         const advance = parseFloat(item.advance) || 0;
         const parsedQty = item.size ? parseFloat(item.size) || 1 : 1;
@@ -142,12 +146,13 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
         }]);
         
         setClientSearch(item.clientName);
-        const matchedClient = clients.find(c => c.name === item.clientName);
+        const matchedClient = clients.find(c => c.name?.toLowerCase().trim() === item.clientName?.toLowerCase().trim());
         if (matchedClient) setSelectedClient(matchedClient);
         setSelectionMode('orders');
         sessionStorage.removeItem('erp_sales_init');
       } catch (e) {
         console.error(e);
+        sessionStorage.removeItem('erp_sales_init');
       }
     }
   }, [clients]);
