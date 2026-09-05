@@ -18,6 +18,12 @@ function UndoToast({ message, highlight, onUndo, onClose }) {
     return () => clearInterval(intervalRef.current)
   }, [])
 
+  useEffect(() => {
+    if (countdown === 0 && onClose) {
+      onClose()
+    }
+  }, [countdown, onClose])
+
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[3000] animate-in slide-in-from-bottom-5 duration-300">
       <div className="flex items-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-5 py-3.5 text-sm font-medium text-[var(--text)] shadow-2xl backdrop-blur-md">

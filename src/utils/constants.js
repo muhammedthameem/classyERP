@@ -214,9 +214,11 @@ export const calculateProgress = (order) => {
   if (order.status === 'Completed' || order.status === 'Sold') return 100;
   if (!order.workflow || !order.productionTasks || order.productionTasks.length === 0) {
     if (order.status === 'In Progress' || order.status === 'Start') return 50;
+    if (order.status === 'Hold' && order.progress !== undefined) return order.progress;
     return 0;
   }
-  const completed = order.productionTasks.filter(t => t.status === 'Completed').length;
+  // Count as completed if status is Completed, OR if it's on Hold but was previously completed
+  const completed = order.productionTasks.filter(t => t.status === 'Completed' || (t.status === 'Hold' && t.completedAt)).length;
   const total = order.workflow.length;
   return total > 0 ? Math.round((completed / total) * 100) : 0;
 }

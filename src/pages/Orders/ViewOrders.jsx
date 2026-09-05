@@ -75,6 +75,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
       const order = { ...orderToDelete };
 
       setRecentlyDeletedOrder(order);
+      setOrderToDelete(null);
       if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
 
       // 1. Restore Inventory Locally (Instant)
@@ -209,6 +210,10 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
         if (newStatus !== 'Hold') {
           newData.lastActiveStatus = newStatus
         }
+          
+        newData.progress = calculateProgress(newData);
+        newData.risk = calculateRisk(newData);
+
         return newData
       }
       return o
@@ -1167,9 +1172,18 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                     )}
                     {(editOrder.workflow || []).map(stage => {
                       const task = (editOrder.productionTasks || []).find(t => t.stage === stage) || { status: 'Pending' };
-                      const allOtherTasksCompleted = (editOrder.productionTasks || []).filter(t => t.stage !== 'Finished').every(t => t.status === 'Completed');
-                      const isFinishedStage = stage === 'Finished';
-                      const disableCompletedButton = isFinishedStage && !allOtherTasksCompleted;
+                      let disableCompletedButton = false;
+                      if (stage === 'Finished') {
+                        const workflow = editOrder.workflow || [];
+                        disableCompletedButton = workflow.some(s => {
+                          if (s === 'Finished') return false;
+                          const t = (editOrder.productionTasks || []).find(pt => pt.stage === s);
+                          if (s === 'Handwork') {
+                            if (!t || t.status === 'Pending') return false;
+                          }
+                          return !t || t.status !== 'Completed';
+                        });
+                      }
                       return (
                         <div key={stage} className="flex items-center justify-between px-2 py-1 hover:bg-[var(--soft)] rounded transition">
                           <span className="font-medium text-[var(--text)] text-xs truncate max-w-[100px]" title={stage}>{stage}</span>
@@ -1788,32 +1802,56 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                            <div className={`h-full transition-all ${order.risk === 'Delayed' ? 'bg-red-500' : order.risk === 'At Risk' ? 'bg-orange-500' : 'bg-emerald-500'}`} style={{ width: `${progress}%` }}></div>
                         </div>
                           <div className="relative mt-1 stage-popover-container">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (order.status === 'Completed' || order.status === 'Sold') return;
-                                setOpenStagePopoverId(openStagePopoverId === order.id ? null : order.id);
-                              }}
-                              className={`w-full flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] px-2 py-1 text-[10px] font-bold outline-none transition ${order.status === 'Completed' || order.status === 'Sold' ? 'cursor-not-allowed opacity-70 text-emerald-600 border-emerald-500/30' : 'cursor-pointer hover:border-[var(--accent)] text-[var(--accent)]'}`}
-                            >
-                              <span className="truncate pr-2">
-                                {(order.status === 'Completed' || order.status === 'Sold') ? 'Finished' : 
-                                  (!order.productionTasks || order.productionTasks.every(t => t.status === 'Pending')) ? 'Not Started' :
-                                  (order.productionTasks.filter(t => t.status === 'In Progress').length > 0 
-                                    ? order.productionTasks.filter(t => t.status === 'In Progress').map(t => t.stage).join(', ') 
-                                    : (order.currentStage || 'Not Started'))}
-                              </span>
-                              <ChevronDown size={12} className="flex-shrink-0" />
-                            </button>
+                            {order.status === 'Completed' ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  sessionStorage.setItem('erp_sales_init', JSON.stringify(order));
+                                  sessionStorage.setItem('erp_sales_back', 'view-orders');
+                                  if (setCurrentPage) setCurrentPage('create-sales');
+                                }}
+                                className="w-full flex items-center justify-center gap-1 rounded-lg border border-emerald-500 bg-emerald-500 text-white px-2 py-1 text-[10px] font-bold shadow-sm transition hover:brightness-95"
+                              >
+                                <CircleDollarSign size={12} /> Pay Now
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (order.status === 'Sold') return;
+                                  setOpenStagePopoverId(openStagePopoverId === order.id ? null : order.id);
+                                }}
+                                className={`w-full flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] px-2 py-1 text-[10px] font-bold outline-none transition ${order.status === 'Sold' ? 'cursor-not-allowed opacity-70 text-emerald-600 border-emerald-500/30' : 'cursor-pointer hover:border-[var(--accent)] text-[var(--accent)]'}`}
+                              >
+                                <span className="truncate pr-2">
+                                  {order.status === 'Sold' ? 'Finished / Sold' : 
+                                    (!order.productionTasks || order.productionTasks.every(t => t.status === 'Pending')) ? 'Not Started' :
+                                    (order.productionTasks.filter(t => t.status === 'In Progress').length > 0 
+                                      ? order.productionTasks.filter(t => t.status === 'In Progress').map(t => t.stage).join(', ') 
+                                      : (order.currentStage || 'Not Started'))}
+                                </span>
+                                <ChevronDown size={12} className="flex-shrink-0" />
+                              </button>
+                            )}
                             
-                            {openStagePopoverId === order.id && (
+                            {openStagePopoverId === order.id && order.status !== 'Completed' && order.status !== 'Sold' && (
                               <div className="absolute top-full left-0 mt-1 w-64 bg-[var(--surface-strong)] border border-[var(--border)] rounded-xl shadow-xl z-[100] p-2 text-xs flex flex-col gap-1 backdrop-blur-xl">
                                 {(order.workflow || DEFAULT_WORKFLOWS[order.product] || DEFAULT_WORKFLOWS['Default']).map(stage => {
                                   const task = (order.productionTasks || []).find(t => t.stage === stage) || { status: 'Pending' };
-                                  const allOtherTasksCompleted = (order.productionTasks || []).filter(t => t.stage !== 'Finished').every(t => t.status === 'Completed');
-                                  const isFinishedStage = stage === 'Finished';
-                                  const disableCompletedButton = isFinishedStage && !allOtherTasksCompleted;
+                                  let disableCompletedButton = false;
+                                  if (stage === 'Finished') {
+                                    const workflow = order.workflow || DEFAULT_WORKFLOWS[order.product] || DEFAULT_WORKFLOWS['Default'];
+                                    disableCompletedButton = workflow.some(s => {
+                                      if (s === 'Finished') return false;
+                                      const t = (order.productionTasks || []).find(pt => pt.stage === s);
+                                      if (s === 'Handwork') {
+                                        if (!t || t.status === 'Pending') return false;
+                                      }
+                                      return !t || t.status !== 'Completed';
+                                    });
+                                  }
                                   return (
                                     <div key={stage} className="flex items-center justify-between p-1.5 hover:bg-[var(--soft)] rounded-lg transition">
                                       <div className="flex flex-col overflow-hidden pr-2">
@@ -1873,7 +1911,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                             disabled={order.status === 'Sold'}
                           >
                             <option value="Not Ready">Not Ready</option>
-                            <option value="In Progress">In Progress</option>
+                            <option value="In Progress" disabled>In Progress</option>
                             <option value="Hold">Hold</option>
                             <option value="Completed" disabled>Completed</option>
                             <option value="Sold" disabled>Sold</option>

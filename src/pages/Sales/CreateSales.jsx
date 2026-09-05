@@ -103,12 +103,55 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     };
   }, []);
 
+  const isInitialMount = useRef(true);
+
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     if (cart.length === 0) {
       setSelectedClient(null);
       setClientSearch('');
     }
   }, [cart.length]);
+
+  useEffect(() => {
+    const initDataStr = sessionStorage.getItem('erp_sales_init');
+    if (initDataStr) {
+      try {
+        const item = JSON.parse(initDataStr);
+        const price = parsePrice(item.price);
+        const advance = parseFloat(item.advance) || 0;
+        const parsedQty = item.size ? parseFloat(item.size) || 1 : 1;
+        const parsedUnit = item.size ? item.size.replace(/[0-9.]/g, '').trim() || 'nos' : 'nos';
+
+        setCart([{
+          id: `ORD-${item.id}`,
+          productId: `ORD-${item.id}`,
+          orderId: item.id,
+          productName: `${item.product} (Order #${item.id})`,
+          qty: parsedQty,
+          unit: parsedUnit,
+          rate: price,
+          discount: 0,
+          advancePaid: advance,
+          finalPrice: price,
+          type: 'order',
+          clientName: item.clientName
+        }]);
+        
+        setClientSearch(item.clientName);
+        const matchedClient = clients.find(c => c.name === item.clientName);
+        if (matchedClient) setSelectedClient(matchedClient);
+        setSelectionMode('orders');
+        sessionStorage.removeItem('erp_sales_init');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, [clients]);
+
 
   const parsePrice = (priceStr) => {
     if (typeof priceStr !== 'string') return parseFloat(priceStr) || 0;
@@ -754,6 +797,8 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
 
   return (
     <div style={themeStyle} className="space-y-6">
+
+
       {/* View Item Details Modal */}
       {viewItem && (() => {
         const isOrder = viewItem.type === 'order';
@@ -1085,7 +1130,12 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       {/* Receipt Modal */}
       {showReceipt && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
-          <div className={`absolute inset-0 bg-black/70 backdrop-blur-md ${isSendingPdf ? 'cursor-wait' : 'cursor-pointer'}`} onClick={() => !isSendingPdf && setCurrentPage('view-sales')}></div>
+          <div className={`absolute inset-0 bg-black/70 backdrop-blur-md ${isSendingPdf ? 'cursor-wait' : 'cursor-pointer'}`} onClick={() => {
+            if (isSendingPdf) return;
+            const backPath = sessionStorage.getItem('erp_sales_back');
+            sessionStorage.removeItem('erp_sales_back');
+            setCurrentPage(backPath || 'view-sales');
+          }}></div>
           <div className="relative w-full max-w-2xl rounded-[24px] sm:rounded-[32px] bg-[var(--surface)] p-4 sm:p-8 shadow-2xl animate-in zoom-in duration-300 overflow-y-auto max-h-[90vh]">
             <div className="mb-6 sm:mb-8 flex items-start sm:items-center justify-between gap-4">
               <div>
@@ -1097,7 +1147,11 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
               </div>
               <button
                 disabled={isSendingPdf}
-                onClick={() => setCurrentPage('view-sales')}
+                onClick={() => {
+                  const backPath = sessionStorage.getItem('erp_sales_back');
+                  sessionStorage.removeItem('erp_sales_back');
+                  setCurrentPage(backPath || 'view-sales');
+                }}
                 className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 grid place-items-center rounded-2xl hover:bg-[var(--soft)] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>

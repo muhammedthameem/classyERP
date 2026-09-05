@@ -27,7 +27,7 @@ import supabase from '../supabase'
 
 function Dashboard({
   isAuthLoading,
-  onLogout, user,
+  onLogout, user, goBack,
   currentPage, setCurrentPage,
   appearance, setAppearance,
   themeName, setThemeName,
@@ -1539,6 +1539,17 @@ function Dashboard({
                 </div>
               </div>
             )}
+            
+            {currentPage !== 'overview' && (
+              <button 
+                onClick={goBack}
+                className="float-left mt-0.5 mr-4 grid h-10 w-10 place-items-center rounded-2xl bg-[var(--accent)] text-white shadow-md shadow-[var(--accent)]/20 hover:brightness-110 active:scale-95 transition-all"
+                aria-label="Go Back"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              </button>
+            )}
+
             <Suspense fallback={null}>
               {currentPage === 'add-order' && <AddOrderPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} orders={orders} setOrders={setOrders} clients={clients} inventory={inventory} setInventory={setInventory} orderTypes={orderTypes} setOrderTypes={setOrderTypes} productTypes={productTypes} setProductTypes={setProductTypes} inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits} saveOrder={saveOrder} saveConfig={saveConfig} orderLimits={orderLimits} setOrderLimits={setOrderLimits} cloudLoaded={cloudLoaded} />}
               {currentPage === 'view-orders' && <ViewOrdersPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} setSelectedClient={setSelectedClient} setClientDetailMode={setClientDetailMode} showGlobalToast={showGlobalToast} currentUser={user} highlightOrderId={highlightOrderId} setHighlightOrderId={setHighlightOrderId} orders={orders} setOrders={setOrders} inventory={inventory} setInventory={setInventory} clients={clients} saveOrder={saveOrder} deleteOrder={deleteOrder} cloudLoaded={cloudLoaded} />}

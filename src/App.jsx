@@ -111,6 +111,13 @@ function App() {
              return itemId && itemId.toString() === payload.new.id.toString();
            });
            if (existing >= 0) {
+             const existingItem = prev[existing];
+             // Prevent rubber-banding: ignore stale realtime updates if local state was updated more recently
+             if (existingItem.updatedAt && newData.updatedAt) {
+               if (new Date(existingItem.updatedAt) > new Date(newData.updatedAt)) {
+                 return prev;
+               }
+             }
              const next = [...prev];
              next[existing] = newData;
              return next;
@@ -291,7 +298,32 @@ function App() {
 
   const [activeBillId, setActiveBillId] = useState(getInitialBillId);
   const [activePayslipId] = useState(getInitialPayslipId);
-  const [currentPage, setCurrentPage] = useState(() => localStorage.getItem('erp_current_page') || 'overview');
+  const [pageHistory, setPageHistory] = useState([]);
+  const [currentPage, _setCurrentPage] = useState(() => localStorage.getItem('erp_current_page') || 'overview');
+
+  const setCurrentPage = (newPage) => {
+    if (typeof newPage === 'function') {
+      _setCurrentPage(newPage);
+      return;
+    }
+    if (newPage !== currentPage) {
+      if (newPage === 'overview') {
+        setPageHistory([]);
+      } else {
+        setPageHistory(prev => [...prev, currentPage]);
+      }
+      _setCurrentPage(newPage);
+    }
+  };
+
+  const goBack = () => {
+    setPageHistory(prev => {
+      const next = [...prev];
+      const last = next.pop();
+      _setCurrentPage(last || 'overview');
+      return next;
+    });
+  };
   const [appearance, setAppearance] = useState(() => localStorage.getItem('erp_appearance') || 'light')
   const [themeName, setThemeName] = useState(() => localStorage.getItem('erp_theme_name') || 'champagne')
 
@@ -380,9 +412,10 @@ function App() {
             <Dashboard
               isAuthLoading={isAuthLoading}
               onLogout={handleLogout}
+              goBack={goBack}
               user={user}
-              themeStyle={themeStyle}
               currentPage={currentPage}
+              themeStyle={themeStyle}
               setCurrentPage={setCurrentPage}
               appearance={appearance} setAppearance={setAppearance}
               themeName={themeName} setThemeName={setThemeName}
