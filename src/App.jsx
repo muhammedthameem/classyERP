@@ -310,7 +310,16 @@ function App() {
       if (newPage === 'overview') {
         setPageHistory([]);
       } else {
-        setPageHistory(prev => [...prev, currentPage]);
+        setPageHistory(prev => {
+          // If the new page is the same as the last page in history, it's a back navigation!
+          if (prev.length > 0 && prev[prev.length - 1] === newPage) {
+            const next = [...prev];
+            next.pop();
+            return next;
+          }
+          // Otherwise, it's a forward navigation
+          return [...prev, currentPage];
+        });
       }
       _setCurrentPage(newPage);
     }
