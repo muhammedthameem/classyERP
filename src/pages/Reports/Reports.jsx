@@ -28,7 +28,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
     fetchAccounts();
   }, []);
 
-  const isDataLoading = !cloudLoaded || !sales || !orders || !clients || !inventory || accountsLoading;
+  const isDataLoading = (!cloudLoaded && (!sales || !orders || !clients || !inventory)) || accountsLoading;
 
   // Pagination State
   const [salesPage, setSalesPage] = useState(1);

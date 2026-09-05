@@ -10,7 +10,7 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
   const [recentlyDeletedInventory, setRecentlyDeletedInventory] = useState(null);
   const undoTimeoutRef = useRef(null);
 
-  const isDataLoading = !cloudLoaded || !inventory;
+  const isDataLoading = !cloudLoaded && (!inventory || inventory.length === 0);
 
   const displayInventory = (inventory || []).filter(inv => !recentlyDeletedInventory || inv.id !== recentlyDeletedInventory.id);
 
@@ -228,7 +228,9 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
                     <td>
                       <div className="flex items-center gap-2">
                         <span className={`h-2 w-2 rounded-full ${item.quantity > 10 ? 'bg-green-500' : item.quantity > 0 ? 'bg-orange-500' : 'bg-red-500'}`}></span>
-                        <span className="font-medium text-[var(--text)]">{item.quantity} {item.unit}</span>
+                        <span className="font-medium text-[var(--text)]">
+                          {item.quantity} {item.unit} {item.initialQuantity !== undefined ? `/ ${item.initialQuantity} ${item.unit}` : ''}
+                        </span>
                       </div>
                     </td>
                     <td className="font-semibold text-[var(--accent)]">

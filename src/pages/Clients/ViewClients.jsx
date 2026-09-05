@@ -15,7 +15,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
   const [currentPageNum, setCurrentPageNum] = useState(1)
   const itemsPerPage = 10
 
-  const isDataLoading = !cloudLoaded || !currentUser || !clients;
+  const isDataLoading = !cloudLoaded && (!clients || clients.length === 0);
 
   const displayClients = (clients || []).filter(c => !recentlyDeletedClient || String(c.id) !== String(recentlyDeletedClient.id));
 

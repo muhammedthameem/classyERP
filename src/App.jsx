@@ -222,10 +222,8 @@ function App() {
       } catch (err) {
         console.error("Auth Init Error:", err);
       } finally {
-        // Ensure preloader stays for at least 1.5 seconds for branding
-        setTimeout(() => {
-          setIsAuthLoading(false);
-        }, 1500);
+        // Remove preloader immediately for better performance
+        setIsAuthLoading(false);
       }
     };
 

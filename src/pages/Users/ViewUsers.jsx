@@ -13,7 +13,7 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
 
   const [userToDelete, setUserToDelete] = useState(null)
 
-  const isDataLoading = !cloudLoaded || !users;
+  const isDataLoading = !cloudLoaded && (!users || users.length === 0);
 
   const handleConfirmDelete = async () => {
     if (!userToDelete) return

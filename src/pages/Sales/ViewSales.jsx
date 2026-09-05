@@ -16,7 +16,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
   const undoTimeoutRef = useRef(null);
   const [isSendingPdf, setIsSendingPdf] = useState(false);
 
-  const isDataLoading = !cloudLoaded || !sales;
+  const isDataLoading = !cloudLoaded && (!sales || sales.length === 0);
 
 
   const handleDeleteConfirm = async () => {

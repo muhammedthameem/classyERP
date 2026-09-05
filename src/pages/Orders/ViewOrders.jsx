@@ -63,7 +63,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openStagePopoverId]);
 
-  const isDataLoading = !cloudLoaded || !orders;
+  const isDataLoading = !cloudLoaded && (!orders || orders.length === 0);
 
   const saveOrders = (newOrders) => {
     setOrders(newOrders)
@@ -1826,11 +1826,11 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                                 className={`w-full flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] px-2 py-1 text-[10px] font-bold outline-none transition ${order.status === 'Sold' ? 'cursor-not-allowed opacity-70 text-emerald-600 border-emerald-500/30' : 'cursor-pointer hover:border-[var(--accent)] text-[var(--accent)]'}`}
                               >
                                 <span className="truncate pr-2">
-                                  {order.status === 'Sold' ? 'Finished / Sold' : 
+                                  {order.status === 'Sold' ? 'Completed' : 
                                     (!order.productionTasks || order.productionTasks.every(t => t.status === 'Pending')) ? 'Not Started' :
                                     (order.productionTasks.filter(t => t.status === 'In Progress').length > 0 
                                       ? order.productionTasks.filter(t => t.status === 'In Progress').map(t => t.stage).join(', ') 
-                                      : (order.currentStage || 'Not Started'))}
+                                      : (order.currentStage || 'Completed'))}
                                 </span>
                                 <ChevronDown size={12} className="flex-shrink-0" />
                               </button>

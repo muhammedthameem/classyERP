@@ -50,14 +50,7 @@ function InventoryDetailPage({ themeStyle, item, setCurrentPage, setSelectedInve
         </div>
       )}
 
-      <div className="mb-6">
-        <button
-          className="flex items-center gap-2 text-sm font-semibold text-[var(--accent)] transition hover:underline"
-          onClick={() => setCurrentPage('view-inventory')}
-        >
-          <ChevronLeft size={16} /> Back to View Inventory
-        </button>
-      </div>
+
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-[var(--surface)] p-6 rounded-[24px] border border-[var(--border)] shadow-sm">
         <div>
