@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2, Plus, X, Printer } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
+import { Virtuoso } from 'react-virtuoso'
 import { formatDateDDMMYY, getIndianDate, orders as dummyOrders, DEFAULT_WORKFLOWS, PRODUCTION_STAGES, calculateProgress, calculateRisk } from '../../utils/constants'
 import { sendWhatsApp } from "../../utils/whatsapp";
 import supabase from '../../supabase'
@@ -52,7 +53,8 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
   const [waData, setWaData] = useState({ phone: '', name: '', message: '', orderId: '' })
   const [showMeasurements, setShowMeasurements] = useState(false)
   const [openStagePopoverId, setOpenStagePopoverId] = useState(null)
-
+  const [expandedOrderId, setExpandedOrderId] = useState(null)
+  const [mobileVisibleCount, setMobileVisibleCount] = useState(5)
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (openStagePopoverId && !e.target.closest('.stage-popover-container')) {
@@ -430,7 +432,11 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
 
   const [activeFilter, setActiveFilter] = useState('All')
 
-  const displayOrders = orders.filter(o => !recentlyDeletedOrder || String(o.id) !== String(recentlyDeletedOrder.id));
+  const displayOrders = orders.filter(o => {
+    if (recentlyDeletedOrder && String(o.id) === String(recentlyDeletedOrder.id)) return false;
+    if (o.status === 'Sold') return false;
+    return true;
+  });
 
   const filteredOrders = displayOrders.filter(o => {
     const matchesSearch = (o.clientName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -496,9 +502,11 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
 
   const sortedOrders = useMemo(() => {
     return [...filteredOrders].sort((a, b) => {
-      // Keep 'Closed' at the bottom regardless of sort
-      if (a.status === 'Closed' && b.status !== 'Closed') return 1;
-      if (a.status !== 'Closed' && b.status === 'Closed') return -1;
+      // Keep 'Closed', 'Completed', and 'Sold' at the bottom regardless of sort
+      const isFinishedA = a.status === 'Closed' || a.status === 'Completed' || a.status === 'Sold';
+      const isFinishedB = b.status === 'Closed' || b.status === 'Completed' || b.status === 'Sold';
+      if (isFinishedA && !isFinishedB) return 1;
+      if (!isFinishedA && isFinishedB) return -1;
 
       let valA = a[sortConfig.key] || ''
       let valB = b[sortConfig.key] || ''
@@ -536,9 +544,12 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
       // Use a timeout to allow state updates (filters) to apply and render
       setTimeout(() => {
         // Recalculate index based on the unfiltered orders
-        const currentSorted = [...orders.filter(o => !recentlyDeletedOrder || String(o.id) !== String(recentlyDeletedOrder.id))].sort((a, b) => {
-          if (a.status === 'Closed' && b.status !== 'Closed') return 1;
-          if (a.status !== 'Closed' && b.status === 'Closed') return -1;
+        const currentSorted = [...displayOrders].sort((a, b) => {
+          // Keep 'Closed', 'Completed', and 'Sold' at the bottom regardless of sort
+          const isFinishedA = a.status === 'Closed' || a.status === 'Completed' || a.status === 'Sold';
+          const isFinishedB = b.status === 'Closed' || b.status === 'Completed' || b.status === 'Sold';
+          if (isFinishedA && !isFinishedB) return 1;
+          if (!isFinishedA && isFinishedB) return -1;
           let valA = a[sortConfig.key] || ''
           let valB = b[sortConfig.key] || ''
           if (sortConfig.key === 'updatedAt') {
@@ -584,6 +595,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
   // Reset pagination to page 1 when search or filters change
   useEffect(() => {
     setCurrentPageNum(1)
+    setMobileVisibleCount(5)
   }, [searchQuery, activeFilter, dateFilter])
 
   const totalPages = Math.ceil(sortedOrders.length / itemsPerPage)
@@ -1481,7 +1493,6 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
             { id: 'In Progress', label: 'In Progress' },
             { id: 'Hold', label: 'On Hold' },
             { id: 'Completed', label: 'Completed' },
-            { id: 'Sold', label: 'Sold/Delivered' },
           ].concat(Object.keys(PRODUCTION_STAGES).map(stage => ({ id: stage, label: stage }))).map(opt => (
             <option key={opt.id} value={opt.id}>{opt.label}</option>
           ))}
@@ -1537,7 +1548,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
           <div className="relative group">
             <select
               className="relative z-10 w-full lg:w-40 appearance-none rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2 pr-10 text-[11px] font-bold outline-none transition cursor-pointer hover:border-[var(--accent)] h-11"
-              value={['All', 'Not Ready', 'In Progress', 'Hold', 'Completed', 'Sold'].includes(activeFilter) ? activeFilter : 'All'}
+              value={['All', 'Not Ready', 'In Progress', 'Hold', 'Completed'].includes(activeFilter) ? activeFilter : 'All'}
               onChange={(e) => {
                 setActiveFilter(e.target.value);
                 setCurrentPageNum(1);
@@ -1548,7 +1559,6 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
               <option value="In Progress">In Progress</option>
               <option value="Hold">On Hold</option>
               <option value="Completed">Completed</option>
-              <option value="Sold">Sold / Delivered</option>
             </select>
             <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] z-10">
               <ChevronDown size={14} />
@@ -1615,7 +1625,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
           </p>
         </div>
         <div 
-          className={`erp-table-container overflow-x-auto ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          className={`erp-table-container overflow-x-auto min-h-[400px] hidden md:block ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           ref={tableContainerRef}
           onMouseDown={handleMouseDown}
           onMouseLeave={handleMouseLeave}
@@ -1632,7 +1642,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                 ].map(header => (
                   <th
                     key={header.key}
-                    className={`cursor-pointer transition hover:text-[var(--accent)] group ${header.key === 'clientName' ? 'sticky left-0 z-20 bg-[var(--surface-strong)] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]' : ''}`}
+                    className={`cursor-pointer transition hover:text-[var(--accent)] group ${header.key === 'clientName' ? 'md:sticky md:left-0 md:z-20 bg-[var(--surface-strong)] md:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]' : ''}`}
                     onClick={() => {
                       setSortConfig(prev => ({
                         key: header.key,
@@ -1701,7 +1711,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                     </td>
                   </tr>
                 ))
-              ) : paginatedOrders.map((order) => {
+              ) : paginatedOrders.map((order, index) => {
                 const progress = getProgress(order)
                 return (
                   <tr
@@ -1717,7 +1727,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                   >
                     <td className="font-medium text-[var(--text)]">#{order.id}</td>
                     <td 
-                      className="sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+                      className="md:sticky md:left-0 md:z-10 md:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
                       style={{
                         background: progress > 0 
                           ? `linear-gradient(to right, ${
@@ -1837,7 +1847,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                             )}
                             
                             {openStagePopoverId === order.id && order.status !== 'Completed' && order.status !== 'Sold' && (
-                              <div className="absolute top-full left-0 mt-1 w-64 bg-[var(--surface-strong)] border border-[var(--border)] rounded-xl shadow-xl z-[100] p-2 text-xs flex flex-col gap-1 backdrop-blur-xl">
+                              <div className={`absolute ${index >= paginatedOrders.length - 2 && paginatedOrders.length > 3 ? 'bottom-full mb-1' : 'top-full mt-1'} right-0 sm:left-0 sm:right-auto w-[220px] sm:w-64 bg-[var(--surface-strong)] border border-[var(--border)] rounded-xl shadow-xl z-[100] p-2 text-xs flex flex-col gap-1 backdrop-blur-xl`}>
                                 {(order.workflow || DEFAULT_WORKFLOWS[order.product] || DEFAULT_WORKFLOWS['Default']).map(stage => {
                                   const task = (order.productionTasks || []).find(t => t.stage === stage) || { status: 'Pending' };
                                   let disableCompletedButton = false;
@@ -1953,8 +1963,321 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
           </table>
         </div>
 
+        {/* Mobile Accordion View */}
+        <div className="block md:hidden mt-4">
+          {isDataLoading ? (
+            // Skeleton for mobile
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="bg-[var(--surface-strong)] border border-[var(--border)] rounded-[16px] p-4 flex items-center justify-between animate-pulse">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-12 bg-[var(--border)] rounded"></div>
+                      <div className="h-5 w-20 bg-[var(--border)] rounded-full"></div>
+                    </div>
+                    <div className="h-6 w-32 bg-[var(--border)] rounded mt-1"></div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="h-1.5 w-24 bg-[var(--border)] rounded-full opacity-50"></div>
+                      <div className="h-3 w-6 bg-[var(--border)] rounded"></div>
+                    </div>
+                  </div>
+                  <div className="h-6 w-6 bg-[var(--border)] rounded-full"></div>
+                </div>
+              ))}
+            </div>
+          ) : sortedOrders.length === 0 ? (
+            <div className="text-center py-8 text-[var(--muted)]">No orders found.</div>
+          ) : (
+            <Virtuoso
+              useWindowScroll
+              overscan={200}
+              data={sortedOrders}
+              itemContent={(index, order) => {
+                const progress = getProgress(order);
+                const isExpanded = expandedOrderId === order.id;
+                return (
+                  <div className="pb-4">
+                    <div 
+                      key={order.id} 
+                      className={`rounded-[16px] border border-[var(--border)] bg-[var(--surface-strong)] transition-all duration-300 ${highlightOrderId === order.id ? 'ring-2 ring-[var(--accent)] ring-inset' : ''} ${order.status === 'Hold' ? '[&_span]:!text-orange-500 [&_p]:!text-orange-500 [&_button]:!text-orange-500' : ''}`}
+                style={{
+                  background: progress > 0 ? `linear-gradient(to right, ${order.status === 'Completed' || order.status === 'Sold' ? 'rgba(34, 197, 94, 0.04)' :
+                    order.status === 'Hold' ? 'rgba(249, 115, 22, 0.04)' :
+                      'color-mix(in srgb, var(--accent) 4%, transparent)'
+                    } ${progress}%, transparent ${progress}%)` : undefined
+                }}
+              >
+                {/* Accordion Header (Always Visible) */}
+                <div 
+                  className="p-4 flex items-center justify-between cursor-pointer"
+                  onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
+                >
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-[var(--text)]">#{order.id}</span>
+                      <div className="relative stage-popover-container">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (order.status === 'Sold' || order.status === 'Completed') return;
+                            setOpenStagePopoverId(openStagePopoverId === order.id ? null : order.id);
+                          }}
+                          className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border border-[var(--border)] font-semibold transition ${order.status === 'Sold' || order.status === 'Completed' ? 'bg-[var(--surface)] text-[var(--muted)] cursor-default' : 'bg-[var(--surface-strong)] text-[var(--accent)] hover:border-[var(--accent)] cursor-pointer'}`}
+                        >
+                          <span className="max-w-[100px] truncate">
+                            {order.status === 'Sold' ? 'Completed' : 
+                              (!order.productionTasks || order.productionTasks.every(t => t.status === 'Pending')) ? 'Not Started' :
+                              (order.productionTasks.filter(t => t.status === 'In Progress').length > 0 
+                                ? order.productionTasks.filter(t => t.status === 'In Progress').map(t => t.stage).join(', ') 
+                                : (order.currentStage || 'Completed'))}
+                          </span>
+                          {order.status !== 'Sold' && order.status !== 'Completed' && (
+                            <ChevronDown size={10} />
+                          )}
+                        </button>
+                        {openStagePopoverId === order.id && order.status !== 'Completed' && order.status !== 'Sold' && (
+                          <div className="absolute top-full left-0 mt-1 w-[240px] max-h-[250px] overflow-y-auto bg-[var(--surface-strong)] border border-[var(--border)] rounded-xl shadow-xl z-[100] p-2 text-xs flex flex-col gap-1 backdrop-blur-xl custom-scrollbar">
+                            {(order.workflow || DEFAULT_WORKFLOWS[order.product] || DEFAULT_WORKFLOWS['Default']).map(stage => {
+                              const task = (order.productionTasks || []).find(t => t.stage === stage) || { status: 'Pending' };
+                              let disableCompletedButton = false;
+                              if (stage === 'Finished') {
+                                const workflow = order.workflow || DEFAULT_WORKFLOWS[order.product] || DEFAULT_WORKFLOWS['Default'];
+                                disableCompletedButton = workflow.some(s => {
+                                  if (s === 'Finished') return false;
+                                  const t = (order.productionTasks || []).find(pt => pt.stage === s);
+                                  if (s === 'Handwork') {
+                                    if (!t || t.status === 'Pending') return false;
+                                  }
+                                  return !t || t.status !== 'Completed';
+                                });
+                              }
+                              return (
+                                <div key={stage} className="flex items-center justify-between p-1.5 hover:bg-[var(--soft)] rounded-lg transition" onClick={e => e.stopPropagation()}>
+                                  <div className="flex flex-col overflow-hidden pr-2">
+                                    <span className="font-medium text-[var(--text)] truncate max-w-[110px]">{stage}</span>
+                                  </div>
+                                  <div className="flex bg-[var(--surface-strong)] rounded-md border border-[var(--border)] overflow-hidden flex-shrink-0">
+                                      {stage !== 'Finished' && (
+                                        <>
+                                          <button 
+                                            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'Hold'); }}
+                                            className={`p-1.5 transition ${task.status === 'Hold' ? 'bg-red-500/20 text-red-500' : 'text-[var(--muted)] hover:text-red-500'}`}
+                                          >
+                                            <Pause size={12} />
+                                          </button>
+                                          <button 
+                                            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'In Progress'); }}
+                                            className={`p-1.5 transition ${task.status === 'In Progress' ? 'bg-orange-500/20 text-orange-500' : 'text-[var(--muted)] hover:text-orange-500'}`}
+                                          >
+                                            <Play size={12} />
+                                          </button>
+                                        </>
+                                      )}
+                                      <button 
+                                        disabled={disableCompletedButton}
+                                        onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); if(!disableCompletedButton) handleTaskStatusChange(order.id, stage, 'Completed'); }}
+                                        className={`p-1.5 transition ${task.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-500' : 'text-[var(--muted)] hover:text-emerald-500'} ${disableCompletedButton ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                      >
+                                        <CheckCircle2 size={12} />
+                                      </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const clientObj = (clients || []).find(c => c.name?.toLowerCase().trim() === order.clientName?.toLowerCase().trim());
+                        if (clientObj && setSelectedClient && setClientDetailMode && setCurrentPage) {
+                          setSelectedClient(clientObj);
+                          setClientDetailMode('view');
+                          setCurrentPage('client-detail');
+                        } else if (!clientObj && showGlobalToast) {
+                          showGlobalToast('Not Found', 'Client details could not be found.');
+                        }
+                      }}
+                      className="font-semibold text-lg text-[var(--accent)] hover:underline text-left break-words"
+                    >
+                      {order.clientName}
+                    </button>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="h-1.5 w-24 bg-[var(--border)] rounded-full overflow-hidden">
+                        <div className={`h-full transition-all ${order.risk === 'Delayed' ? 'bg-red-500' : order.risk === 'At Risk' ? 'bg-orange-500' : 'bg-emerald-500'}`} style={{ width: `${progress}%` }}></div>
+                      </div>
+                      <span className="text-[10px] font-bold text-[var(--text)]">{progress}%</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <ChevronDown size={20} className={`text-[var(--muted)] transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+
+                {/* Accordion Body (Visible when expanded) */}
+                {isExpanded && (
+                  <div className="px-4 pb-4 border-t border-[var(--border)]/50 pt-4 flex flex-col gap-4">
+                    {/* Priority & Dates */}
+                    <div className="flex items-start justify-between bg-[var(--surface)] rounded-xl p-3">
+                      <div className="flex flex-col gap-1 text-xs">
+                        <span className="text-[var(--muted)]">Order: <span className="font-medium text-[var(--text)]">{formatDateDDMMYY(order.orderDate)}</span></span>
+                        <span className="text-[var(--muted)]">Delivery: <span className="font-medium text-[var(--text)]">{formatDateDDMMYY(order.deliveryDate)}</span></span>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${order.priority === 'High' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : order.priority === 'Medium' ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20' : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)]'}`}>
+                          {order.priority || 'Normal'}
+                        </span>
+                        <span className={`text-[10px] font-bold ${order.risk === 'Delayed' ? 'text-red-500' : order.risk === 'At Risk' ? 'text-orange-500' : 'text-emerald-500'}`}>{order.risk || 'On Track'}</span>
+                      </div>
+                    </div>
+
+                    {/* Details */}
+                    <div className="flex items-start gap-3 bg-[var(--surface)] rounded-xl p-3">
+                      {order.image ? (
+                        <div 
+                          className="relative h-16 w-16 rounded-xl overflow-hidden border border-[var(--border)] cursor-pointer isolate bg-[var(--surface-strong)]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setImagePopup(order.image);
+                          }}
+                        >
+                          <div className="absolute inset-0 animate-pulse bg-[var(--border)] opacity-30 -z-10"></div>
+                          <img 
+                            src={order.image} 
+                            alt="Order" 
+                            className="h-full w-full object-cover transition-opacity duration-300 opacity-0"
+                            onLoad={(e) => e.currentTarget.classList.remove('opacity-0')}
+                          />
+                        </div>
+                      ) : (
+                        <div className="h-16 w-16 rounded-xl bg-[var(--surface-strong)] flex flex-col items-center justify-center text-[var(--muted)] border border-[var(--border)]">
+                          <Eye size={16} />
+                          <span className="text-[8px] mt-1 font-medium uppercase tracking-wider">No Image</span>
+                        </div>
+                      )}
+                      <div className="flex-1 flex flex-col gap-1">
+                        <p className="text-xs font-bold text-[var(--text)] break-words">{order.product}</p>
+                        <p className="text-[10px] text-[var(--muted)]">{order.fabric}</p>
+                        <div className="mt-1 flex items-baseline gap-1">
+                          <span className="font-semibold text-[var(--accent)] text-sm">₹{order.price}</span>
+                          {order.advance > 0 && (
+                            <span className="text-[9px] font-semibold text-green-600 ml-2">
+                              Adv: ₹{order.advance} • Bal: ₹{(parseFloat(order.price || 0) - parseFloat(order.advance || 0)).toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Main Status */}
+                    <div className="flex flex-col gap-2 bg-[var(--surface)] rounded-xl p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[var(--text)]">Main Status</span>
+                        <div className="relative w-36">
+                          <select
+                            className={`relative z-10 w-full appearance-none rounded-lg border bg-[var(--surface-strong)] px-2 py-1.5 pr-6 text-[11px] font-bold outline-none transition cursor-pointer active:scale-95 ${order.status === 'Completed' || order.status === 'Sold' ? 'text-green-600 border-green-500/30' : order.status === 'Hold' ? 'text-orange-500 border-orange-500/30' : 'text-[var(--text)] border-[var(--border)]'}`}
+                            value={order.status || 'Not Ready'}
+                            onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                            disabled={order.status === 'Sold'}
+                          >
+                            <option value="Not Ready">Not Ready</option>
+                            <option value="In Progress" disabled>In Progress</option>
+                            <option value="Hold">Hold</option>
+                            <option value="Completed" disabled>Completed</option>
+                            <option value="Sold" disabled>Sold</option>
+                          </select>
+                          <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[var(--muted)] z-10">
+                            <ChevronDown size={14} />
+                          </div>
+                        </div>
+                      </div>
+                      {((order.startDate && order.status !== 'Pending') || ((order.completedDate || order.closedDate) && (order.status === 'Completed' || order.status === 'Sold'))) && (
+                        <div className="flex items-center justify-between text-[10px] text-[var(--muted)] border-t border-[var(--border)]/50 pt-2 mt-1">
+                          {order.startDate && order.status !== 'Pending' ? (
+                            <span>Started: {formatDateDDMMYY(order.startDate)}</span>
+                          ) : <span />}
+                          {(order.completedDate || order.closedDate) && (order.status === 'Completed' || order.status === 'Sold') && (
+                            <span>Done: {formatDateDDMMYY(order.completedDate || order.closedDate)}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Pay Now Button (if completed) */}
+                    {order.status === 'Completed' && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            sessionStorage.setItem('erp_sales_init', JSON.stringify(order));
+                            sessionStorage.setItem('erp_sales_back', 'view-orders');
+                            if (setCurrentPage) setCurrentPage('create-sales');
+                          }}
+                          className="w-full flex items-center justify-center gap-1 rounded-lg border border-emerald-500 bg-emerald-500 text-white px-2 py-2 text-[11px] font-bold shadow-sm transition hover:brightness-95"
+                        >
+                          <CircleDollarSign size={14} /> Pay Now
+                        </button>
+                      </div>
+                    )}
+
+                       <div className="flex items-center gap-1">
+                          <button className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white" onClick={() => setViewOrder(order)}>
+                            <Eye size={16} />
+                          </button>
+                          <button className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white" onClick={() => setEditOrder(order)}>
+                            <Pencil size={16} />
+                          </button>
+                          <button className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white" onClick={() => setOrderToDelete(order)}>
+                            <Trash2 size={16} />
+                          </button>
+                       </div>
+
+                    <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setWaData({
+                              phone: clients.find(c => c.name?.toLowerCase() === order.clientName?.toLowerCase())?.phone || '',
+                              name: order.clientName || '',
+                              message: `Hi ${order.clientName},\n\nYour order #${order.id} for ${order.product} is currently ${order.status}.\nProgress: ${progress}%\nEstimated Delivery: ${formatDateDDMMYY(order.deliveryDate)}\n\nThank you!`,
+                              orderId: order.id
+                            })
+                            setShowWaPopup(true)
+                          }}
+                          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-[#25D366]/10 text-[#25D366] px-2 py-2 text-[10px] font-bold shadow-sm transition hover:bg-[#25D366]/20"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/></svg>
+                          WhatsApp
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (setCurrentPage && setViewOrder) {
+                              setViewOrder(order)
+                            }
+                          }}
+                          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-2 text-[10px] font-bold shadow-sm transition hover:bg-[var(--soft)]"
+                        >
+                          <Printer size={12} />
+                          Print
+                        </button>
+                    </div>
+                  </div>
+                )}
+                    </div>
+                  </div>
+                );
+              }}
+            />
+          )}
+        </div>
+
+
         {totalPages > 1 && (
-          <div className="mt-4 flex items-center justify-between border-t border-[var(--border)] pt-4">
+          <div className="mt-4 hidden md:flex items-center justify-between border-t border-[var(--border)] pt-4">
             <span className="text-sm text-[var(--muted)]">Showing {(currentPageNum - 1) * itemsPerPage + 1} to {Math.min(currentPageNum * itemsPerPage, filteredOrders.length)} of {filteredOrders.length}</span>
             <div className="flex gap-2">
               <button

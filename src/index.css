@@ -500,3 +500,9 @@ input[type="reset"],
 .my-masonry-grid_column > div {
   margin-bottom: 1.5rem;
 }
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}

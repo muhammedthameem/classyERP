@@ -1540,26 +1540,58 @@ function Dashboard({
               </div>
             )}
             
-            {currentPage !== 'overview' && (
-              <button 
-                onClick={goBack}
-                className="relative z-50 float-left mt-0.5 mr-4 grid h-10 w-10 place-items-center rounded-2xl bg-[var(--accent)] text-white shadow-md shadow-[var(--accent)]/20 hover:brightness-110 active:scale-95 transition-all"
-                aria-label="Go Back"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-              </button>
-            )}
-
             <Suspense fallback={
-                <div className="flex h-[60vh] w-full flex-col items-center justify-center">
-                  <div className="flex gap-2">
-                    <div className="h-3 w-3 rounded-full bg-[var(--accent)] animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="h-3 w-3 rounded-full bg-[var(--accent)] animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="h-3 w-3 rounded-full bg-[var(--accent)] animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="flex h-full flex-col gap-6 p-4 sm:p-6 md:p-8 overflow-hidden">
+                  {currentPage !== 'overview' && (
+                    <div className="relative z-30 float-left mt-0.5 mr-4 grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[var(--surface-strong)] animate-pulse border border-[var(--border)]" />
+                  )}
+                  {/* Header Skeleton */}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex flex-col gap-2">
+                      <div className="h-8 w-48 rounded-xl bg-[var(--surface-strong)] animate-pulse border border-[var(--border)]"></div>
+                      <div className="h-4 w-32 rounded-lg bg-[var(--surface-strong)] animate-pulse border border-[var(--border)]"></div>
+                    </div>
+                    <div className="h-10 w-32 rounded-xl bg-[var(--accent)]/10 animate-pulse border border-[var(--accent)]/20"></div>
                   </div>
-                  <p className="mt-4 text-sm font-medium text-[var(--muted)] animate-pulse">Loading...</p>
+                  
+                  {/* Stats/Cards Skeleton */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="h-32 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-sm animate-pulse p-5 flex flex-col justify-between overflow-hidden relative">
+                        <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+                        <div className="flex justify-between items-start">
+                          <div className="h-4 w-24 rounded-lg bg-[var(--surface-strong)]"></div>
+                          <div className="h-8 w-8 rounded-full bg-[var(--surface-strong)]"></div>
+                        </div>
+                        <div className="h-8 w-32 rounded-xl bg-[var(--surface-strong)]"></div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Table/List Skeleton */}
+                  <div className="flex-1 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-sm p-5 flex flex-col gap-4 animate-pulse mt-2 overflow-hidden relative">
+                    <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+                    <div className="h-6 w-1/4 rounded-lg bg-[var(--surface-strong)] mb-4"></div>
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div key={i} className="flex justify-between items-center py-4 border-b border-[var(--border)]/50 last:border-0">
+                        <div className="h-5 w-1/4 rounded-lg bg-[var(--surface-strong)]"></div>
+                        <div className="h-5 w-1/5 rounded-lg bg-[var(--surface-strong)] hidden sm:block"></div>
+                        <div className="h-5 w-1/6 rounded-lg bg-[var(--surface-strong)] hidden md:block"></div>
+                        <div className="h-8 w-20 rounded-xl bg-[var(--surface-strong)]"></div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               }>
+              {currentPage !== 'overview' && (
+                <button 
+                  onClick={goBack}
+                  className="relative z-30 float-left mt-0.5 mr-4 grid h-10 w-10 place-items-center rounded-2xl bg-[var(--accent)] text-white shadow-md shadow-[var(--accent)]/20 hover:brightness-110 active:scale-95 transition-all"
+                  aria-label="Go Back"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                </button>
+              )}
               {currentPage === 'add-order' && <AddOrderPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} orders={orders} setOrders={setOrders} clients={clients} inventory={inventory} setInventory={setInventory} orderTypes={orderTypes} setOrderTypes={setOrderTypes} productTypes={productTypes} setProductTypes={setProductTypes} inventoryUnits={inventoryUnits} setInventoryUnits={setInventoryUnits} saveOrder={saveOrder} saveConfig={saveConfig} orderLimits={orderLimits} setOrderLimits={setOrderLimits} cloudLoaded={cloudLoaded} />}
               {currentPage === 'view-orders' && <ViewOrdersPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} setSelectedClient={setSelectedClient} setClientDetailMode={setClientDetailMode} showGlobalToast={showGlobalToast} currentUser={user} highlightOrderId={highlightOrderId} setHighlightOrderId={setHighlightOrderId} orders={orders} setOrders={setOrders} inventory={inventory} setInventory={setInventory} clients={clients} saveOrder={saveOrder} deleteOrder={deleteOrder} cloudLoaded={cloudLoaded} />}
               {currentPage === 'add-clients' && <AddClientsPage themeStyle={themeStyle} setCurrentPage={setCurrentPage} showGlobalToast={showGlobalToast} currentUser={user} clients={clients} setClients={setClients} saveClient={saveClient} productTypes={productTypes} setProductTypes={setProductTypes} saveConfig={saveConfig} cloudLoaded={cloudLoaded} />}

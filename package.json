@@ -19,7 +19,8 @@
     "lucide-react": "^1.14.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "react-masonry-css": "^1.0.16"
+    "react-masonry-css": "^1.0.16",
+    "react-virtuoso": "^4.18.13"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
