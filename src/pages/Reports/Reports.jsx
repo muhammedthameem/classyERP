@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { CalendarDays, ChevronLeft, ChevronRight, ShoppingBag, TrendingUp, UsersRound, Download, Clock, BarChart3, CircleDollarSign, TrendingDown } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, ShoppingBag, TrendingUp, UsersRound, Download, Clock, BarChart3, CircleDollarSign, TrendingDown, ChevronDown } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
 import { formatDateDDMMYY, orders } from '../../utils/constants'
 import ReportStatCard from '../../components/ReportStatCard'
@@ -12,6 +12,12 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
 
   const [accounts, setAccounts] = useState([]);
   const [accountsLoading, setAccountsLoading] = useState(true);
+
+  const [expandedPurchaseId, setExpandedPurchaseId] = useState(null);
+  const [expandedSalesId, setExpandedSalesId] = useState(null);
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const [expandedIncomeId, setExpandedIncomeId] = useState(null);
+  const [expandedExpenseId, setExpandedExpenseId] = useState(null);
 
   useEffect(() => {
     const fetchAccounts = async () => {
@@ -397,7 +403,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                 <Download size={14} /> Export CSV
               </button>
             </div>
-            <div className="erp-table-container">
+            <div className="erp-table-container hidden md:block">
               <table className="erp-table">
                 <thead>
                   <tr>
@@ -439,6 +445,51 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                 </tbody>
               </table>
             </div>
+
+            <div className="block md:hidden mt-4">
+              {filteredInventory.map(i => {
+                const isExpanded = expandedPurchaseId === i.id;
+                return (
+                  <div key={i.id} className={`mb-3 rounded-2xl border ${isExpanded ? 'border-[var(--accent)] shadow-md bg-[var(--surface-strong)]' : 'border-[var(--border)] bg-[var(--surface)]'} overflow-hidden transition-all duration-300`}>
+                    <div 
+                      className="p-4 flex items-center justify-between cursor-pointer"
+                      onClick={() => setExpandedPurchaseId(isExpanded ? null : i.id)}
+                    >
+                      <div className="flex flex-col gap-1 w-full max-w-[65%]">
+                        <span className="font-bold text-sm text-[var(--accent)] truncate">{i.productName}</span>
+                        <span className="text-[10px] font-semibold text-[var(--muted)]">{new Date(i.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="font-black text-red-500 text-sm">₹{(parseFloat(i.purchasePrice || 0) * (parseFloat(i.quantity) || 0)).toLocaleString()}</span>
+                          <span className="text-[9px] font-bold text-[var(--muted)]">{i.quantity} {i.unit}</span>
+                        </div>
+                        <div className={`transition-transform duration-300 text-[var(--muted)] ${isExpanded ? 'rotate-180 text-[var(--accent)]' : ''}`}>
+                          <ChevronDown size={18} />
+                        </div>
+                      </div>
+                    </div>
+                    {isExpanded && (
+                      <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
+                        <div className="pt-3 border-t border-[var(--border)] flex flex-col gap-2">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-[var(--muted)] font-semibold">Vendor:</span>
+                            <span className="font-medium text-[var(--text)]">{i.vendorName || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-[var(--muted)] font-semibold">Unit Cost:</span>
+                            <span className="font-bold text-[var(--text)]">₹{parseFloat(i.purchasePrice || 0).toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {filteredInventory.length === 0 && !isDataLoading && (
+                <div className="text-center text-[var(--muted)] py-4 text-sm border border-[var(--border)] rounded-2xl">No purchase records found</div>
+              )}
+            </div>
           </section>
         </div>
 
@@ -454,7 +505,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                 <Download size={14} /> Export CSV
               </button>
             </div>
-            <div className="erp-table-container">
+            <div className="erp-table-container hidden md:block">
               <table className="erp-table">
                 <thead>
                   <tr>
@@ -491,6 +542,44 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
               </table>
             </div>
 
+            <div className="block md:hidden mt-4">
+              {paginatedSales.map(s => {
+                const isExpanded = expandedSalesId === s.id;
+                return (
+                  <div key={s.id} className={`mb-3 rounded-2xl border ${isExpanded ? 'border-[var(--accent)] shadow-md bg-[var(--surface-strong)]' : 'border-[var(--border)] bg-[var(--surface)]'} overflow-hidden transition-all duration-300`}>
+                    <div 
+                      className="p-4 flex items-center justify-between cursor-pointer"
+                      onClick={() => setExpandedSalesId(isExpanded ? null : s.id)}
+                    >
+                      <div className="flex flex-col gap-1 w-full max-w-[65%]">
+                        <span className="font-bold text-sm text-[var(--accent)] truncate">{s.client?.name || 'Guest'}</span>
+                        <span className="text-[10px] font-semibold text-[var(--muted)]">{new Date(s.timestamp).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="font-black text-[var(--accent)] text-sm">₹{parseFloat(s.total).toFixed(2)}</span>
+                        <div className={`transition-transform duration-300 text-[var(--muted)] ${isExpanded ? 'rotate-180 text-[var(--accent)]' : ''}`}>
+                          <ChevronDown size={18} />
+                        </div>
+                      </div>
+                    </div>
+                    {isExpanded && (
+                      <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
+                        <div className="pt-3 border-t border-[var(--border)] flex flex-col gap-2">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-[var(--muted)] font-semibold">Sale ID:</span>
+                            <span className="font-mono font-bold text-[var(--muted)]">{s.saleId}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {paginatedSales.length === 0 && !isDataLoading && (
+                <div className="text-center text-[var(--muted)] py-4 text-sm border border-[var(--border)] rounded-2xl">No sales found for this period</div>
+              )}
+            </div>
+
             {totalSalesPages > 1 && (
               <div className="mt-6 flex items-center justify-between border-t border-[var(--border)] pt-4">
                 <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Page {salesPage} of {totalSalesPages}</span>
@@ -525,7 +614,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                 <Download size={14} /> Export CSV
               </button>
             </div>
-            <div className="erp-table-container">
+            <div className="erp-table-container hidden md:block">
               <table className="erp-table">
                 <thead>
                   <tr>
@@ -569,6 +658,46 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
               </table>
             </div>
 
+            <div className="block md:hidden mt-4">
+              {paginatedOrders.map(o => {
+                const isExpanded = expandedOrderId === o.id;
+                return (
+                  <div key={o.id} className={`mb-3 rounded-2xl border ${isExpanded ? 'border-[var(--accent)] shadow-md bg-[var(--surface-strong)]' : 'border-[var(--border)] bg-[var(--surface)]'} overflow-hidden transition-all duration-300`}>
+                    <div 
+                      className="p-4 flex items-center justify-between cursor-pointer"
+                      onClick={() => setExpandedOrderId(isExpanded ? null : o.id)}
+                    >
+                      <div className="flex flex-col gap-1 w-full max-w-[65%]">
+                        <span className="font-bold text-sm text-[var(--accent)] truncate">#{o.id} - {o.product}</span>
+                        <span className="text-[10px] font-semibold text-[var(--muted)]">{formatDateDDMMYY(o.orderDate)}</span>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${o.status === 'Completed' ? 'bg-green-100 text-green-700' : o.status === 'Sold' ? 'bg-purple-100 text-purple-700' : o.status === 'In Progress' ? 'bg-blue-100 text-blue-700' : o.status === 'Hold' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-700'}`}>
+                          {o.status}
+                        </span>
+                        <div className={`transition-transform duration-300 text-[var(--muted)] ${isExpanded ? 'rotate-180 text-[var(--accent)]' : ''}`}>
+                          <ChevronDown size={18} />
+                        </div>
+                      </div>
+                    </div>
+                    {isExpanded && (
+                      <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
+                        <div className="pt-3 border-t border-[var(--border)] flex flex-col gap-2">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-[var(--muted)] font-semibold">Price:</span>
+                            <span className="font-bold">{o.status === 'Sold' && saleOrderPrices[o.id] ? `₹${saleOrderPrices[o.id]}` : o.price}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {paginatedOrders.length === 0 && !isDataLoading && (
+                <div className="text-center text-[var(--muted)] py-4 text-sm border border-[var(--border)] rounded-2xl">No orders found for this period</div>
+              )}
+            </div>
+
             {totalOrdersPages > 1 && (
               <div className="mt-6 flex items-center justify-between border-t border-[var(--border)] pt-4">
                 <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Page {ordersPage} of {totalOrdersPages}</span>
@@ -605,7 +734,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                 <Download size={14} /> Export CSV
               </button>
             </div>
-            <div className="erp-table-container">
+            <div className="erp-table-container hidden md:block">
               <table className="erp-table">
                 <thead>
                   <tr>
@@ -642,6 +771,44 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
               </table>
             </div>
 
+            <div className="block md:hidden mt-4">
+              {paginatedIncome.map(s => {
+                const isExpanded = expandedIncomeId === s.id;
+                return (
+                  <div key={s.id} className={`mb-3 rounded-2xl border ${isExpanded ? 'border-[var(--accent)] shadow-md bg-[var(--surface-strong)]' : 'border-[var(--border)] bg-[var(--surface)]'} overflow-hidden transition-all duration-300`}>
+                    <div 
+                      className="p-4 flex items-center justify-between cursor-pointer"
+                      onClick={() => setExpandedIncomeId(isExpanded ? null : s.id)}
+                    >
+                      <div className="flex flex-col gap-1 w-full max-w-[65%]">
+                        <span className="font-bold text-sm text-[var(--accent)] truncate">{s.category}</span>
+                        <span className="text-[10px] font-semibold text-[var(--muted)]">{new Date(s.date).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="font-black text-green-600 text-sm">₹{parseFloat(s.amount).toFixed(2)}</span>
+                        <div className={`transition-transform duration-300 text-[var(--muted)] ${isExpanded ? 'rotate-180 text-[var(--accent)]' : ''}`}>
+                          <ChevronDown size={18} />
+                        </div>
+                      </div>
+                    </div>
+                    {isExpanded && (
+                      <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
+                        <div className="pt-3 border-t border-[var(--border)] flex flex-col gap-2">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-[var(--muted)] font-semibold">Reference:</span>
+                            <span className="font-medium">{s.reference || '-'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {paginatedIncome.length === 0 && !isDataLoading && (
+                <div className="text-center text-[var(--muted)] py-4 text-sm border border-[var(--border)] rounded-2xl">No income records found for this period</div>
+              )}
+            </div>
+
             {totalIncomePages > 1 && (
               <div className="mt-6 flex items-center justify-between border-t border-[var(--border)] pt-4">
                 <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Page {incomePage} of {totalIncomePages}</span>
@@ -676,7 +843,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                 <Download size={14} /> Export CSV
               </button>
             </div>
-            <div className="erp-table-container">
+            <div className="erp-table-container hidden md:block">
               <table className="erp-table">
                 <thead>
                   <tr>
@@ -711,6 +878,44 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                   )}
                 </tbody>
               </table>
+            </div>
+
+            <div className="block md:hidden mt-4">
+              {paginatedExpense.map(s => {
+                const isExpanded = expandedExpenseId === s.id;
+                return (
+                  <div key={s.id} className={`mb-3 rounded-2xl border ${isExpanded ? 'border-[var(--accent)] shadow-md bg-[var(--surface-strong)]' : 'border-[var(--border)] bg-[var(--surface)]'} overflow-hidden transition-all duration-300`}>
+                    <div 
+                      className="p-4 flex items-center justify-between cursor-pointer"
+                      onClick={() => setExpandedExpenseId(isExpanded ? null : s.id)}
+                    >
+                      <div className="flex flex-col gap-1 w-full max-w-[65%]">
+                        <span className="font-bold text-sm text-[var(--accent)] truncate">{s.category}</span>
+                        <span className="text-[10px] font-semibold text-[var(--muted)]">{new Date(s.date).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="font-black text-red-600 text-sm">₹{parseFloat(s.amount).toFixed(2)}</span>
+                        <div className={`transition-transform duration-300 text-[var(--muted)] ${isExpanded ? 'rotate-180 text-[var(--accent)]' : ''}`}>
+                          <ChevronDown size={18} />
+                        </div>
+                      </div>
+                    </div>
+                    {isExpanded && (
+                      <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
+                        <div className="pt-3 border-t border-[var(--border)] flex flex-col gap-2">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-[var(--muted)] font-semibold">Reference:</span>
+                            <span className="font-medium">{s.reference || '-'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {paginatedExpense.length === 0 && !isDataLoading && (
+                <div className="text-center text-[var(--muted)] py-4 text-sm border border-[var(--border)] rounded-2xl">No expense records found for this period</div>
+              )}
             </div>
 
             {totalExpensePages > 1 && (

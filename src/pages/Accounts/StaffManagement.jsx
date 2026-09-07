@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Users, Pencil, Trash2, Search, Plus, Save, X, Download, FileText, ChevronUp, ChevronDown } from 'lucide-react'
+import { Virtuoso } from 'react-virtuoso'
 import html2pdf from 'html2pdf.js'
 import UndoToast from '../../components/UndoToast'
 import supabase from '../../supabase'
@@ -8,6 +9,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
   const rowRefs = useRef({})
   const tableContainerRef = useRef(null);
   const [isSendingPdf, setIsSendingPdf] = useState(false);
+  const [expandedMobileId, setExpandedMobileId] = useState(null);
   const [formData, setFormData] = useState({
     id: '',
     name: '',
@@ -854,7 +856,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
           </div>
         </div>
 
-        <div className="erp-table-container" ref={tableContainerRef}>
+        <div className="erp-table-container hidden md:block" ref={tableContainerRef}>
           <table className="erp-table">
             <thead>
               <tr>
@@ -946,6 +948,93 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="block md:hidden mt-4 h-[65vh] -mx-4 px-4">
+          <Virtuoso
+            data={sortedStaff}
+            overscan={200}
+            itemContent={(index, staff) => {
+              const isExpanded = expandedMobileId === staff.id;
+              return (
+                <div className={`mb-3 rounded-2xl border ${isExpanded ? 'border-[var(--accent)] shadow-md bg-[var(--surface-strong)]' : 'border-[var(--border)] bg-[var(--surface)]'} overflow-hidden transition-all duration-300`}>
+                  <div 
+                    className="p-4 flex items-center justify-between cursor-pointer"
+                    onClick={() => setExpandedMobileId(isExpanded ? null : staff.id)}
+                  >
+                    <div className="flex flex-col gap-1 w-full max-w-[65%]">
+                      <span className="font-bold text-sm text-[var(--text)] truncate">{staff.name}</span>
+                      <span className="text-[11px] font-semibold text-[var(--muted)]">{staff.phone}</span>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="rounded bg-[var(--accent-soft)] px-2 py-1 text-xs font-semibold text-[var(--accent)]">{staff.designation}</span>
+                      <div className={`transition-transform duration-300 text-[var(--muted)] ${isExpanded ? 'rotate-180 text-[var(--accent)]' : ''}`}>
+                        <ChevronDown size={18} />
+                      </div>
+                    </div>
+                  </div>
+                  {isExpanded && (
+                    <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
+                      <div className="pt-3 border-t border-[var(--border)] mb-4 flex flex-col gap-2">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-[var(--muted)] font-semibold">Monthly Salary:</span>
+                          <span className="font-medium text-[var(--text)]">₹{parseFloat(staff.salary || 0).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-[var(--muted)] font-semibold">Salary / Day:</span>
+                          <span className="font-medium text-[var(--text)]">{staff.salaryPerDay ? `₹${parseFloat(staff.salaryPerDay).toLocaleString()}` : '-'}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-[var(--muted)] font-semibold">Balance Due:</span>
+                          <span className="font-bold text-red-500">{staff.balanceDue && parseFloat(staff.balanceDue) !== 0 ? `₹${parseFloat(staff.balanceDue).toLocaleString()}` : '-'}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-[var(--muted)] font-semibold">Total Paid:</span>
+                          <div className="flex flex-col gap-1 items-end">
+                            <span className="text-green-600 font-bold">₹{getDynamicTotalPaid(staff).toLocaleString()}</span>
+                            {checkPaidStatus(staff) ? (
+                              <span className="w-fit rounded bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">Paid {tableMonthFilter ? '' : '(This Month)'}</span>
+                            ) : (
+                              <span className="w-fit rounded bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">Unpaid {tableMonthFilter ? '' : '(This Month)'}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] font-bold text-xs hover:bg-[var(--accent)] hover:text-white transition"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setLedgerStaff(staff)
+                          }}
+                        >
+                          <FileText size={16} /> Ledger
+                        </button>
+                        <button
+                          className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white transition shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(staff)
+                          }}
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(staff.id)
+                          }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            }}
+          />
         </div>
       </section>
 

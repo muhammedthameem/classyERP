@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, Search, TrendingUp, Eye, Trash2, Download, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Search, TrendingUp, Eye, Trash2, Download, Plus, ChevronDown } from 'lucide-react'
+import { Virtuoso } from 'react-virtuoso'
 import html2pdf from 'html2pdf.js'
 import { generateReceiptHtmlString } from '../../utils/pdfHelper'
 import { orders } from '../../utils/constants'
@@ -15,6 +16,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
   const [recentlyDeletedSale, setRecentlyDeletedSale] = useState(null);
   const undoTimeoutRef = useRef(null);
   const [isSendingPdf, setIsSendingPdf] = useState(false);
+  const [expandedMobileId, setExpandedMobileId] = useState(null);
 
   const isDataLoading = !cloudLoaded && (!sales || sales.length === 0);
 
@@ -230,7 +232,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
           </label>
         </div>
 
-        <div className="erp-table-container">
+        <div className="erp-table-container hidden md:block">
           <table className="erp-table">
             <thead>
               <tr>
@@ -312,6 +314,69 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="block md:hidden mt-4 h-[65vh] -mx-4 px-4">
+          <Virtuoso
+            data={filteredSales}
+            overscan={200}
+            itemContent={(index, sale) => {
+              const isExpanded = expandedMobileId === sale.id;
+              const totalAmount = sale.items.reduce((sum, item) => sum + ((parseFloat(item.price) || parseFloat(item.rate) || 0) * (item.qty || 0)) - (parseFloat(item.discount) || 0), 0);
+              return (
+                <div className={`mb-3 rounded-2xl border ${isExpanded ? 'border-[var(--accent)] shadow-md bg-[var(--surface-strong)]' : 'border-[var(--border)] bg-[var(--surface)]'} overflow-hidden transition-all duration-300`}>
+                  <div 
+                    className="p-4 flex items-center justify-between cursor-pointer"
+                    onClick={() => setExpandedMobileId(isExpanded ? null : sale.id)}
+                  >
+                    <div className="flex flex-col gap-1 w-full max-w-[60%]">
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-[var(--text)] text-[13px] truncate">{sale.saleId}</span>
+                      </div>
+                      <p className="font-bold text-sm text-[var(--accent)] truncate">{sale.client?.name || 'Guest'}</p>
+                      <span className="text-[10px] uppercase font-semibold text-[var(--muted)]">{new Date(sale.timestamp).toDateString() === new Date().toDateString() ? new Date(sale.timestamp).toLocaleString() : new Date(sale.timestamp).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="font-black text-emerald-600 text-sm">₹{totalAmount.toFixed(2)}</span>
+                        {sale.paymentMode && (
+                          <span className="text-[9px] font-bold text-[var(--muted)] bg-[var(--soft)] px-1.5 py-0.5 rounded uppercase">{sale.paymentMode}</span>
+                        )}
+                      </div>
+                      <div className={`transition-transform duration-300 text-[var(--muted)] ${isExpanded ? 'rotate-180 text-[var(--accent)]' : ''}`}>
+                        <ChevronDown size={18} />
+                      </div>
+                    </div>
+                  </div>
+                  {isExpanded && (
+                    <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
+                      <div className="pt-3 border-t border-[var(--border)] mb-4">
+                        <h4 className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] mb-2">Items Sold</h4>
+                        <div className="flex flex-col gap-2">
+                          {sale.items.map((item, idx) => (
+                            <div key={idx} className="flex justify-between items-center text-xs p-2 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
+                              <span className="font-semibold text-[var(--text)]">{item.qty}x {item.productName}</span>
+                              <span className="font-bold text-[var(--accent)]">₹{((parseFloat(item.price) || parseFloat(item.rate) || 0) * (item.qty || 0)).toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={(e) => { e.stopPropagation(); setViewSale(sale); }} className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] font-bold text-xs hover:bg-[var(--accent)] hover:text-white transition">
+                          <Eye size={16} /> View Details
+                        </button>
+                        {currentUser?.role === 'Admin' && (
+                          <button onClick={(e) => { e.stopPropagation(); setSaleToDelete(sale); }} className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition shrink-0">
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            }}
+          />
         </div>
 
         {totalPages > 1 && (

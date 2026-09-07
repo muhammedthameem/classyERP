@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, Package, Search, Eye, Pencil, Trash2, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Package, Search, Eye, Pencil, Trash2, Plus, ChevronDown } from 'lucide-react'
+import { Virtuoso } from 'react-virtuoso'
 import supabase from '../../supabase'
 import UndoToast from '../../components/UndoToast'
 
@@ -9,6 +10,7 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
   const [itemToDelete, setItemToDelete] = useState(null);
   const [recentlyDeletedInventory, setRecentlyDeletedInventory] = useState(null);
   const undoTimeoutRef = useRef(null);
+  const [expandedMobileId, setExpandedMobileId] = useState(null);
 
   const isDataLoading = !cloudLoaded && (!inventory || inventory.length === 0);
 
@@ -175,7 +177,7 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
       </div>
 
       <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur overflow-hidden">
-        <div className="erp-table-container">
+        <div className="erp-table-container hidden md:block">
           <table className="erp-table">
             <thead>
               <tr>
@@ -283,6 +285,96 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="block md:hidden mt-4 h-[65vh] -mx-4 px-4">
+          <Virtuoso
+            data={filteredInventory}
+            overscan={200}
+            itemContent={(index, item) => {
+              const isExpanded = expandedMobileId === item.id;
+              return (
+                <div className={`mb-3 rounded-2xl border ${isExpanded ? 'border-[var(--accent)] shadow-md bg-[var(--surface-strong)]' : 'border-[var(--border)] bg-[var(--surface)]'} overflow-hidden transition-all duration-300`}>
+                  <div 
+                    className="p-4 flex items-center justify-between cursor-pointer"
+                    onClick={() => setExpandedMobileId(isExpanded ? null : item.id)}
+                  >
+                    <div className="flex flex-col gap-1 w-full max-w-[65%]">
+                      <p className="font-bold text-sm text-[var(--accent)] truncate">{item.productName}</p>
+                      <p className="text-[10px] uppercase font-semibold text-[var(--muted)]">ID: {item.productId}</p>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="flex flex-col items-end gap-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`h-2 w-2 rounded-full ${item.quantity > 10 ? 'bg-green-500' : item.quantity > 0 ? 'bg-orange-500' : 'bg-red-500'}`}></span>
+                          <span className="font-black text-[var(--text)] text-sm">{item.quantity}</span>
+                        </div>
+                        <span className="text-[9px] font-bold text-[var(--muted)] uppercase">{item.unit}</span>
+                      </div>
+                      <div className={`transition-transform duration-300 text-[var(--muted)] ${isExpanded ? 'rotate-180 text-[var(--accent)]' : ''}`}>
+                        <ChevronDown size={18} />
+                      </div>
+                    </div>
+                  </div>
+                  {isExpanded && (
+                    <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
+                      <div className="pt-3 border-t border-[var(--border)] mb-4 flex flex-col gap-2">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-[var(--muted)] font-semibold">Category:</span>
+                          <span className="font-medium text-[var(--text)]">{item.productType}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-[var(--muted)] font-semibold">Price:</span>
+                          <span className="font-bold text-[var(--accent)]">₹{item.finalPrice} <span className="text-[10px] text-[var(--muted)]">/ {item.unit}</span></span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-[var(--muted)] font-semibold">Vendor:</span>
+                          <span className="font-medium text-[var(--text)]">{item.vendorName || '-'}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] font-bold text-xs hover:bg-[var(--accent)] hover:text-white transition"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedInventoryItem(item);
+                            setInventoryDetailMode('view');
+                            setCurrentPage('inventory-detail');
+                          }}
+                        >
+                          <Eye size={16} /> Details
+                        </button>
+                        {currentUser?.role === 'Admin' && (
+                          <button
+                            className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white transition shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedInventoryItem(item);
+                              setInventoryDetailMode('edit');
+                              setCurrentPage('inventory-detail');
+                            }}
+                          >
+                            <Pencil size={16} />
+                          </button>
+                        )}
+                        {currentUser?.role === 'Admin' && (
+                          <button
+                            className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setItemToDelete(item);
+                            }}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            }}
+          />
         </div>
 
         {totalPages > 1 && (

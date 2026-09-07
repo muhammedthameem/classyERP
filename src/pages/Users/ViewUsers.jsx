@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Search, Eye, Pencil, Trash2 } from 'lucide-react'
+import { Search, Eye, Pencil, Trash2, ChevronDown } from 'lucide-react'
+import { Virtuoso } from 'react-virtuoso'
 import supabase from '../../supabase'
 
 function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designations, setDesignations, showGlobalToast, currentUser, cloudLoaded }) {
@@ -10,6 +11,7 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
   const [showRepeatPassword, setShowRepeatPassword] = useState(false)
   const [showDesignationDropdown, setShowDesignationDropdown] = useState(false)
   const [designationSearch, setDesignationSearch] = useState('')
+  const [expandedMobileId, setExpandedMobileId] = useState(null)
 
   const [userToDelete, setUserToDelete] = useState(null)
 
@@ -379,7 +381,7 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
       </div>
 
       <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
-        <div className="erp-table-container">
+        <div className="erp-table-container hidden md:block">
           <table className="erp-table">
             <thead>
               <tr>
@@ -485,6 +487,85 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="block md:hidden mt-4 h-[65vh] -mx-4 px-4">
+          <Virtuoso
+            data={filteredUsers}
+            overscan={200}
+            itemContent={(index, user) => {
+              const isExpanded = expandedMobileId === user.id;
+              const isCurrentUser = currentUser && user.email === currentUser.email;
+              return (
+                <div className={`mb-3 rounded-2xl border ${isExpanded ? 'border-[var(--accent)] shadow-md bg-[var(--surface-strong)]' : 'border-[var(--border)] bg-[var(--surface)]'} overflow-hidden transition-all duration-300`}>
+                  <div 
+                    className="p-4 flex items-center justify-between cursor-pointer"
+                    onClick={() => setExpandedMobileId(isExpanded ? null : user.id)}
+                  >
+                    <div className="flex flex-col gap-1 w-full max-w-[65%]">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-[var(--accent)] truncate">{user.name}</span>
+                        {isCurrentUser && (
+                          <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent)] uppercase tracking-wider">You</span>
+                        )}
+                      </div>
+                      <span className="text-[11px] font-semibold text-[var(--text)]">{user.email}</span>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="rounded-md bg-[var(--soft)] px-2 py-1 text-xs font-semibold text-[var(--text)]">{user.designation}</span>
+                      <div className={`transition-transform duration-300 text-[var(--muted)] ${isExpanded ? 'rotate-180 text-[var(--accent)]' : ''}`}>
+                        <ChevronDown size={18} />
+                      </div>
+                    </div>
+                  </div>
+                  {isExpanded && (
+                    <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
+                      <div className="pt-3 border-t border-[var(--border)] mb-4 flex flex-col gap-2">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-[var(--muted)] font-semibold">Phone:</span>
+                          <span className="font-medium text-[var(--text)]">{user.phone}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] font-bold text-xs hover:bg-[var(--accent)] hover:text-white transition"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewUser(user)
+                          }}
+                        >
+                          <Eye size={16} /> View Profile
+                        </button>
+                        {currentUser?.role === 'Admin' && (
+                          <button
+                            className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white transition shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditUser({ ...user, repeatPassword: user.password })
+                              setDesignationSearch(user.designation)
+                            }}
+                          >
+                            <Pencil size={16} />
+                          </button>
+                        )}
+                        {currentUser?.role === 'Admin' && !isCurrentUser && user.designation !== 'Admin' && (
+                          <button
+                            className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setUserToDelete(user)
+                            }}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            }}
+          />
         </div>
       </section>
     </div>
