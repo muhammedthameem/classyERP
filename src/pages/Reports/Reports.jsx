@@ -449,22 +449,25 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
 
             <div className="block md:hidden mt-4 h-[50vh] -mx-4 px-4">
               <Virtuoso
-                data={filteredSales}
+                data={filteredInventory}
                 overscan={200}
-                itemContent={(index, s) => {
-                  const isExpanded = expandedSalesId === s.id;
+                itemContent={(index, i) => {
+                  const isExpanded = expandedPurchaseId === i.id;
                   return (
-                    <div className={`mb-3 rounded-2xl border ${isExpanded ? 'border-[var(--accent)] shadow-md bg-[var(--surface-strong)]' : 'border-[var(--border)] bg-[var(--surface)]'} overflow-hidden transition-all duration-300`}>
+                    <div className={`mb-3 rounded-2xl border ${isExpanded ? 'border-[var(--accent)] shadow-md bg-[var(--surface-strong)]' : 'border-[var(--border)] bg-[var(--surface)]'} overflow-hidden transition-all duration-300 mx-4`}>
                       <div 
                         className="p-4 flex items-center justify-between cursor-pointer"
-                        onClick={() => setExpandedSalesId(isExpanded ? null : s.id)}
+                        onClick={() => setExpandedPurchaseId(isExpanded ? null : i.id)}
                       >
                         <div className="flex flex-col gap-1 w-full max-w-[65%]">
-                          <span className="font-bold text-sm text-[var(--accent)] truncate">{s.client?.name || 'Guest'}</span>
-                          <span className="text-[10px] font-semibold text-[var(--muted)]">{new Date(s.timestamp).toLocaleDateString()}</span>
+                          <span className="font-bold text-sm text-[var(--accent)] truncate">{i.productName}</span>
+                          <span className="text-[10px] font-semibold text-[var(--muted)]">{new Date(i.createdAt).toLocaleDateString()}</span>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          <span className="font-black text-[var(--accent)] text-sm">₹{parseFloat(s.total).toFixed(2)}</span>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="font-black text-red-500 text-sm">₹{(parseFloat(i.purchasePrice || 0) * (parseFloat(i.quantity) || 0)).toLocaleString()}</span>
+                            <span className="text-[9px] font-bold text-[var(--muted)]">{i.quantity} {i.unit}</span>
+                          </div>
                           <div className={`transition-transform duration-300 text-[var(--muted)] ${isExpanded ? 'rotate-180 text-[var(--accent)]' : ''}`}>
                             <ChevronDown size={18} />
                           </div>
@@ -474,8 +477,12 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                         <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
                           <div className="pt-3 border-t border-[var(--border)] flex flex-col gap-2">
                             <div className="flex justify-between items-center text-xs">
-                              <span className="text-[var(--muted)] font-semibold">Sale ID:</span>
-                              <span className="font-mono font-bold text-[var(--muted)]">{s.saleId}</span>
+                              <span className="text-[var(--muted)] font-semibold">Vendor:</span>
+                              <span className="font-medium text-[var(--text)]">{i.vendorName || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-[var(--muted)] font-semibold">Unit Cost:</span>
+                              <span className="font-bold text-[var(--text)]">₹{parseFloat(i.purchasePrice || 0).toFixed(2)}</span>
                             </div>
                           </div>
                         </div>
@@ -537,42 +544,43 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
               </table>
             </div>
 
-            <div className="block md:hidden mt-4">
-              {paginatedSales.map(s => {
-                const isExpanded = expandedSalesId === s.id;
-                return (
-                  <div key={s.id} className={`mb-3 rounded-2xl border ${isExpanded ? 'border-[var(--accent)] shadow-md bg-[var(--surface-strong)]' : 'border-[var(--border)] bg-[var(--surface)]'} overflow-hidden transition-all duration-300`}>
-                    <div 
-                      className="p-4 flex items-center justify-between cursor-pointer"
-                      onClick={() => setExpandedSalesId(isExpanded ? null : s.id)}
-                    >
-                      <div className="flex flex-col gap-1 w-full max-w-[65%]">
-                        <span className="font-bold text-sm text-[var(--accent)] truncate">{s.client?.name || 'Guest'}</span>
-                        <span className="text-[10px] font-semibold text-[var(--muted)]">{new Date(s.timestamp).toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span className="font-black text-[var(--accent)] text-sm">₹{parseFloat(s.total).toFixed(2)}</span>
-                        <div className={`transition-transform duration-300 text-[var(--muted)] ${isExpanded ? 'rotate-180 text-[var(--accent)]' : ''}`}>
-                          <ChevronDown size={18} />
+            <div className="block md:hidden mt-4 h-[50vh] -mx-4 px-4">
+              <Virtuoso
+                data={filteredSales}
+                overscan={200}
+                itemContent={(index, s) => {
+                  const isExpanded = expandedSalesId === s.id;
+                  return (
+                    <div className={`mb-3 rounded-2xl border ${isExpanded ? 'border-[var(--accent)] shadow-md bg-[var(--surface-strong)]' : 'border-[var(--border)] bg-[var(--surface)]'} overflow-hidden transition-all duration-300 mx-4`}>
+                      <div 
+                        className="p-4 flex items-center justify-between cursor-pointer"
+                        onClick={() => setExpandedSalesId(isExpanded ? null : s.id)}
+                      >
+                        <div className="flex flex-col gap-1 w-full max-w-[65%]">
+                          <span className="font-bold text-sm text-[var(--accent)] truncate">{s.client?.name || 'Guest'}</span>
+                          <span className="text-[10px] font-semibold text-[var(--muted)]">{new Date(s.timestamp).toLocaleDateString()}</span>
                         </div>
-                      </div>
-                    </div>
-                    {isExpanded && (
-                      <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
-                        <div className="pt-3 border-t border-[var(--border)] flex flex-col gap-2">
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-[var(--muted)] font-semibold">Sale ID:</span>
-                            <span className="font-mono font-bold text-[var(--muted)]">{s.saleId}</span>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="font-black text-[var(--accent)] text-sm">₹{parseFloat(s.total).toFixed(2)}</span>
+                          <div className={`transition-transform duration-300 text-[var(--muted)] ${isExpanded ? 'rotate-180 text-[var(--accent)]' : ''}`}>
+                            <ChevronDown size={18} />
                           </div>
                         </div>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-              {paginatedSales.length === 0 && !isDataLoading && (
-                <div className="text-center text-[var(--muted)] py-4 text-sm border border-[var(--border)] rounded-2xl">No sales found for this period</div>
-              )}
+                      {isExpanded && (
+                        <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
+                          <div className="pt-3 border-t border-[var(--border)] flex flex-col gap-2">
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-[var(--muted)] font-semibold">Sale ID:</span>
+                              <span className="font-mono font-bold text-[var(--muted)]">{s.saleId}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }}
+              />
             </div>
 
             {totalSalesPages > 1 && (
@@ -660,7 +668,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                 itemContent={(index, o) => {
                   const isExpanded = expandedOrderId === o.id;
                   return (
-                    <div className={`mb-3 rounded-2xl border ${isExpanded ? 'border-[var(--accent)] shadow-md bg-[var(--surface-strong)]' : 'border-[var(--border)] bg-[var(--surface)]'} overflow-hidden transition-all duration-300`}>
+                    <div className={`mb-3 rounded-2xl border ${isExpanded ? 'border-[var(--accent)] shadow-md bg-[var(--surface-strong)]' : 'border-[var(--border)] bg-[var(--surface)]'} overflow-hidden transition-all duration-300 mx-4`}>
                       <div 
                         className="p-4 flex items-center justify-between cursor-pointer"
                         onClick={() => setExpandedOrderId(isExpanded ? null : o.id)}
@@ -774,7 +782,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                 itemContent={(index, s) => {
                   const isExpanded = expandedIncomeId === s.id;
                   return (
-                    <div className={`mb-3 rounded-2xl border ${isExpanded ? 'border-[var(--accent)] shadow-md bg-[var(--surface-strong)]' : 'border-[var(--border)] bg-[var(--surface)]'} overflow-hidden transition-all duration-300`}>
+                    <div className={`mb-3 rounded-2xl border ${isExpanded ? 'border-[var(--accent)] shadow-md bg-[var(--surface-strong)]' : 'border-[var(--border)] bg-[var(--surface)]'} overflow-hidden transition-all duration-300 mx-4`}>
                       <div 
                         className="p-4 flex items-center justify-between cursor-pointer"
                         onClick={() => setExpandedIncomeId(isExpanded ? null : s.id)}
@@ -884,7 +892,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                 itemContent={(index, s) => {
                   const isExpanded = expandedExpenseId === s.id;
                   return (
-                    <div className={`mb-3 rounded-2xl border ${isExpanded ? 'border-[var(--accent)] shadow-md bg-[var(--surface-strong)]' : 'border-[var(--border)] bg-[var(--surface)]'} overflow-hidden transition-all duration-300`}>
+                    <div className={`mb-3 rounded-2xl border ${isExpanded ? 'border-[var(--accent)] shadow-md bg-[var(--surface-strong)]' : 'border-[var(--border)] bg-[var(--surface)]'} overflow-hidden transition-all duration-300 mx-4`}>
                       <div 
                         className="p-4 flex items-center justify-between cursor-pointer"
                         onClick={() => setExpandedExpenseId(isExpanded ? null : s.id)}
