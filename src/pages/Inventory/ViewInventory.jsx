@@ -378,7 +378,7 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
         </div>
 
         {totalPages > 1 && (
-          <div className="mt-4 flex items-center justify-between border-t border-[var(--border)] pt-4">
+          <div className="hidden md:flex mt-4 items-center justify-between border-t border-[var(--border)] pt-4">
             <span className="text-sm text-[var(--muted)]">Showing {(currentPageNum - 1) * itemsPerPage + 1} to {Math.min(currentPageNum * itemsPerPage, filteredInventory.length)} of {filteredInventory.length}</span>
             <div className="flex gap-2">
               <button
