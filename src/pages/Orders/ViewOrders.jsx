@@ -1847,7 +1847,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                             )}
                             
                             {openStagePopoverId === order.id && order.status !== 'Completed' && order.status !== 'Sold' && (
-                              <div className={`absolute ${index >= paginatedOrders.length - 2 && paginatedOrders.length > 3 ? 'bottom-full mb-1' : 'top-full mt-1'} right-0 sm:left-0 sm:right-auto w-[220px] sm:w-64 bg-[var(--surface-strong)] border border-[var(--border)] rounded-xl shadow-xl z-[100] p-2 text-xs flex flex-col gap-1 backdrop-blur-xl`}>
+                              <div className={`hidden sm:flex absolute ${index >= paginatedOrders.length - 2 && paginatedOrders.length > 3 ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 w-64 bg-[var(--surface-strong)] border border-[var(--border)] rounded-xl shadow-xl z-[100] p-2 text-xs flex-col gap-1 backdrop-blur-xl`}>
                                 {(order.workflow || DEFAULT_WORKFLOWS[order.product] || DEFAULT_WORKFLOWS['Default']).map(stage => {
                                   const task = (order.productionTasks || []).find(t => t.stage === stage) || { status: 'Pending' };
                                   let disableCompletedButton = false;
@@ -2037,7 +2037,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                           )}
                         </button>
                         {openStagePopoverId === order.id && order.status !== 'Completed' && order.status !== 'Sold' && (
-                          <div className="absolute top-full left-0 mt-1 w-[240px] max-h-[250px] overflow-y-auto bg-[var(--surface-strong)] border border-[var(--border)] rounded-xl shadow-xl z-[100] p-2 text-xs flex flex-col gap-1 backdrop-blur-xl custom-scrollbar">
+                          <div className="hidden sm:flex absolute top-full left-0 mt-1 w-[240px] max-h-[250px] overflow-y-auto bg-[var(--surface-strong)] border border-[var(--border)] rounded-xl shadow-xl z-[100] p-2 text-xs flex-col gap-1 backdrop-blur-xl custom-scrollbar">
                             {(order.workflow || DEFAULT_WORKFLOWS[order.product] || DEFAULT_WORKFLOWS['Default']).map(stage => {
                               const task = (order.productionTasks || []).find(t => t.stage === stage) || { status: 'Pending' };
                               let disableCompletedButton = false;
