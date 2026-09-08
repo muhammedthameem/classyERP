@@ -52,30 +52,30 @@ function InventoryDetailPage({ themeStyle, item, setCurrentPage, setSelectedInve
 
 
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-[var(--surface)] p-6 rounded-[24px] border border-[var(--border)] shadow-sm">
-        <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-[var(--surface)] p-5 sm:p-6 rounded-[24px] border border-[var(--border)] shadow-sm">
+        <div className="text-center sm:text-left">
           <h1 className="text-2xl font-bold">{mode === 'view' ? 'Inventory Details' : 'Edit Inventory Item'}</h1>
           <p className="text-sm text-[var(--muted)]">{formData.productName} (ID: {formData.productId})</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 w-full sm:w-auto">
           <button
             onClick={() => setCurrentPage('create-inventory')}
-            className="flex items-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95"
+            className="col-span-2 sm:col-span-1 flex justify-center items-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95"
           >
             <Package size={18} /> Add New Item
           </button>
           <button
             onClick={() => setItemToDelete(true)}
-            className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-600 hover:text-white"
+            className="flex justify-center items-center gap-1.5 sm:gap-2 rounded-xl border border-red-500/30 bg-red-50 px-3 sm:px-4 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-600 hover:text-white"
           >
-            <Trash2 size={18} /> Delete Item
+            <Trash2 size={16} className="sm:w-[18px] sm:h-[18px]" /> Delete
           </button>
           {mode === 'view' ? (
             <button
               onClick={() => setMode('edit')}
-              className="flex items-center gap-2 rounded-xl bg-[var(--accent-soft)] px-4 py-2.5 text-sm font-bold text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white"
+              className="flex justify-center items-center gap-1.5 sm:gap-2 rounded-xl bg-[var(--accent-soft)] px-3 sm:px-4 py-2.5 text-sm font-bold text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white"
             >
-              <Pencil size={18} /> Edit Inventory
+              <Pencil size={16} className="sm:w-[18px] sm:h-[18px]" /> Edit
             </button>
           ) : (
             <button
@@ -83,9 +83,9 @@ function InventoryDetailPage({ themeStyle, item, setCurrentPage, setSelectedInve
                 setFormData(item); // Reset to original values
                 setMode('view');
               }}
-              className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2.5 text-sm font-bold transition hover:bg-[var(--soft)]"
+              className="flex justify-center items-center gap-1.5 sm:gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 sm:px-4 py-2.5 text-sm font-bold transition hover:bg-[var(--soft)]"
             >
-              Cancel Edit
+              Cancel
             </button>
           )}
         </div>
