@@ -2299,6 +2299,86 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
         )}
       </section>
 
+      {/* Global Mobile Bottom Sheet for Stage Updates */}
+      {openStagePopoverId && (() => {
+        const order = orders.find(o => o.id === openStagePopoverId);
+        if (!order || order.status === 'Completed' || order.status === 'Sold') return null;
+        return (
+          <div className="sm:hidden stage-popover-container">
+            <div className="fixed inset-0 z-[1999] bg-black/40 backdrop-blur-sm" onClick={(e) => { e.stopPropagation(); setOpenStagePopoverId(null); }} />
+            <div className="fixed inset-x-0 bottom-0 w-full max-h-[80vh] overflow-y-auto bg-[var(--surface-strong)] border-t border-[var(--border)] rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.2)] z-[2000] p-5 text-xs flex flex-col gap-2 backdrop-blur-xl custom-scrollbar animate-slide-up pb-safe">
+              <div className="w-12 h-1.5 bg-[var(--border)] rounded-full mx-auto mb-2" />
+              <div className="flex flex-col mb-2 pb-3 border-b border-[var(--border)]">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-[15px] text-[var(--text)]">Update Stage</span>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); setOpenStagePopoverId(null); }} className="p-1.5 rounded-full bg-[var(--soft)] text-[var(--muted)] hover:text-[var(--text)] transition"><X size={18}/></button>
+                </div>
+                <p className="text-[13px] text-[var(--muted)] mt-0.5 truncate pr-4 font-medium">
+                  {order.clientName} <span className="opacity-50 mx-1">•</span> #{order.id}
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 mt-1">
+                {(order.workflow || DEFAULT_WORKFLOWS[order.product] || DEFAULT_WORKFLOWS['Default']).map(stage => {
+                  const task = (order.productionTasks || []).find(t => t.stage === stage) || { status: 'Pending' };
+                  let disableCompletedButton = false;
+                  if (stage === 'Finished') {
+                    const workflow = order.workflow || DEFAULT_WORKFLOWS[order.product] || DEFAULT_WORKFLOWS['Default'];
+                    disableCompletedButton = workflow.some(s => {
+                      if (s === 'Finished') return false;
+                      const t = (order.productionTasks || []).find(pt => pt.stage === s);
+                      if (s === 'Handwork') {
+                        if (!t || t.status === 'Pending') return false;
+                      }
+                      return !t || t.status !== 'Completed';
+                    });
+                  }
+                  return (
+                    <div key={stage} className="flex items-center justify-between p-2 hover:bg-[var(--soft)] rounded-xl transition bg-[var(--surface)] border border-[var(--border)]/50" onClick={e => e.stopPropagation()}>
+                      <div className="flex flex-col overflow-hidden pr-2">
+                        <span className="font-bold text-sm text-[var(--text)] truncate">{stage}</span>
+                        {task.startedAt && (
+                          <span className="text-[10px] text-[var(--muted)] leading-tight mt-1">Start: {new Date(task.startedAt).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                        )}
+                        {task.completedAt && (
+                          <span className="text-[10px] text-emerald-600 font-medium leading-tight mt-0.5">Done: {new Date(task.completedAt).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                        )}
+                      </div>
+                      <div className="flex bg-[var(--surface-strong)] rounded-lg border border-[var(--border)] overflow-hidden flex-shrink-0 shadow-sm">
+                          {stage !== 'Finished' && (
+                            <>
+                              <button 
+                                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'Hold'); }}
+                                className={`p-2.5 transition ${task.status === 'Hold' ? 'bg-red-500/20 text-red-500' : 'text-[var(--muted)] hover:text-red-500 hover:bg-red-50'}`}
+                              >
+                                <Pause size={16} />
+                              </button>
+                              <div className="w-px bg-[var(--border)]" />
+                              <button 
+                                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'In Progress'); }}
+                                className={`p-2.5 transition ${task.status === 'In Progress' ? 'bg-orange-500/20 text-orange-500' : 'text-[var(--muted)] hover:text-orange-500 hover:bg-orange-50'}`}
+                              >
+                                <Play size={16} />
+                              </button>
+                              <div className="w-px bg-[var(--border)]" />
+                            </>
+                          )}
+                          <button 
+                            disabled={disableCompletedButton}
+                            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); if(!disableCompletedButton) handleTaskStatusChange(order.id, stage, 'Completed'); }}
+                            className={`p-2.5 transition ${task.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-500' : 'text-[var(--muted)] hover:text-emerald-500 hover:bg-emerald-50'} ${disableCompletedButton ? 'opacity-30 cursor-not-allowed' : ''}`}
+                          >
+                            <CheckCircle2 size={16} />
+                          </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {imagePopup && (
         <div className="fixed inset-0 z-[2100] grid place-items-center bg-black/80 px-4 backdrop-blur-sm" onClick={() => setImagePopup(null)}>
           <div className="relative">
