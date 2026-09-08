@@ -39,16 +39,18 @@ function DeliveryAlertModal({ orders }) {
 
   // 1. SOUND LOGIC
   useEffect(() => {
-    // Initialize audio once
-    audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-    audioRef.current.loop = true;
-    audioRef.current.volume = 0.5;
+    const audio = new Audio();
+    audio.src = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
+    audio.crossOrigin = 'anonymous';
+    audio.preload = 'auto';
+    audio.loop = true;
+    audio.volume = 0.5;
+    audioRef.current = audio;
+    audio.addEventListener('error', () => { console.warn("Delivery alert audio unavailable"); });
 
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      audio.pause();
+      audioRef.current = null;
     };
   }, []);
 

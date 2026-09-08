@@ -55,6 +55,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
   const [openStagePopoverId, setOpenStagePopoverId] = useState(null)
   const [expandedOrderId, setExpandedOrderId] = useState(null)
   const [mobileVisibleCount, setMobileVisibleCount] = useState(5)
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (openStagePopoverId && !e.target.closest('.stage-popover-container')) {

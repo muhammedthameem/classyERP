@@ -36,7 +36,11 @@ function App() {
   useEffect(() => {
     if (!isLoggedIn) return;
     let isMounted = true;
-    const fetchData = async () => {
+    let retryTimer = null;
+    let retryCount = 0;
+    const MAX_RETRIES = 5;
+    const RETRY_DELAY = 60000;
+    const fetchData = async (isRetry = false) => {
       try {
         const [u, c, o, s, i, a, cfg] = await Promise.all([
           supabase.from('erp_users').select('*'),
@@ -50,6 +54,32 @@ function App() {
 
         if (!isMounted) return;
 
+        // Backend down? (503 / PGRST002 schema-cache = Postgres unreachable/paused)
+        // Supabase-js resolves — not throws — so we must check .error explicitly.
+        const responses = [u, c, o, s, i, a, cfg];
+        const firstError = responses.find(r => r.error);
+        if (firstError) {
+          const status = firstError.error?.status;
+          const code = firstError.error?.code;
+          const isServerDown = status === 503 || status === 502 || status === 504 || code === 'PGRST002' || code === 'PGRST000' || code === 'PGRST001';
+          if (!isRetry) {
+            console.warn(`Cloud offline (${code || status || 'fetch failed'}) — working from local data. Will retry automatically.`);
+          }
+          setSyncError(isServerDown ? "Cloud database unreachable (paused or starting). Offline mode active — your local data is safe." : "Failed to load cloud data. Offline mode active.");
+          setCloudLoaded(true);
+          // Retry quietly every 60s, max 5 times — instead of spamming the console
+          if (isMounted) {
+            if (retryTimer) clearTimeout(retryTimer);
+            if (retryCount < MAX_RETRIES) {
+              retryCount++;
+              retryTimer = setTimeout(() => { if (isMounted) fetchData(true); }, RETRY_DELAY);
+            }
+          }
+          return false;
+        }
+
+        setSyncError(null);
+        retryCount = 0;
         if (u.data) setUsers(u.data.map(item => item.data || item));
         if (c.data) setClients(c.data.map(item => item.data || item));
         if (o.data) setOrders(o.data.map(item => item.data || item));
@@ -150,9 +180,13 @@ function App() {
   // LOCAL PERSISTENCE
   const safeSetStorage = (key, value) => {
     try {
-      localStorage.setItem(key, JSON.stringify(value));
+      const serialized = JSON.stringify(value);
+      if (serialized.length > 4_000_000) return;
+      localStorage.setItem(key, serialized);
     } catch (e) {
-      console.warn(`Failed to save ${key} to localStorage:`, e);
+      if (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014) {
+        try { localStorage.removeItem(key); localStorage.setItem(key, JSON.stringify(value)); } catch (_) {}
+      }
     }
   };
 
