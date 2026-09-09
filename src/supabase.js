@@ -33,4 +33,11 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
     }
 });
 
+export const supabaseAdmin = createClient(supabaseUrl, supabaseKey, {
+    auth: {
+        autoRefreshToken: false,
+        persistSession: false
+    }
+});
+
 export default supabase;

@@ -39,8 +39,8 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
     setUserToDelete(null); // Close modal instantly
 
     try {
-      // Tell cloud to delete in background
-      const { error } = await supabase.from('erp_users').delete().eq('id', id);
+      // Tell cloud to delete in background using our secure function
+      const { error } = await supabase.rpc('delete_user', { user_id: id });
       if (error) throw error;
       
       if (showGlobalToast) showGlobalToast('Success', `${userToDelete.name} successfully deleted`)

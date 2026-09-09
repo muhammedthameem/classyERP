@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { ShieldCheck, Eye } from 'lucide-react'
-import supabase from '../../supabase'
+import supabase, { supabaseAdmin } from '../../supabase'
 
 function CreateUserPage({ themeStyle, setCurrentPage, showGlobalToast, users, setUsers, designations, setDesignations, currentUser, saveUser }) {
   const [name, setName] = useState('')
@@ -37,8 +37,8 @@ function CreateUserPage({ themeStyle, setCurrentPage, showGlobalToast, users, se
 
     setIsCreating(true)
     try {
-      // 1. Register in Supabase Auth Vault
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // 1. Register in Supabase Auth Vault using the admin client (prevents auto-logout)
+      const { data: authData, error: authError } = await supabaseAdmin.auth.signUp({
         email: email.toLowerCase(),
         password: password,
       });
