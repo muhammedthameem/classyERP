@@ -40,7 +40,7 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
 
     try {
       // Tell cloud to delete in background using our secure function
-      const { error } = await supabase.rpc('delete_user', { user_id: id });
+      const { error } = await supabase.rpc('delete_user', { user_email: id });
       if (error) throw error;
       
       if (showGlobalToast) showGlobalToast('Success', `${userToDelete.name} successfully deleted`)
