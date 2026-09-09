@@ -42,6 +42,12 @@ function App() {
     const RETRY_DELAY = 60000;
     const fetchData = async (isRetry = false) => {
       try {
+        const isSessionSynced = sessionStorage.getItem('erp_session_synced');
+        if (isSessionSynced && !isRetry) {
+          setCloudLoaded(true);
+          return; // Skip mass download if already synced this session. Data is loaded from localStorage.
+        }
+
         const [u, c, o, s, i, a, cfg] = await Promise.all([
           supabase.from('erp_users').select('*'),
           supabase.from('erp_clients').select('*'),
@@ -53,6 +59,8 @@ function App() {
         ]);
 
         if (!isMounted) return;
+
+        sessionStorage.setItem('erp_session_synced', 'true');
 
         // Backend down? (503 / PGRST002 schema-cache = Postgres unreachable/paused)
         // Supabase-js resolves — not throws — so we must check .error explicitly.
