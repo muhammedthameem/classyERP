@@ -950,7 +950,11 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
               </div>
             </div>
 
-            <div className="mt-8 flex justify-end">
+            <div className="mt-8 flex justify-between items-end">
+              <div className="text-[10px] text-[var(--muted)] font-medium leading-tight">
+                <p>Created By: <span className="font-bold text-[var(--text)]">{viewOrder.createdBy || 'Admin'}</span></p>
+                <p>Created At: <span className="font-bold text-[var(--text)]">{viewOrder.createdAt ? new Date(viewOrder.createdAt).toLocaleString('en-IN', { hour12: true, day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : (viewOrder.orderDate || 'N/A')}</span></p>
+              </div>
               <button type="button" className="rounded-xl border border-[var(--border)] px-6 py-2.5 font-semibold hover:bg-[var(--soft)] transition" onClick={() => setViewOrder(null)}>Close</button>
             </div>
           </div>

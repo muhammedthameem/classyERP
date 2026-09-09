@@ -329,6 +329,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
         const measurementData = {
           id: Date.now(),
           ...measurementToSave,
+          addedBy: currentUser?.name || currentUser?.email || 'Admin',
           createdAt: new Date().toISOString()
         }
         updatedClient.measurements.push(measurementData)
@@ -340,6 +341,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
         const measurementData = {
           id: Date.now(),
           ...measurementToSave,
+          addedBy: currentUser?.name || currentUser?.email || 'Admin',
           createdAt: new Date().toISOString()
         }
         updatedClient.measurements.push(measurementData)
@@ -351,6 +353,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
       const measurementData = {
         id: Date.now(),
         ...measurementToSave,
+        addedBy: currentUser?.name || currentUser?.email || 'Admin',
         createdAt: new Date().toISOString()
       }
 
@@ -704,7 +707,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                         {measurements[selectedMeasurementIndex].product || `Product ${selectedMeasurementIndex + 1}`}
                       </span>
                       <span className="block text-xs text-[var(--muted)]">
-                        Added {formatDateDDMMYY(measurements[selectedMeasurementIndex].createdAt || client.createdAt)}
+                        Added {formatDateDDMMYY(measurements[selectedMeasurementIndex].createdAt || client.createdAt)}{measurements[selectedMeasurementIndex].addedBy ? ` • By ${measurements[selectedMeasurementIndex].addedBy}` : ''}
                       </span>
                     </div>
                     <ChevronDown size={18} className={`text-[var(--muted)] transition-transform ${showMeasurementDropdown ? 'rotate-180' : ''}`} />
@@ -728,7 +731,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                                 {measurement.product || `Product ${index + 1}`}
                               </span>
                               <span className="block text-xs text-[var(--muted)]">
-                                {formatDateDDMMYY(measurement.createdAt || client.createdAt)}
+                                {formatDateDDMMYY(measurement.createdAt || client.createdAt)}{measurement.addedBy ? ` • By ${measurement.addedBy}` : ''}
                               </span>
                             </div>
                             {selectedMeasurementIndex === index && (

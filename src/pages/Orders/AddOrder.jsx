@@ -13,7 +13,8 @@ function AddOrderPage({
   productTypes, setProductTypes, 
   inventoryUnits, setInventoryUnits,
   orderLimits, setOrderLimits, 
-  saveOrder, saveConfig 
+  saveOrder, saveConfig,
+  currentUser 
 }) {
   const [clientName, setClientName] = useState('')
   const [showClientDropdown, setShowClientDropdown] = useState(false)
@@ -268,6 +269,8 @@ function AddOrderPage({
     const newOrders = orderItems.map((item, idx) => ({
       id: baseId + idx,
       clientName,
+      createdBy: currentUser?.name || currentUser?.email || 'Admin',
+      createdAt: new Date().toISOString(),
       product: item.product,
       orderType: item.orderType,
       price: item.price,
