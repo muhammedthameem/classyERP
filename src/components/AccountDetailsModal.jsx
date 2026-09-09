@@ -86,6 +86,11 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
       setMessage('Backup downloaded! Opening email client...');
       setStatus('success');
       
+      setTimeout(() => {
+        setMessage('');
+        setStatus(null);
+      }, 4000);
+      
       const bodyText = `Hello,\n\nPlease find the attached database backup for ClassyERP.\n(Note: You need to attach the downloaded file '${fileName}' to this email before sending.)`;
       window.location.href = `mailto:classycouture.alpy@gmail.com?subject=ClassyERP Database Backup&body=${encodeURIComponent(bodyText)}`;
       
@@ -290,27 +295,27 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
         </div>
 
         {/* Tabs */}
-        <div className="flex px-8 gap-6 border-b border-[var(--border)] bg-[var(--surface)] overflow-x-auto no-scrollbar">
+        <div className="flex px-8 gap-8 border-b border-[var(--border)] bg-[var(--surface)]">
           <button
             onClick={() => setActiveTab('profile')}
-            className={`py-4 text-xs font-bold uppercase tracking-widest transition-all relative ${activeTab === 'profile' ? 'text-[var(--accent)]' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+            className={`py-4 text-sm font-semibold transition-all relative whitespace-nowrap ${activeTab === 'profile' ? 'text-[var(--text)]' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
           >
             Profile Info
-            {activeTab === 'profile' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[var(--accent)] rounded-t-full"></div>}
+            {activeTab === 'profile' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--text)] rounded-t-full"></div>}
           </button>
           <button
             onClick={() => setActiveTab('security')}
-            className={`py-4 text-xs font-bold uppercase tracking-widest transition-all relative ${activeTab === 'security' ? 'text-[var(--accent)]' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+            className={`py-4 text-sm font-semibold transition-all relative whitespace-nowrap ${activeTab === 'security' ? 'text-[var(--text)]' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
           >
             Security & Password
-            {activeTab === 'security' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[var(--accent)] rounded-t-full"></div>}
+            {activeTab === 'security' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--text)] rounded-t-full"></div>}
           </button>
           <button
             onClick={() => setActiveTab('data')}
-            className={`py-4 text-xs font-bold uppercase tracking-widest transition-all relative ${activeTab === 'data' ? 'text-[var(--accent)]' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+            className={`py-4 text-sm font-semibold transition-all relative whitespace-nowrap ${activeTab === 'data' ? 'text-[var(--text)]' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
           >
             Data Management
-            {activeTab === 'data' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[var(--accent)] rounded-t-full"></div>}
+            {activeTab === 'data' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--text)] rounded-t-full"></div>}
           </button>
         </div>
 
