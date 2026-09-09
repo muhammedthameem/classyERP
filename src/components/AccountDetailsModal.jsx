@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Eye, EyeOff, ShieldCheck, User, Mail, Phone, Calendar, MapPin, CheckCircle2, AlertCircle, Fingerprint, Key, Trash2, Loader } from 'lucide-react'
+import { Eye, EyeOff, ShieldCheck, User, Mail, Phone, Calendar, MapPin, CheckCircle2, AlertCircle, Fingerprint, Key, Trash2, Loader, Database, Download, Upload } from 'lucide-react'
 import supabase from '../supabase'
 
 function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyle }) {
@@ -11,6 +11,132 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
   const [message, setMessage] = useState('')
   const [status, setStatus] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+  const [isImporting, setIsImporting] = useState(false)
+  const [exportMode, setExportMode] = useState('full') // 'full' or 'custom'
+  const [exportStartDate, setExportStartDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0])
+  const [exportEndDate, setExportEndDate] = useState(new Date().toISOString().split('T')[0])
+  const fileInputRef = useRef(null)
+
+  const handleExportBackup = async () => {
+    setIsExporting(true);
+    setMessage(`Generating ${exportMode === 'custom' ? 'filtered' : 'full'} backup... Please wait.`);
+    setStatus(null);
+    try {
+      const tables = ['erp_users', 'erp_clients', 'erp_orders', 'erp_sales', 'erp_inventory', 'erp_accounts', 'erp_config'];
+      const backupData = {};
+      
+      const fetchAllPaginated = async (tableName) => {
+        let allData = [];
+        let from = 0;
+        const step = 999;
+        let hasMore = true;
+        
+        while (hasMore) {
+          let query = supabase.from(tableName).select('*').range(from, from + step);
+          
+          const { data, error } = await query;
+          if (error) throw error;
+          
+          if (data && data.length > 0) {
+            allData = [...allData, ...data];
+            from += step + 1;
+            if (data.length <= step) hasMore = false;
+          } else {
+            hasMore = false;
+          }
+        }
+        return allData;
+      };
+
+      for (const table of tables) {
+        let dateColumn = null;
+        if (table === 'erp_orders') dateColumn = 'orderDate';
+        if (table === 'erp_sales') dateColumn = 'timestamp';
+        if (table === 'erp_clients') dateColumn = 'createdAt';
+        // We do not filter inventory, users, accounts, or config so that the system remains functional
+        
+        let tableData = await fetchAllPaginated(table);
+
+        if (exportMode === 'custom' && dateColumn) {
+          const startTs = new Date(`${exportStartDate}T00:00:00.000Z`).getTime();
+          const endTs = new Date(`${exportEndDate}T23:59:59.999Z`).getTime();
+          
+          tableData = tableData.filter(row => {
+            const rowDate = row.data && row.data[dateColumn];
+            if (!rowDate) return false;
+            const d = new Date(rowDate).getTime();
+            return d >= startTs && d <= endTs;
+          });
+        }
+        
+        backupData[table] = tableData;
+      }
+      
+      const fileName = `ClassyERP_Backup_${exportMode === 'custom' ? 'Filtered_' : ''}${new Date().toISOString().slice(0,10)}.json`;
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      setMessage('Backup downloaded! Opening email client...');
+      setStatus('success');
+      
+      const bodyText = `Hello,\n\nPlease find the attached database backup for ClassyERP.\n(Note: You need to attach the downloaded file '${fileName}' to this email before sending.)`;
+      window.location.href = `mailto:classycouture.alpy@gmail.com?subject=ClassyERP Database Backup&body=${encodeURIComponent(bodyText)}`;
+      
+    } catch (error) {
+      console.error('Backup Error:', error);
+      setMessage('Failed to generate backup: ' + error.message);
+      setStatus('error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportBackup = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    if (!window.confirm("WARNING: Importing data will overwrite conflicting records. Are you sure you want to proceed?")) {
+      event.target.value = '';
+      return;
+    }
+    
+    setIsImporting(true);
+    setMessage('Importing data... Please do not close this window.');
+    setStatus(null);
+    
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      
+      for (const [table, rows] of Object.entries(data)) {
+        if (!Array.isArray(rows) || rows.length === 0) continue;
+        
+        const chunkSize = 500;
+        for (let i = 0; i < rows.length; i += chunkSize) {
+          const chunk = rows.slice(i, i + chunkSize);
+          const { error } = await supabase.from(table).upsert(chunk);
+          if (error) throw error;
+        }
+      }
+      
+      setMessage('Data restored successfully! Please refresh the application.');
+      setStatus('success');
+    } catch (error) {
+      console.error('Import Error:', error);
+      setMessage('Failed to import data: ' + error.message);
+      setStatus('error');
+    } finally {
+      setIsImporting(false);
+      event.target.value = '';
+    }
+  };
 
   // Passkey / WebAuthn Biometrics States
   const [passkeys, setPasskeys] = useState([])
@@ -164,7 +290,7 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
         </div>
 
         {/* Tabs */}
-        <div className="flex px-8 gap-6 border-b border-[var(--border)] bg-[var(--surface)]">
+        <div className="flex px-8 gap-6 border-b border-[var(--border)] bg-[var(--surface)] overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('profile')}
             className={`py-4 text-xs font-bold uppercase tracking-widest transition-all relative ${activeTab === 'profile' ? 'text-[var(--accent)]' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
@@ -179,10 +305,17 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
             Security & Password
             {activeTab === 'security' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[var(--accent)] rounded-t-full"></div>}
           </button>
+          <button
+            onClick={() => setActiveTab('data')}
+            className={`py-4 text-xs font-bold uppercase tracking-widest transition-all relative ${activeTab === 'data' ? 'text-[var(--accent)]' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+          >
+            Data Management
+            {activeTab === 'data' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[var(--accent)] rounded-t-full"></div>}
+          </button>
         </div>
 
         {/* Content Area */}
-        <div className="p-8 overflow-y-auto flex-1">
+        <div className="px-8 pt-8 overflow-y-auto flex-1">
           {activeTab === 'profile' ? (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -236,8 +369,8 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
 
               </div>
             </div>
-          ) : (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          ) : activeTab === 'security' ? (
+            <div className="space-y-6 pb-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <form onSubmit={submitChangePassword} className="space-y-6">
                 <div className="space-y-4">
                   <div className="relative">
@@ -400,7 +533,94 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
                 )}
               </div>
             </div>
-          )}
+          ) : activeTab === 'data' ? (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              {message && (
+                <div className={`flex items-center gap-3 p-4 rounded-xl border ${status === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-600' : 'bg-red-500/10 border-red-500/20 text-red-600'}`}>
+                  {status === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+                  <p className="text-sm font-medium">{message}</p>
+                </div>
+              )}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Database className="text-[var(--accent)]" size={20} />
+                  <h3 className="font-bold text-base text-[var(--text)]">Backup Data</h3>
+                </div>
+                <p className="text-[var(--muted)] text-xs leading-relaxed">
+                  Download a secure snapshot of your entire database (Orders, Clients, Sales, Inventory, etc.) to your local computer.
+                </p>
+
+                <div className="flex gap-4 mb-4">
+                  <label className="flex items-center gap-2 text-sm text-[var(--text)] cursor-pointer">
+                    <input type="radio" checked={exportMode === 'full'} onChange={() => setExportMode('full')} className="accent-[var(--accent)]" />
+                    Full Backup
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-[var(--text)] cursor-pointer">
+                    <input type="radio" checked={exportMode === 'custom'} onChange={() => setExportMode('custom')} className="accent-[var(--accent)]" />
+                    Custom Date Range
+                  </label>
+                </div>
+
+                {exportMode === 'custom' && (
+                  <div className="flex gap-4 mb-4">
+                    <div className="flex-1">
+                      <label className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest block mb-1">Start Date</label>
+                      <input type="date" value={exportStartDate} onChange={(e) => setExportStartDate(e.target.value)} className="w-full bg-[var(--surface-strong)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text)] outline-none focus:border-[var(--accent)]" />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest block mb-1">End Date</label>
+                      <input type="date" value={exportEndDate} onChange={(e) => setExportEndDate(e.target.value)} className="w-full bg-[var(--surface-strong)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text)] outline-none focus:border-[var(--accent)]" />
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleExportBackup}
+                  disabled={isExporting}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-5 py-4 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 hover:brightness-95 active:scale-[0.98] transition disabled:opacity-50"
+                >
+                  {isExporting ? (
+                    <><Loader size={16} className="animate-spin" /> Generating Backup...</>
+                  ) : (
+                    <><Download size={16} /> Download {exportMode === 'custom' ? 'Filtered ' : 'Full '} Backup & Email</>
+                  )}
+                </button>
+              </div>
+
+              <div className="space-y-4 border-t border-[var(--border)] pt-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <Upload className="text-[var(--accent)]" size={20} />
+                  <h3 className="font-bold text-base text-[var(--text)]">Restore Data</h3>
+                </div>
+                <p className="text-[var(--muted)] text-xs leading-relaxed">
+                  Upload a previously downloaded `.json` backup file. <strong className="text-red-500 font-bold">Warning:</strong> This will overwrite existing records with the data in the backup.
+                </p>
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept=".json"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleImportBackup}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isImporting}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-5 py-4 text-sm font-bold text-[var(--text)] hover:bg-[var(--soft)] transition disabled:opacity-50"
+                  >
+                    {isImporting ? (
+                      <><Loader size={16} className="animate-spin" /> Restoring Data...</>
+                    ) : (
+                      <><Upload size={16} /> Choose Backup File to Restore</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+          <div className="h-8 flex-shrink-0"></div>
         </div>
       </div>
     </div>

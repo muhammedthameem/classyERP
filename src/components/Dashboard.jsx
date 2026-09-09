@@ -1446,16 +1446,18 @@ function Dashboard({
                         </div>
                       </div>
                     </div>
-                    <button
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-[var(--text)] transition hover:bg-[var(--soft)]"
-                      onClick={() => {
-                        setShowAccountMenu(false)
-                        setShowAccountPanel(true)
-                      }}
-                      type="button"
-                    >
-                      <Settings size={17} /> Account Details
-                    </button>
+                    {(user?.role === 'Admin' || user?.role === 'Owner') && (
+                      <button
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-[var(--text)] transition hover:bg-[var(--soft)]"
+                        onClick={() => {
+                          setShowAccountMenu(false)
+                          setShowAccountPanel(true)
+                        }}
+                        type="button"
+                      >
+                        <Settings size={17} /> Account Details
+                      </button>
+                    )}
                     <button
                       className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-[var(--accent)] transition hover:bg-[var(--soft)]"
                       onClick={onLogout}
