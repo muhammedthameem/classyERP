@@ -1890,14 +1890,14 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                                             <>
                                               <button 
                                                 title="Hold"
-                                                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'Hold'); }}
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'Hold'); }}
                                                 className={`p-1.5 transition ${task.status === 'Hold' ? 'bg-red-500/20 text-red-500' : 'text-[var(--muted)] hover:text-red-500'}`}
                                               >
                                                 <Pause size={12} />
                                               </button>
                                               <button 
                                                 title="In Progress"
-                                                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'In Progress'); }}
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'In Progress'); }}
                                                 className={`p-1.5 transition ${task.status === 'In Progress' ? 'bg-orange-500/20 text-orange-500' : 'text-[var(--muted)] hover:text-orange-500'}`}
                                               >
                                                 <Play size={12} />
@@ -1906,7 +1906,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                                           )}
                                           <button 
                                             title={disableCompletedButton ? "Complete all other tasks first" : "Completed"}
-                                            onPointerDown={(e) => { 
+                                            onClick={(e) => { 
                                               if (disableCompletedButton) return;
                                               e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'Completed'); 
                                             }}
@@ -2073,13 +2073,13 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                                       {stage !== 'Finished' && (
                                         <>
                                           <button 
-                                            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'Hold'); }}
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'Hold'); }}
                                             className={`p-1.5 transition ${task.status === 'Hold' ? 'bg-red-500/20 text-red-500' : 'text-[var(--muted)] hover:text-red-500'}`}
                                           >
                                             <Pause size={12} />
                                           </button>
                                           <button 
-                                            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'In Progress'); }}
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'In Progress'); }}
                                             className={`p-1.5 transition ${task.status === 'In Progress' ? 'bg-orange-500/20 text-orange-500' : 'text-[var(--muted)] hover:text-orange-500'}`}
                                           >
                                             <Play size={12} />
@@ -2088,7 +2088,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                                       )}
                                       <button 
                                         disabled={disableCompletedButton}
-                                        onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); if(!disableCompletedButton) handleTaskStatusChange(order.id, stage, 'Completed'); }}
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); if(!disableCompletedButton) handleTaskStatusChange(order.id, stage, 'Completed'); }}
                                         className={`p-1.5 transition ${task.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-500' : 'text-[var(--muted)] hover:text-emerald-500'} ${disableCompletedButton ? 'opacity-30 cursor-not-allowed' : ''}`}
                                       >
                                         <CheckCircle2 size={12} />
@@ -2368,14 +2368,14 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                           {stage !== 'Finished' && (
                             <>
                               <button 
-                                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'Hold'); }}
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'Hold'); }}
                                 className={`p-2.5 transition ${task.status === 'Hold' ? 'bg-red-500/20 text-red-500' : 'text-[var(--muted)] hover:text-red-500 hover:bg-red-50'}`}
                               >
                                 <Pause size={16} />
                               </button>
                               <div className="w-px bg-[var(--border)]" />
                               <button 
-                                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'In Progress'); }}
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'In Progress'); }}
                                 className={`p-2.5 transition ${task.status === 'In Progress' ? 'bg-orange-500/20 text-orange-500' : 'text-[var(--muted)] hover:text-orange-500 hover:bg-orange-50'}`}
                               >
                                 <Play size={16} />
@@ -2385,7 +2385,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                           )}
                           <button 
                             disabled={disableCompletedButton}
-                            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); if(!disableCompletedButton) handleTaskStatusChange(order.id, stage, 'Completed'); }}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); if(!disableCompletedButton) handleTaskStatusChange(order.id, stage, 'Completed'); }}
                             className={`p-2.5 transition ${task.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-500' : 'text-[var(--muted)] hover:text-emerald-500 hover:bg-emerald-50'} ${disableCompletedButton ? 'opacity-30 cursor-not-allowed' : ''}`}
                           >
                             <CheckCircle2 size={16} />
