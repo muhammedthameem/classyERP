@@ -109,7 +109,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
 
   const reportStats = {
     totalRevenue: filteredSales.reduce((sum, s) => sum + parseFloat(s.total || 0), 0),
-    totalInvestment: filteredInventory.reduce((sum, i) => sum + (parseFloat(i.purchasePrice || 0) * (parseFloat(i.quantity) || 0)), 0),
+    totalInvestment: filteredInventory.reduce((sum, i) => sum + (parseFloat(i.purchasePrice || 0) * (parseFloat(i.initialQuantity || i.quantity) || 0)), 0),
     salesCount: filteredSales.length,
     pendingOrders: filteredOrders.filter(o => o.status === 'Not Ready' || o.status === 'Pending').length,
     totalClients: clients.length,
@@ -436,8 +436,8 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                       <td className="font-bold">{i.productName}</td>
                       <td className="font-medium text-[var(--muted)]">{i.vendorName || 'N/A'}</td>
                       <td className="text-right">₹{parseFloat(i.purchasePrice || 0).toFixed(2)}</td>
-                      <td className="text-right">{i.quantity} {i.unit}</td>
-                      <td className="text-right font-black text-red-500">₹{(parseFloat(i.purchasePrice || 0) * (parseFloat(i.quantity) || 0)).toLocaleString()}</td>
+                      <td className="text-right">{i.initialQuantity || i.quantity} {i.unit}</td>
+                      <td className="text-right font-black text-red-500">₹{(parseFloat(i.purchasePrice || 0) * (parseFloat(i.initialQuantity || i.quantity) || 0)).toLocaleString()}</td>
                     </tr>
                   ))}
                   {filteredInventory.length === 0 && !isDataLoading && (
@@ -647,7 +647,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                       <td className="font-bold">#{o.id}</td>
                       <td>{o.product}</td>
                       <td>
-                        <span className={`rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase ${o.status === 'Completed' ? 'bg-green-100 text-green-700' : o.status === 'Sold' ? 'bg-purple-100 text-purple-700' : o.status === 'In Progress' ? 'bg-blue-100 text-blue-700' : o.status === 'Hold' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-700'}`}>
+                        <span className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase ${o.status === 'Completed' ? 'bg-green-100 text-green-700' : o.status === 'Sold' ? 'bg-purple-100 text-purple-700' : o.status === 'In Progress' ? 'bg-blue-100 text-blue-700' : o.status === 'Hold' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-700'}`}>
                           {o.status}
                         </span>
                       </td>
@@ -680,7 +680,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                           <span className="text-[10px] font-semibold text-[var(--muted)]">{formatDateDDMMYY(o.orderDate)}</span>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${o.status === 'Completed' ? 'bg-green-100 text-green-700' : o.status === 'Sold' ? 'bg-purple-100 text-purple-700' : o.status === 'In Progress' ? 'bg-blue-100 text-blue-700' : o.status === 'Hold' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-700'}`}>
+                          <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${o.status === 'Completed' ? 'bg-green-100 text-green-700' : o.status === 'Sold' ? 'bg-purple-100 text-purple-700' : o.status === 'In Progress' ? 'bg-blue-100 text-blue-700' : o.status === 'Hold' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-700'}`}>
                             {o.status}
                           </span>
                           <div className={`transition-transform duration-300 text-[var(--muted)] ${isExpanded ? 'rotate-180 text-[var(--accent)]' : ''}`}>
