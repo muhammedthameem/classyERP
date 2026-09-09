@@ -10,6 +10,39 @@ import IOSInstallPrompt from './components/IOSInstallPrompt';
 import PwaUpdateModal from './components/PwaUpdateModal';
 import PushPermissionModal from './components/PushPermissionModal';
 
+const idb = {
+  db: null,
+  init() {
+    return new Promise((resolve) => {
+      const req = indexedDB.open('erp_idb_cache', 1);
+      req.onupgradeneeded = (e) => {
+        e.target.result.createObjectStore('store');
+      };
+      req.onsuccess = (e) => {
+        this.db = e.target.result;
+        resolve();
+      };
+      req.onerror = () => resolve();
+    });
+  },
+  async get(key) {
+    if (!this.db) await this.init();
+    if (!this.db) return null;
+    return new Promise((resolve) => {
+      const tx = this.db.transaction('store', 'readonly');
+      const req = tx.objectStore('store').get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(null);
+    });
+  },
+  async set(key, val) {
+    if (!this.db) await this.init();
+    if (!this.db) return;
+    const tx = this.db.transaction('store', 'readwrite');
+    tx.objectStore('store').put(val, key);
+  }
+};
+
 function App() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   // SHARED STATES
@@ -44,6 +77,15 @@ function App() {
       try {
         const isSessionSynced = sessionStorage.getItem('erp_session_synced');
         if (isSessionSynced && !isRetry) {
+          if (orders.length === 0) {
+             const [idbOrders, idbClients, idbSales, idbInventory] = await Promise.all([
+               idb.get('orders'), idb.get('clients'), idb.get('sales'), idb.get('inventory')
+             ]);
+             if (idbOrders) setOrders(JSON.parse(idbOrders));
+             if (idbClients) setClients(JSON.parse(idbClients));
+             if (idbSales) setSales(JSON.parse(idbSales));
+             if (idbInventory) setInventory(JSON.parse(idbInventory));
+          }
           setCloudLoaded(true);
           return; // Skip mass download if already synced this session. Data is loaded from localStorage.
         }
@@ -189,29 +231,33 @@ function App() {
   const safeSetStorage = (key, value) => {
     try {
       const serialized = JSON.stringify(value);
-      if (serialized.length > 4_000_000) return;
+      if (serialized.length > 4_000_000) {
+        idb.set(key, serialized);
+        return;
+      }
       localStorage.setItem(key, serialized);
     } catch (e) {
       if (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014) {
-        try { localStorage.removeItem(key); localStorage.setItem(key, JSON.stringify(value)); } catch (_) {}
+        idb.set(key, JSON.stringify(value));
+        try { localStorage.removeItem(key); } catch (_) {}
       }
     }
   };
 
-  useEffect(() => { safeSetStorage('erp_users', users) }, [users])
-  useEffect(() => { safeSetStorage('erp_designations', designations) }, [designations])
-  useEffect(() => { safeSetStorage('activities', activities) }, [activities])
-  useEffect(() => { safeSetStorage('clients', clients) }, [clients])
-  useEffect(() => { safeSetStorage('orders', orders) }, [orders])
-  useEffect(() => { safeSetStorage('inventory', inventory) }, [inventory])
-  useEffect(() => { safeSetStorage('sales', sales) }, [sales])
-  useEffect(() => { safeSetStorage('orderTypes', orderTypes) }, [orderTypes])
-  useEffect(() => { safeSetStorage('productTypes', productTypes) }, [productTypes])
-  useEffect(() => { safeSetStorage('inventoryUnits', inventoryUnits) }, [inventoryUnits])
-  useEffect(() => { safeSetStorage('orderLimits', orderLimits) }, [orderLimits])
-  useEffect(() => { safeSetStorage('incomeCategories', incomeCategories) }, [incomeCategories])
-  useEffect(() => { safeSetStorage('expenseCategories', expenseCategories) }, [expenseCategories])
-  useEffect(() => { safeSetStorage('staffList', staffList) }, [staffList])
+  useEffect(() => { if (cloudLoaded) safeSetStorage('erp_users', users) }, [users, cloudLoaded])
+  useEffect(() => { if (cloudLoaded) safeSetStorage('erp_designations', designations) }, [designations, cloudLoaded])
+  useEffect(() => { if (cloudLoaded) safeSetStorage('activities', activities) }, [activities, cloudLoaded])
+  useEffect(() => { if (cloudLoaded) safeSetStorage('clients', clients) }, [clients, cloudLoaded])
+  useEffect(() => { if (cloudLoaded) safeSetStorage('orders', orders) }, [orders, cloudLoaded])
+  useEffect(() => { if (cloudLoaded) safeSetStorage('inventory', inventory) }, [inventory, cloudLoaded])
+  useEffect(() => { if (cloudLoaded) safeSetStorage('sales', sales) }, [sales, cloudLoaded])
+  useEffect(() => { if (cloudLoaded) safeSetStorage('orderTypes', orderTypes) }, [orderTypes, cloudLoaded])
+  useEffect(() => { if (cloudLoaded) safeSetStorage('productTypes', productTypes) }, [productTypes, cloudLoaded])
+  useEffect(() => { if (cloudLoaded) safeSetStorage('inventoryUnits', inventoryUnits) }, [inventoryUnits, cloudLoaded])
+  useEffect(() => { if (cloudLoaded) safeSetStorage('orderLimits', orderLimits) }, [orderLimits, cloudLoaded])
+  useEffect(() => { if (cloudLoaded) safeSetStorage('incomeCategories', incomeCategories) }, [incomeCategories, cloudLoaded])
+  useEffect(() => { if (cloudLoaded) safeSetStorage('expenseCategories', expenseCategories) }, [expenseCategories, cloudLoaded])
+  useEffect(() => { if (cloudLoaded) safeSetStorage('staffList', staffList) }, [staffList, cloudLoaded])
 
 
   // 1. RECOVER SUPABASE SESSION
