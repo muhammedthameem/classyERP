@@ -212,20 +212,31 @@ function App() {
       }
     };
 
-    const channels = [
-      supabase.channel('erp_users').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_users' }, (p) => handlePayload(p, setUsers)).subscribe(),
-      supabase.channel('erp_clients').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_clients' }, (p) => handlePayload(p, setClients)).subscribe(),
-      supabase.channel('erp_orders').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_orders' }, (p) => handlePayload(p, setOrders)).subscribe(),
-      supabase.channel('erp_sales').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_sales' }, (p) => handlePayload(p, setSales)).subscribe(),
-      supabase.channel('erp_inventory').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_inventory' }, (p) => handlePayload(p, setInventory)).subscribe(),
-      supabase.channel('erp_config').on('postgres_changes', { event: '*', schema: 'public', table: 'erp_config' }, () => fetchData()).subscribe()
-    ];
+    const erpChannel = supabase.channel('erp_db_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'erp_users' }, (p) => handlePayload(p, setUsers))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'erp_clients' }, (p) => handlePayload(p, setClients))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'erp_orders' }, (p) => handlePayload(p, setOrders))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'erp_sales' }, (p) => handlePayload(p, setSales))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'erp_inventory' }, (p) => handlePayload(p, setInventory))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'erp_config' }, () => fetchData(true))
+      .subscribe((status, err) => {
+        if (status === 'CHANNEL_ERROR') console.error('Realtime error:', err);
+      });
 
     return () => {
       isMounted = false;
-      channels.forEach(channel => supabase.removeChannel(channel));
+      supabase.removeChannel(erpChannel);
     };
   }, [isLoggedIn]);
+
+  // Clear session sync flag on page reload so pull-to-refresh works
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      sessionStorage.removeItem('erp_session_synced');
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
 
   // LOCAL PERSISTENCE
   const safeSetStorage = (key, value) => {
