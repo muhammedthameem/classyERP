@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2, Plus, X, Printer } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2, Plus, X, Printer, Calendar, AlertCircle, XCircle, ZoomIn } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
 import { Virtuoso } from 'react-virtuoso'
 import { formatDateDDMMYY, getIndianDate, orders as dummyOrders, DEFAULT_WORKFLOWS, PRODUCTION_STAGES, calculateProgress, calculateRisk } from '../../utils/constants'
@@ -691,7 +691,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
           <div className="w-full max-w-lg rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto">
             <div className="absolute top-4 right-4 flex items-center gap-3">
               <button className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--accent)] text-white hover:brightness-95 transition text-sm font-semibold shadow-sm" onClick={handlePrintReceipt}>
-                <Printer size={16} /> Print Receipt
+                <Eye size={16} /> View Details
               </button>
               <button className="text-[var(--muted)] hover:text-[var(--text)] transition p-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg" onClick={() => setViewOrder(null)}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -1531,86 +1531,97 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
           </button>
         ))}
       </div>
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="sm:flex-1 w-full sm:max-w-md">
-          <label className="flex h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm focus-within:border-[var(--accent)] transition-colors">
-            <Search size={18} />
-            <input
-              className="w-full bg-transparent outline-none placeholder:text-stone-400 font-medium"
-              placeholder="Search client, product or ID..."
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </label>
-        </div>
-        <div className="flex flex-col gap-2 w-full lg:w-auto">
-          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] px-1">Order Status</span>
-          <div className="relative group">
-            <select
-              className="relative z-10 w-full lg:w-40 appearance-none rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2 pr-10 text-[11px] font-bold outline-none transition cursor-pointer hover:border-[var(--accent)] h-11"
-              value={['All', 'Not Ready', 'In Progress', 'Hold', 'Completed'].includes(activeFilter) ? activeFilter : 'All'}
-              onChange={(e) => {
-                setActiveFilter(e.target.value);
-                setCurrentPageNum(1);
-              }}
-            >
-              <option value="All">All Statuses</option>
-              <option value="Not Ready">Not Ready</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Hold">On Hold</option>
-              <option value="Completed">Completed</option>
-            </select>
-            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] z-10">
-              <ChevronDown size={14} />
-            </div>
+      <div className="mb-6 flex flex-col gap-4 bg-[var(--surface)] p-4 rounded-[24px] border border-[var(--border)] shadow-[var(--shadow)]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="w-full lg:max-w-md flex-1">
+            <label className="flex h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm focus-within:border-[var(--accent)] transition-colors">
+              <Search size={18} />
+              <input
+                className="w-full bg-transparent outline-none placeholder:text-stone-400 font-medium"
+                placeholder="Search client, product or ID..."
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </label>
           </div>
-        </div>
-        <div className="flex flex-col gap-2 w-full lg:w-auto">
-          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] px-1">Production Stage</span>
-          <div className="relative group">
-            <select
-              className="relative z-10 w-full lg:w-40 appearance-none rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2 pr-10 text-[11px] font-bold outline-none transition cursor-pointer hover:border-[var(--accent)] h-11"
-              value={Object.keys(PRODUCTION_STAGES).includes(activeFilter) ? activeFilter : 'All'}
-              onChange={(e) => {
-                setActiveFilter(e.target.value);
-                setCurrentPageNum(1);
-              }}
-            >
-              <option value="All">All Stages</option>
-              {Object.keys(PRODUCTION_STAGES).map(stage => (
-                <option key={stage} value={stage}>{stage}</option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] z-10">
-              <ChevronDown size={14} />
-            </div>
-          </div>
-        </div>
-        <div className="flex flex-col gap-2 w-full lg:w-auto">
-          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] px-1">Delivery Tracker</span>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex h-11 items-center gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth">
-              {['All', 'Today', 'Tomorrow', 'Week', 'Custom'].map((df) => (
-                <button
-                  key={df}
-                  onClick={() => setDateFilter(df)}
-                  className={`h-9 px-4 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all flex items-center justify-center ${dateFilter === df ? 'bg-[var(--accent)] text-white shadow-md' : 'bg-[var(--soft)] text-[var(--muted)] hover:text-[var(--text)]'}`}
+          
+          <div className="flex flex-col sm:flex-row flex-wrap items-end gap-4">
+            <div className="flex flex-col gap-2 w-full sm:w-auto flex-1 min-w-[140px]">
+              <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] px-1">Order Status</span>
+              <div className="relative group">
+                <select
+                  className="relative z-10 w-full appearance-none rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2 pr-10 text-[11px] font-bold outline-none transition cursor-pointer hover:border-[var(--accent)] h-11"
+                  value={['All', 'Not Ready', 'In Progress', 'Hold', 'Completed'].includes(activeFilter) ? activeFilter : 'All'}
+                  onChange={(e) => {
+                    setActiveFilter(e.target.value);
+                    setCurrentPageNum(1);
+                  }}
                 >
-                  {df}
-                </button>
-              ))}
-            </div>
-            {dateFilter === 'Custom' && (
-              <div className="w-full sm:w-auto animate-in slide-in-from-right-2 duration-300">
-                <input
-                  type="date"
-                  value={customDate}
-                  onChange={(e) => setCustomDate(e.target.value)}
-                  className="w-full sm:w-auto rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-[11px] font-bold outline-none focus:border-[var(--accent)] h-9 shadow-sm"
-                />
+                  <option value="All">All Statuses</option>
+                  <option value="Not Ready">Not Ready</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Hold">On Hold</option>
+                  <option value="Completed">Completed</option>
+                </select>
+                <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] z-10">
+                  <ChevronDown size={14} />
+                </div>
               </div>
-            )}
+            </div>
+            
+            <div className="flex flex-col gap-2 w-full sm:w-auto flex-1 min-w-[140px]">
+              <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] px-1">Production Stage</span>
+              <div className="relative group">
+                <select
+                  className="relative z-10 w-full appearance-none rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2 pr-10 text-[11px] font-bold outline-none transition cursor-pointer hover:border-[var(--accent)] h-11"
+                  value={Object.keys(PRODUCTION_STAGES).includes(activeFilter) ? activeFilter : 'All'}
+                  onChange={(e) => {
+                    setActiveFilter(e.target.value);
+                    setCurrentPageNum(1);
+                  }}
+                >
+                  <option value="All">All Stages</option>
+                  {Object.keys(PRODUCTION_STAGES).map(stage => (
+                    <option key={stage} value={stage}>{stage}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] z-10">
+                  <ChevronDown size={14} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-[var(--border)]/50">
+          <div className="flex flex-col gap-2 w-full">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">Delivery Tracker</span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex h-11 items-center gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth w-full sm:w-auto">
+                {['All', 'Today', 'Tomorrow', 'Week', 'Custom'].map((df) => (
+                  <button
+                    key={df}
+                    onClick={() => setDateFilter(df)}
+                    className={`h-9 px-4 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all flex items-center justify-center shrink-0 ${dateFilter === df ? 'bg-[var(--accent)] text-white shadow-md' : 'bg-[var(--soft)] text-[var(--muted)] hover:text-[var(--text)]'}`}
+                  >
+                    {df}
+                  </button>
+                ))}
+              </div>
+              {dateFilter === 'Custom' && (
+                <div className="w-full sm:w-auto animate-in fade-in zoom-in-95 duration-200">
+                  <input
+                    type="date"
+                    value={customDate}
+                    onChange={(e) => setCustomDate(e.target.value)}
+                    className="w-full sm:w-auto rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-[11px] font-bold outline-none focus:border-[var(--accent)] h-11 sm:h-9 shadow-sm transition-colors"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -1626,7 +1637,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
           </p>
         </div>
         <div 
-          className={`erp-table-container overflow-x-auto min-h-[400px] hidden md:block ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          className={`erp-table-container overflow-x-auto min-h-[400px] hidden lg:block ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           ref={tableContainerRef}
           onMouseDown={handleMouseDown}
           onMouseLeave={handleMouseLeave}
@@ -1965,7 +1976,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
         </div>
 
         {/* Mobile Accordion View */}
-        <div className="block md:hidden mt-4">
+        <div className="block lg:hidden mt-4">
           {isDataLoading ? (
             // Skeleton for mobile
             <div className="space-y-4">
@@ -2121,31 +2132,45 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
 
                 {/* Accordion Body (Visible when expanded) */}
                 {isExpanded && (
-                  <div className="px-4 pb-4 border-t border-[var(--border)]/50 pt-4 flex flex-col gap-4">
-                    {/* Priority & Dates */}
-                    <div className="flex items-start justify-between bg-[var(--surface)] rounded-xl p-3">
-                      <div className="flex flex-col gap-1 text-xs">
-                        <span className="text-[var(--muted)]">Order: <span className="font-medium text-[var(--text)]">{formatDateDDMMYY(order.orderDate)}</span></span>
-                        <span className="text-[var(--muted)]">Delivery: <span className="font-medium text-[var(--text)]">{formatDateDDMMYY(order.deliveryDate)}</span></span>
+                  <div className="px-3 pb-4 border-t border-[var(--border)]/30 pt-3 flex flex-col gap-3 bg-[var(--soft)]/20">
+                    
+                    {/* Top Row: Dates & Status */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-2 bg-[var(--surface-strong)] rounded-xl p-3 border border-[var(--border)]/40 shadow-sm">
+                        <span className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold flex items-center gap-1"><Calendar size={10} /> Timeline</span>
+                        <div className="flex flex-col gap-1 text-[11px]">
+                          <div className="flex justify-between items-center"><span className="text-[var(--muted)]">Order:</span> <span className="font-semibold text-[var(--text)]">{formatDateDDMMYY(order.orderDate)}</span></div>
+                          <div className="flex justify-between items-center"><span className="text-[var(--muted)]">Delivery:</span> <span className="font-semibold text-[var(--text)]">{formatDateDDMMYY(order.deliveryDate)}</span></div>
+                        </div>
                       </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${order.priority === 'High' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : order.priority === 'Medium' ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20' : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)]'}`}>
-                          {order.priority || 'Normal'}
-                        </span>
-                        <span className={`text-[10px] font-bold ${order.risk === 'Delayed' ? 'text-red-500' : order.risk === 'At Risk' ? 'text-orange-500' : 'text-emerald-500'}`}>{order.risk || 'On Track'}</span>
+                      <div className="flex flex-col gap-2 bg-[var(--surface-strong)] rounded-xl p-3 border border-[var(--border)]/40 shadow-sm">
+                        <span className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold flex items-center gap-1"><AlertCircle size={10} /> Status</span>
+                        <div className="flex flex-col gap-1.5 items-end justify-center h-full">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${order.priority === 'High' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : order.priority === 'Medium' ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20' : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)]'}`}>
+                            {order.priority || 'Normal'}
+                          </span>
+                          <span className={`text-[10px] font-bold flex items-center gap-1 ${order.risk === 'Delayed' ? 'text-red-500' : order.risk === 'At Risk' ? 'text-orange-500' : 'text-emerald-500'}`}>
+                             {order.risk === 'Delayed' ? <XCircle size={10} /> : order.risk === 'At Risk' ? <AlertCircle size={10} /> : <CheckCircle2 size={10} />}
+                             {order.risk || 'On Track'}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Details */}
-                    <div className="flex items-start gap-3 bg-[var(--surface)] rounded-xl p-3">
+                    {/* Middle Row: Product Details */}
+                    <div className="flex items-start gap-3 bg-[var(--surface-strong)] rounded-xl p-3 border border-[var(--border)]/40 shadow-sm relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-1 h-full bg-[var(--accent)]"></div>
                       {order.image ? (
                         <div 
-                          className="relative h-16 w-16 rounded-xl overflow-hidden border border-[var(--border)] cursor-pointer isolate bg-[var(--surface-strong)]"
+                          className="relative h-20 w-20 rounded-xl overflow-hidden border border-[var(--border)]/50 cursor-pointer shadow-sm group"
                           onClick={(e) => {
                             e.stopPropagation();
                             setImagePopup(order.image);
                           }}
                         >
+                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white z-10">
+                            <ZoomIn size={16} />
+                          </div>
                           <div className="absolute inset-0 animate-pulse bg-[var(--border)] opacity-30 -z-10"></div>
                           <img 
                             src={order.image} 
@@ -2155,32 +2180,36 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                           />
                         </div>
                       ) : (
-                        <div className="h-16 w-16 rounded-xl bg-[var(--surface-strong)] flex flex-col items-center justify-center text-[var(--muted)] border border-[var(--border)]">
-                          <Eye size={16} />
-                          <span className="text-[8px] mt-1 font-medium uppercase tracking-wider">No Image</span>
+                        <div className="h-20 w-20 rounded-xl bg-[var(--surface)] flex flex-col items-center justify-center text-[var(--muted)] border border-[var(--border)]/50 shadow-sm">
+                          <Eye size={18} className="opacity-50" />
+                          <span className="text-[9px] mt-1.5 font-medium uppercase tracking-wider">No Image</span>
                         </div>
                       )}
-                      <div className="flex-1 flex flex-col gap-1">
-                        <p className="text-xs font-bold text-[var(--text)] break-words">{order.product}</p>
-                        <p className="text-[10px] text-[var(--muted)]">{order.fabric}</p>
-                        <div className="mt-1 flex items-baseline gap-1">
-                          <span className="font-semibold text-[var(--accent)] text-sm">₹{order.price}</span>
+                      <div className="flex-1 flex flex-col gap-1 min-w-0">
+                        <p className="text-sm font-bold text-[var(--text)] truncate">{order.product}</p>
+                        <p className="text-[11px] text-[var(--muted)] truncate font-medium">{order.fabric}</p>
+                        <div className="mt-1 flex flex-col gap-1 bg-[var(--surface)] p-2 rounded-lg border border-[var(--border)]/30">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] text-[var(--muted)] font-medium">Total Price</span>
+                            <span className="font-bold text-[var(--accent)] text-sm">₹{order.price}</span>
+                          </div>
                           {order.advance > 0 && (
-                            <span className="text-[9px] font-semibold text-green-600 ml-2">
-                              Adv: ₹{order.advance} • Bal: ₹{(parseFloat(order.price || 0) - parseFloat(order.advance || 0)).toFixed(2)}
-                            </span>
+                            <div className="flex justify-between items-center border-t border-[var(--border)]/50 pt-1 mt-0.5">
+                              <span className="text-[9px] text-[var(--muted)]">Adv: ₹{order.advance}</span>
+                              <span className="text-[10px] font-bold text-green-600">Bal: ₹{(parseFloat(order.price || 0) - parseFloat(order.advance || 0)).toFixed(2)}</span>
+                            </div>
                           )}
                         </div>
                       </div>
                     </div>
 
-                    {/* Main Status */}
-                    <div className="flex flex-col gap-2 bg-[var(--surface)] rounded-xl p-3">
+                    {/* Bottom Row: Actions & Status */}
+                    <div className="flex flex-col gap-3 bg-[var(--surface-strong)] rounded-xl p-3 border border-[var(--border)]/40 shadow-sm">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[var(--text)]">Main Status</span>
+                        <span className="text-[11px] font-bold text-[var(--text)]">Production Status</span>
                         <div className="relative w-36">
                           <select
-                            className={`relative z-10 w-full appearance-none rounded-lg border bg-[var(--surface-strong)] px-2 py-1.5 pr-6 text-[11px] font-bold outline-none transition cursor-pointer active:scale-95 ${order.status === 'Completed' || order.status === 'Sold' ? 'text-green-600 border-green-500/30' : order.status === 'Hold' ? 'text-orange-500 border-orange-500/30' : 'text-[var(--text)] border-[var(--border)]'}`}
+                            className={`relative z-10 w-full appearance-none rounded-lg border bg-[var(--surface)] px-2.5 py-1.5 pr-6 text-[11px] font-bold outline-none transition cursor-pointer active:scale-95 shadow-sm ${order.status === 'Completed' || order.status === 'Sold' ? 'text-emerald-600 border-emerald-500/30' : order.status === 'Hold' ? 'text-orange-500 border-orange-500/30' : 'text-[var(--text)] border-[var(--border)]'}`}
                             value={order.status || 'Not Ready'}
                             onChange={(e) => handleStatusChange(order.id, e.target.value)}
                             disabled={order.status === 'Sold'}
@@ -2191,26 +2220,25 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                             <option value="Completed" disabled>Completed</option>
                             <option value="Sold" disabled>Sold</option>
                           </select>
-                          <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[var(--muted)] z-10">
+                          <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--muted)] z-10">
                             <ChevronDown size={14} />
                           </div>
                         </div>
                       </div>
+                      
                       {((order.startDate && order.status !== 'Pending') || ((order.completedDate || order.closedDate) && (order.status === 'Completed' || order.status === 'Sold'))) && (
                         <div className="flex items-center justify-between text-[10px] text-[var(--muted)] border-t border-[var(--border)]/50 pt-2 mt-1">
                           {order.startDate && order.status !== 'Pending' ? (
-                            <span>Started: {formatDateDDMMYY(order.startDate)}</span>
+                            <span className="flex items-center gap-1"><Clock size={10} /> Started: {formatDateDDMMYY(order.startDate)}</span>
                           ) : <span />}
                           {(order.completedDate || order.closedDate) && (order.status === 'Completed' || order.status === 'Sold') && (
-                            <span>Done: {formatDateDDMMYY(order.completedDate || order.closedDate)}</span>
+                            <span className="flex items-center gap-1 text-emerald-500/80"><CheckCircle2 size={10} /> Done: {formatDateDDMMYY(order.completedDate || order.closedDate)}</span>
                           )}
                         </div>
                       )}
-                    </div>
 
-                    {/* Pay Now Button (if completed) */}
-                    {order.status === 'Completed' && (
-                      <div className="flex items-center gap-2">
+                      {/* Pay Now Button (if completed) */}
+                      {order.status === 'Completed' && (
                         <button
                           type="button"
                           onClick={(e) => {
@@ -2219,27 +2247,29 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                             sessionStorage.setItem('erp_sales_back', 'view-orders');
                             if (setCurrentPage) setCurrentPage('create-sales');
                           }}
-                          className="w-full flex items-center justify-center gap-1 rounded-lg border border-emerald-500 bg-emerald-500 text-white px-2 py-2 text-[11px] font-bold shadow-sm transition hover:brightness-95"
+                          className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500 text-white px-3 py-2 text-[11px] font-bold shadow-md transition hover:bg-emerald-600 active:scale-95"
                         >
-                          <CircleDollarSign size={14} /> Pay Now
+                          <CircleDollarSign size={14} /> Proceed to Billing
                         </button>
-                      </div>
-                    )}
+                      )}
 
-                       <div className="flex items-center gap-1">
-                          <button className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white" onClick={() => setViewOrder(order)}>
-                            <Eye size={16} />
-                          </button>
-                          <button className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white" onClick={() => setEditOrder(order)}>
-                            <Pencil size={16} />
-                          </button>
-                          <button className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white" onClick={() => setOrderToDelete(order)}>
-                            <Trash2 size={16} />
-                          </button>
-                       </div>
+                      <div className="flex gap-2 mt-1">
+                        <div className="flex items-center gap-1 bg-[var(--surface)] p-1 rounded-lg border border-[var(--border)]/50 shadow-sm flex-1">
+                           <button title="View Details" className="flex-1 flex justify-center py-1.5 rounded-md bg-transparent text-[var(--muted)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] transition" onClick={() => setViewOrder(order)}>
+                             <Eye size={14} />
+                           </button>
+                           <div className="w-px h-4 bg-[var(--border)]/50"></div>
+                           <button title="Edit Order" className="flex-1 flex justify-center py-1.5 rounded-md bg-transparent text-[var(--muted)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] transition" onClick={() => setEditOrder(order)}>
+                             <Pencil size={14} />
+                           </button>
+                           <div className="w-px h-4 bg-[var(--border)]/50"></div>
+                           <button title="Delete Order" className="flex-1 flex justify-center py-1.5 rounded-md bg-transparent text-[var(--muted)] hover:bg-red-500/10 hover:text-red-500 transition" onClick={() => setOrderToDelete(order)}>
+                             <Trash2 size={14} />
+                           </button>
+                        </div>
 
-                    <div className="flex gap-2">
                         <button
+                          title="Send WhatsApp Update"
                           onClick={() => {
                             setWaData({
                               phone: clients.find(c => c.name?.toLowerCase() === order.clientName?.toLowerCase())?.phone || '',
@@ -2249,22 +2279,12 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                             })
                             setShowWaPopup(true)
                           }}
-                          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-[#25D366]/10 text-[#25D366] px-2 py-2 text-[10px] font-bold shadow-sm transition hover:bg-[#25D366]/20"
+                          className="flex items-center justify-center gap-1.5 rounded-lg border border-[#25D366]/30 bg-[#25D366]/10 text-[#25D366] px-4 py-2 text-[11px] font-bold shadow-sm transition hover:bg-[#25D366]/20 active:scale-95"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/></svg>
-                          WhatsApp
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/></svg>
+                          Update
                         </button>
-                        <button
-                          onClick={() => {
-                            if (setCurrentPage && setViewOrder) {
-                              setViewOrder(order)
-                            }
-                          }}
-                          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-2 text-[10px] font-bold shadow-sm transition hover:bg-[var(--soft)]"
-                        >
-                          <Printer size={12} />
-                          Print
-                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -2278,7 +2298,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
 
 
         {totalPages > 1 && (
-          <div className="mt-4 hidden md:flex items-center justify-between border-t border-[var(--border)] pt-4">
+          <div className="mt-4 hidden lg:flex items-center justify-between border-t border-[var(--border)] pt-4">
             <span className="text-sm text-[var(--muted)]">Showing {(currentPageNum - 1) * itemsPerPage + 1} to {Math.min(currentPageNum * itemsPerPage, filteredOrders.length)} of {filteredOrders.length}</span>
             <div className="flex gap-2">
               <button

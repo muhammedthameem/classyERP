@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { ImageIcon, ChevronDown, ChevronLeft, Package, Search, Settings, ShoppingBag, UsersRound, Pencil, Trash2, Plus } from 'lucide-react'
 import { formatDateDDMMYY, formatDateTimeDDMMYY, products } from '../../utils/constants'
 import supabase from '../../supabase'
+import { compressImage } from '../../utils/imageCompression'
 
 function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClient, initialMode, setClientDetailMode, showGlobalToast, currentUser, clients, setClients, saveClient, deleteClient, productTypes = [], setProductTypes, saveConfig }) {
   const [clientsList, setClientsList] = useState([])
@@ -169,9 +170,10 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
     if (photoFile) {
       setIsUploading(true);
       try {
-        const fileExt = photoFile.name.split('.').pop();
+        const compressedPhoto = await compressImage(photoFile);
+        const fileExt = compressedPhoto.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const { error } = await supabase.storage.from('measurements').upload(fileName, photoFile);
+        const { error } = await supabase.storage.from('measurements').upload(fileName, compressedPhoto);
         if (error) throw error;
         
         const { data } = supabase.storage.from('measurements').getPublicUrl(fileName);
@@ -179,10 +181,11 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
       } catch (err) {
         console.error('Error uploading photo:', err);
         try {
+          const compressedPhoto = await compressImage(photoFile);
           const base64 = await new Promise((resolve) => {
             const reader = new FileReader();
             reader.onloadend = () => resolve(reader.result);
-            reader.readAsDataURL(photoFile);
+            reader.readAsDataURL(compressedPhoto);
           });
           uploadedPhotoUrl = base64;
           if (showGlobalToast) showGlobalToast('Storage Upload Failed', 'Falling back to local database storage for image.');
@@ -1053,7 +1056,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                         type="text"
                         value={topMeasurements.length}
                         onChange={(e) => setTopMeasurements({ ...topMeasurements, length: e.target.value })}
-                        placeholder="Length"
+                        placeholder="Length" inputMode="decimal"
                       />
                     </div>
                     <div></div>
@@ -1085,7 +1088,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                           type="text"
                           value={topMeasurements[`${field.key}Length`] || ''}
                           onChange={(e) => setTopMeasurements({ ...topMeasurements, [`${field.key}Length`]: e.target.value })}
-                          placeholder="Length"
+                          placeholder="Length" inputMode="decimal"
                         />
                       </div>
                       <div className="measurement-input-group">
@@ -1095,7 +1098,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                           type="text"
                           value={topMeasurements[`${field.key}Round`] || ''}
                           onChange={(e) => setTopMeasurements({ ...topMeasurements, [`${field.key}Round`]: e.target.value })}
-                          placeholder="Round"
+                          placeholder="Round" inputMode="decimal"
                         />
                       </div>
                     </div>
@@ -1118,7 +1121,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                         type="text"
                         value={bottomMeasurements.length}
                         onChange={(e) => setBottomMeasurements({ ...bottomMeasurements, length: e.target.value })}
-                        placeholder="Length"
+                        placeholder="Length" inputMode="decimal"
                       />
                     </div>
                     <div></div>
@@ -1141,7 +1144,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                           type="text"
                           value={bottomMeasurements[`${field.key}Length`] || ''}
                           onChange={(e) => setBottomMeasurements({ ...bottomMeasurements, [`${field.key}Length`]: e.target.value })}
-                          placeholder="Length"
+                          placeholder="Length" inputMode="decimal"
                         />
                       </div>
                       <div className="measurement-input-group">
@@ -1151,7 +1154,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
                           type="text"
                           value={bottomMeasurements[`${field.key}Round`] || ''}
                           onChange={(e) => setBottomMeasurements({ ...bottomMeasurements, [`${field.key}Round`]: e.target.value })}
-                          placeholder="Round"
+                          placeholder="Round" inputMode="decimal"
                         />
                       </div>
                     </div>

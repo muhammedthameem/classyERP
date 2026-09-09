@@ -413,25 +413,10 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
 
   return (
     <div style={themeStyle} className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <h1 className="text-h1">Account Ledger</h1>
           <p className="text-para text-[var(--muted)] mt-1">View and manage income and expenses</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button 
-            className="flex items-center gap-2 rounded-xl bg-[var(--surface-strong)] border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--text)] transition hover:bg-[var(--soft)]"
-            onClick={() => setCurrentPage('add-income')}
-          >
-            <CircleDollarSign size={16} className="text-green-500"/> Add Income
-          </button>
-          <button 
-            className="flex items-center gap-2 rounded-xl bg-[var(--surface-strong)] border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--text)] transition hover:bg-[var(--soft)]"
-            onClick={() => setCurrentPage('add-expense')}
-          >
-            <TrendingDown size={16} className="text-red-500"/> Add Expense
-          </button>
         </div>
       </div>
 
@@ -476,104 +461,129 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
         </div>
       </div>
 
-      {/* Tabs & Search */}
-      <div className="flex flex-col xl:flex-row items-center justify-between gap-4">
-        <div ref={tabsContainerRef} className="flex p-1 space-x-1 bg-[var(--surface-strong)] rounded-xl border border-[var(--border)] w-full overflow-x-auto whitespace-nowrap [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <button
-            title="All"
-            className={`flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all duration-300 overflow-hidden ${activeTab === 'All' ? 'flex-1 bg-[var(--surface)] text-[var(--text)] shadow-sm px-6' : 'w-12 sm:w-16 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--soft)]'}`}
-            onClick={(e) => handleTabChange('All', e)}
-          >
-            <Layers size={18} className="shrink-0" /> 
-            {activeTab === 'All' && <span className="whitespace-nowrap animate-in fade-in duration-300">All</span>}
-          </button>
-          <button
-            title="Income"
-            className={`flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all duration-300 overflow-hidden ${activeTab === 'Income' ? 'flex-1 bg-[var(--surface)] text-green-500 shadow-sm px-6' : 'w-12 sm:w-16 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--soft)]'}`}
-            onClick={(e) => handleTabChange('Income', e)}
-          >
-            <CircleDollarSign size={18} className="shrink-0" /> 
-            {activeTab === 'Income' && <span className="whitespace-nowrap animate-in fade-in duration-300">Income</span>}
-          </button>
-          <button
-            title="Expense"
-            className={`flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all duration-300 overflow-hidden ${activeTab === 'Expense' ? 'flex-1 bg-[var(--surface)] text-red-500 shadow-sm px-6' : 'w-12 sm:w-16 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--soft)]'}`}
-            onClick={(e) => handleTabChange('Expense', e)}
-          >
-            <TrendingDown size={18} className="shrink-0" /> 
-            {activeTab === 'Expense' && <span className="whitespace-nowrap animate-in fade-in duration-300">Expense</span>}
-          </button>
-          <button
-            title="Cashbook"
-            className={`flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all duration-300 overflow-hidden ${activeTab === 'Cashbook' ? 'flex-1 bg-[var(--accent)] text-white shadow-sm px-6' : 'w-12 sm:w-16 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--soft)]'}`}
-            onClick={(e) => handleTabChange('Cashbook', e)}
-          >
-            <Book size={18} className="shrink-0" /> 
-            {activeTab === 'Cashbook' && <span className="whitespace-nowrap animate-in fade-in duration-300">Cashbook</span>}
-          </button>
+      {/* Professional Search & Filter Card */}
+      <div className="mb-6 flex flex-col gap-4 bg-[var(--surface)] p-4 rounded-[24px] border border-[var(--border)] shadow-[var(--shadow)]">
+        
+        {/* Top Row: Search and Add Buttons */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="w-full lg:max-w-md flex-1">
+            <label className="flex h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm focus-within:border-[var(--accent)] transition-colors">
+              <Search size={18} />
+              <input
+                className="w-full bg-transparent outline-none placeholder:text-stone-400 font-medium"
+                placeholder="Search..."
+                type="search"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setCurrentPageNum(1)
+                }}
+              />
+            </label>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-4 w-full lg:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button 
+                className="flex flex-1 sm:flex-none h-11 items-center justify-center gap-2 rounded-xl bg-[var(--surface-strong)] border border-[var(--border)] px-4 text-sm font-semibold text-[var(--text)] transition hover:bg-[var(--soft)] whitespace-nowrap"
+                onClick={() => setCurrentPage('add-income')}
+              >
+                <CircleDollarSign size={16} className="text-green-500"/> Add Income
+              </button>
+              <button 
+                className="flex flex-1 sm:flex-none h-11 items-center justify-center gap-2 rounded-xl bg-[var(--surface-strong)] border border-[var(--border)] px-4 text-sm font-semibold text-[var(--text)] transition hover:bg-[var(--soft)] whitespace-nowrap"
+                onClick={() => setCurrentPage('add-expense')}
+              >
+                <TrendingDown size={16} className="text-red-500"/> Add Expense
+              </button>
+            </div>
+            <button
+              onClick={exportToPDF}
+              className="flex w-full sm:w-auto h-11 items-center justify-center gap-2 rounded-xl bg-[var(--surface-strong)] border border-[var(--border)] px-4 text-sm font-semibold text-[var(--text)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] hover:border-[var(--accent)] whitespace-nowrap shadow-sm"
+            >
+              <Download size={16} /> <span className="hidden sm:inline">Download</span> PDF
+            </button>
+          </div>
         </div>
 
-        <div className="flex flex-wrap xl:flex-nowrap items-center gap-4 w-full xl:w-auto shrink-0">
-          {activeTab === 'Cashbook' && (
-            <div className="flex items-center gap-2 bg-[var(--surface-strong)] rounded-xl border border-[var(--border)] px-3 py-2 text-sm">
-              <Filter size={16} className="text-[var(--muted)]" />
-                <select 
-                  className="bg-transparent outline-none text-[var(--text)] font-medium cursor-pointer"
-                  value={cashbookMode}
-                  onChange={(e) => {
-                    setCashbookMode(e.target.value)
-                    setCurrentPageNum(1)
-                  }}
-                >
-                  <option value="All">All Modes</option>
-                  <option value="Cash">Cash Only</option>
-                  <option value="UPI">UPI</option>
-                  <option value="Bank Transfer">Bank Transfer</option>
-                  <option value="Card">Card</option>
-                  <option value="Cheque">Cheque</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-          )}
-
-          <div className="relative w-full sm:w-auto shrink-0 flex flex-wrap sm:flex-nowrap items-center gap-2">
-            <input 
-              type="date"
-              value={filterStartDate}
-              onChange={(e) => { setFilterStartDate(e.target.value); setCurrentPageNum(1); }}
-              className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-sm outline-none transition focus:border-[var(--accent)] text-[var(--text)]"
-              title="Start Date"
-            />
-            <span className="text-[var(--muted)]">to</span>
-            <input 
-              type="date"
-              value={filterEndDate}
-              onChange={(e) => { setFilterEndDate(e.target.value); setCurrentPageNum(1); }}
-              className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2 text-sm outline-none transition focus:border-[var(--accent)] text-[var(--text)]"
-              title="End Date"
-            />
+        {/* Bottom Row: Tabs and Date Filters */}
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 pt-4 border-t border-[var(--border)]/50">
+          <div ref={tabsContainerRef} className="flex p-1 space-x-1 bg-[var(--surface-strong)] rounded-xl border border-[var(--border)] w-full xl:w-auto overflow-x-auto whitespace-nowrap [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <button
+              title="All"
+              className={`flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all duration-300 overflow-hidden ${activeTab === 'All' ? 'flex-1 bg-[var(--surface)] text-[var(--text)] shadow-sm px-6' : 'w-12 sm:w-16 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--soft)]'}`}
+              onClick={(e) => handleTabChange('All', e)}
+            >
+              <Layers size={18} className="shrink-0" /> 
+              {activeTab === 'All' && <span className="whitespace-nowrap animate-in fade-in duration-300">All</span>}
+            </button>
+            <button
+              title="Income"
+              className={`flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all duration-300 overflow-hidden ${activeTab === 'Income' ? 'flex-1 bg-[var(--surface)] text-green-500 shadow-sm px-6' : 'w-12 sm:w-16 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--soft)]'}`}
+              onClick={(e) => handleTabChange('Income', e)}
+            >
+              <CircleDollarSign size={18} className="shrink-0" /> 
+              {activeTab === 'Income' && <span className="whitespace-nowrap animate-in fade-in duration-300">Income</span>}
+            </button>
+            <button
+              title="Expense"
+              className={`flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all duration-300 overflow-hidden ${activeTab === 'Expense' ? 'flex-1 bg-[var(--surface)] text-red-500 shadow-sm px-6' : 'w-12 sm:w-16 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--soft)]'}`}
+              onClick={(e) => handleTabChange('Expense', e)}
+            >
+              <TrendingDown size={18} className="shrink-0" /> 
+              {activeTab === 'Expense' && <span className="whitespace-nowrap animate-in fade-in duration-300">Expense</span>}
+            </button>
+            <button
+              title="Cashbook"
+              className={`flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all duration-300 overflow-hidden ${activeTab === 'Cashbook' ? 'flex-1 bg-[var(--accent)] text-white shadow-sm px-6' : 'w-12 sm:w-16 text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--soft)]'}`}
+              onClick={(e) => handleTabChange('Cashbook', e)}
+            >
+              <Book size={18} className="shrink-0" /> 
+              {activeTab === 'Cashbook' && <span className="whitespace-nowrap animate-in fade-in duration-300">Cashbook</span>}
+            </button>
           </div>
 
-          <div className="relative w-full sm:w-48 shrink-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" size={18} />
-            <input
-              type="text"
-              placeholder={`Search...`}
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value)
-                setCurrentPageNum(1)
-              }}
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
-            />
-          </div>
+          <div className="flex flex-wrap items-center gap-4 w-full xl:w-auto shrink-0">
+            {activeTab === 'Cashbook' && (
+              <div className="flex items-center gap-2 bg-[var(--surface-strong)] rounded-xl border border-[var(--border)] px-3 h-11 text-sm flex-1 sm:flex-none">
+                <Filter size={16} className="text-[var(--muted)]" />
+                  <select 
+                    className="bg-transparent outline-none text-[var(--text)] font-medium cursor-pointer w-full"
+                    value={cashbookMode}
+                    onChange={(e) => {
+                      setCashbookMode(e.target.value)
+                      setCurrentPageNum(1)
+                    }}
+                  >
+                    <option value="All">All Modes</option>
+                    <option value="Cash">Cash Only</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Card">Card</option>
+                    <option value="Cheque">Cheque</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+            )}
 
-          <button
-            onClick={exportToPDF}
-            className="flex items-center gap-2 rounded-xl bg-[var(--surface-strong)] border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-[var(--text)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] hover:border-[var(--accent)] whitespace-nowrap shadow-sm"
-          >
-            <Download size={16} /> <span className="hidden sm:inline">Download</span> PDF
-          </button>
+            <div className="relative w-full sm:w-auto shrink-0 flex items-center gap-2 h-11">
+              <input 
+                type="date"
+                value={filterStartDate}
+                onChange={(e) => { setFilterStartDate(e.target.value); setCurrentPageNum(1); }}
+                className="w-full sm:w-auto h-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 text-sm outline-none transition focus:border-[var(--accent)] text-[var(--text)]"
+                title="Start Date"
+              />
+              <span className="text-[var(--muted)]">to</span>
+              <input 
+                type="date"
+                value={filterEndDate}
+                onChange={(e) => { setFilterEndDate(e.target.value); setCurrentPageNum(1); }}
+                className="w-full sm:w-auto h-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 text-sm outline-none transition focus:border-[var(--accent)] text-[var(--text)]"
+                title="End Date"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -633,7 +643,7 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
                   <th className="p-4 font-semibold">Type</th>
                   <th className="p-4 font-semibold">Customer / Payee</th>
                   <th className="p-4 font-semibold">Category</th>
-                  <th className="p-4 font-semibold hidden md:table-cell">Reference</th>
+                  <th className="p-4 font-semibold hidden lg:table-cell">Reference</th>
                   <th className="p-4 font-semibold hidden sm:table-cell">Mode</th>
                   <th className="p-4 font-semibold text-right">Amount</th>
                   <th className="p-4 font-semibold text-center">Action</th>
@@ -649,7 +659,7 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
                     <td className="p-4"><div className="skeleton h-6 w-16 rounded-full" /></td>
                     <td className="p-4"><div className="skeleton h-6 w-24 rounded" /></td>
                     <td className="p-4"><div className="skeleton h-6 w-24 rounded" /></td>
-                    <td className="p-4 hidden md:table-cell"><div className="skeleton h-5 w-32 rounded" /></td>
+                    <td className="p-4 hidden lg:table-cell"><div className="skeleton h-5 w-32 rounded" /></td>
                     <td className="p-4 hidden sm:table-cell"><div className="skeleton h-5 w-16 rounded" /></td>
                     <td className="p-4 text-right"><div className="skeleton h-5 w-20 rounded ml-auto" /></td>
                     <td className="p-4 text-center">
@@ -711,7 +721,7 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
                           {item.category}
                         </span>
                       </td>
-                      <td className="p-4 text-[var(--muted)] max-w-xs truncate hidden md:table-cell" title={item.reference || item.notes}>
+                      <td className="p-4 text-[var(--muted)] max-w-xs truncate hidden lg:table-cell" title={item.reference || item.notes}>
                         <LinkableText text={item.reference || '-'} />
                       </td>
                       <td className="p-4 text-[var(--text)] hidden sm:table-cell">{item.payment_mode}</td>

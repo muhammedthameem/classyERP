@@ -154,30 +154,37 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
           <h1 className="text-h1">View Inventory</h1>
           <p className="text-para text-[var(--muted)] mt-2">Manage and search all inventory items</p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <label className="flex sm:flex-1 h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm">
-            <Search size={17} />
-            <input
-              className="w-full bg-transparent outline-none placeholder:text-stone-400"
-              placeholder="Search by ID, name, type..."
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </label>
-          <button
-            className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 active:scale-95 whitespace-nowrap"
-            onClick={() => setCurrentPage('create-inventory')}
-          >
-            <Plus size={18} />
-            <span className="hidden sm:inline">Add New Item</span>
-            <span className="sm:hidden">Add Item</span>
-          </button>
+      </div>
+
+      <div className="mb-6 flex flex-col gap-4 bg-[var(--surface)] p-4 rounded-[24px] border border-[var(--border)] shadow-[var(--shadow)]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="w-full lg:max-w-md flex-1">
+            <label className="flex h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm focus-within:border-[var(--accent)] transition-colors">
+              <Search size={18} />
+              <input
+                className="w-full bg-transparent outline-none placeholder:text-stone-400 font-medium"
+                placeholder="Search by ID, name, type..."
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </label>
+          </div>
+          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-4 w-full lg:w-auto">
+            <button
+              className="flex w-full sm:w-auto h-11 items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 active:scale-95 whitespace-nowrap"
+              onClick={() => setCurrentPage('create-inventory')}
+            >
+              <Plus size={18} />
+              <span className="hidden sm:inline">Add New Item</span>
+              <span className="sm:hidden">Add Item</span>
+            </button>
+          </div>
         </div>
       </div>
 
       <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur overflow-hidden">
-        <div className="erp-table-container hidden md:block">
+        <div className="erp-table-container hidden lg:block">
           <table className="erp-table">
             <thead>
               <tr>
@@ -287,7 +294,7 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
           </table>
         </div>
 
-        <div className="block md:hidden mt-4 h-[65vh] -mx-4 px-4">
+        <div className="block lg:hidden mt-4 h-[65vh] -mx-4 px-4">
           <Virtuoso
             data={filteredInventory}
             overscan={200}
@@ -378,7 +385,7 @@ function ViewInventoryPage({ themeStyle, setCurrentPage, currentUser, setSelecte
         </div>
 
         {totalPages > 1 && (
-          <div className="hidden md:flex mt-4 items-center justify-between border-t border-[var(--border)] pt-4">
+          <div className="hidden lg:flex mt-4 items-center justify-between border-t border-[var(--border)] pt-4">
             <span className="text-sm text-[var(--muted)]">Showing {(currentPageNum - 1) * itemsPerPage + 1} to {Math.min(currentPageNum * itemsPerPage, filteredInventory.length)} of {filteredInventory.length}</span>
             <div className="flex gap-2">
               <button

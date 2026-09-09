@@ -200,7 +200,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
         />
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-[var(--accent)] mb-1">
             <TrendingUp size={16} /> Sales History
@@ -208,31 +208,38 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
           <h1 className="text-h1">View Sales</h1>
           <p className="text-para text-[var(--muted)] mt-2">Track all boutique transactions and manage records.</p>
         </div>
-        <button
-          onClick={() => setCurrentPage('create-sales')}
-          className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 active:scale-95 whitespace-nowrap"
-        >
-          <Plus size={18} />
-          <span className="hidden sm:inline">New Transaction</span>
-          <span className="sm:hidden">New Sale</span>
-        </button>
+      </div>
+
+      <div className="mb-6 flex flex-col gap-4 bg-[var(--surface)] p-4 rounded-[24px] border border-[var(--border)] shadow-[var(--shadow)]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="w-full lg:max-w-md flex-1">
+            <label className="flex h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm focus-within:border-[var(--accent)] transition-colors">
+              <Search size={18} />
+              <input
+                type="text"
+                placeholder="Search by Sale ID or Client..."
+                className="w-full bg-transparent outline-none placeholder:text-stone-400 font-medium"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </label>
+          </div>
+          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-4 w-full lg:w-auto">
+            <button
+              onClick={() => setCurrentPage('create-sales')}
+              className="flex w-full sm:w-auto h-11 items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 active:scale-95 whitespace-nowrap"
+            >
+              <Plus size={18} />
+              <span className="hidden sm:inline">New Transaction</span>
+              <span className="sm:hidden">New Sale</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
-        <div className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <label className="flex sm:flex-1 h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm focus-within:border-[var(--accent)] transition-colors">
-            <Search size={18} />
-            <input
-              type="text"
-              placeholder="Search by Sale ID or Client..."
-              className="w-full bg-transparent outline-none placeholder:text-stone-400 font-medium"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </label>
-        </div>
 
-        <div className="erp-table-container hidden md:block">
+        <div className="erp-table-container hidden lg:block">
           <table className="erp-table">
             <thead>
               <tr>
@@ -316,7 +323,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
           </table>
         </div>
 
-        <div className="block md:hidden mt-4 h-[65vh] -mx-4 px-4">
+        <div className="block lg:hidden mt-4 h-[65vh] -mx-4 px-4">
           <Virtuoso
             data={filteredSales}
             overscan={200}
@@ -380,7 +387,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
         </div>
 
         {totalPages > 1 && (
-          <div className="hidden md:flex mt-4 items-center justify-between border-t border-[var(--border)] pt-4">
+          <div className="hidden lg:flex mt-4 items-center justify-between border-t border-[var(--border)] pt-4">
             <span className="text-sm text-[var(--muted)]">Showing {(currentPageNum - 1) * itemsPerPage + 1} to {Math.min(currentPageNum * itemsPerPage, filteredSales.length)} of {filteredSales.length}</span>
             <div className="flex gap-2">
               <button

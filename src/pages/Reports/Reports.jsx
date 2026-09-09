@@ -307,16 +307,10 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
           <h1 className="text-h1">Reports & Insights</h1>
           <p className="text-para text-[var(--muted)] mt-2">Analyze your boutique performance and financial growth.</p>
         </div>
-        <button
-          onClick={downloadPDF}
-          className="flex items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 active:scale-95"
-        >
-          <Download size={18} /> Export Full Report
-        </button>
       </div>
 
-      <div className="rounded-[24px] sm:rounded-[32px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
+      <div className="mb-6 flex flex-col gap-4 bg-[var(--surface)] p-4 rounded-[24px] border border-[var(--border)] shadow-[var(--shadow)]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex flex-wrap sm:flex-nowrap gap-2 w-full lg:w-auto">
             {[
               { id: 'all', label: 'All Time' },
@@ -327,50 +321,58 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
               <button
                 key={btn.id}
                 onClick={() => setFilter(btn.id)}
-                className={`flex-1 sm:flex-none px-3 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${filter === btn.id ? 'bg-[var(--accent)] text-white shadow-lg' : 'bg-[var(--soft)] text-[var(--muted)] hover:text-[var(--text)]'}`}
+                className={`flex-1 sm:flex-none px-3 sm:px-5 h-11 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${filter === btn.id ? 'bg-[var(--accent)] text-white shadow-lg' : 'bg-[var(--soft)] text-[var(--muted)] hover:text-[var(--text)]'}`}
               >
                 {btn.label}
               </button>
             ))}
           </div>
+          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-4 w-full lg:w-auto">
+            <button
+              onClick={downloadPDF}
+              className="flex w-full sm:w-auto h-11 items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 active:scale-95 whitespace-nowrap"
+            >
+              <Download size={18} /> Export Full Report
+            </button>
+          </div>
         </div>
-      </div>
 
-      {filter === 'custom' && (
-        <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:items-end gap-4 sm:gap-6 rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 animate-in slide-in-from-top-2 duration-300 shadow-sm">
-          <div className="space-y-2">
-            <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] ml-1">Start Date</p>
-            <div className="relative">
-              <input 
-                type="date" 
-                value={startDate} 
-                onChange={(e) => setStartDate(e.target.value)} 
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 text-sm font-bold outline-none transition focus:border-[var(--accent)]" 
-              />
+        {filter === 'custom' && (
+          <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:items-end gap-4 sm:gap-6 pt-4 border-t border-[var(--border)]/50 animate-in fade-in duration-300">
+            <div className="space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] ml-1">Start Date</p>
+              <div className="relative">
+                <input 
+                  type="date" 
+                  value={startDate} 
+                  onChange={(e) => setStartDate(e.target.value)} 
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 text-sm font-bold outline-none transition focus:border-[var(--accent)]" 
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] ml-1">End Date</p>
+              <div className="relative">
+                <input 
+                  type="date" 
+                  value={endDate} 
+                  onChange={(e) => setEndDate(e.target.value)} 
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 text-sm font-bold outline-none transition focus:border-[var(--accent)]" 
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-3 bg-[var(--accent-soft)]/30 p-4 sm:p-3 rounded-2xl sm:col-span-2 lg:col-span-1 mt-2 sm:mt-0">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-white shadow-lg">
+                <CalendarDays size={20} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-tighter text-[var(--accent)]">Data Range Active</p>
+                <p className="text-xs font-medium text-[var(--text)]">Showing insights between selected dates</p>
+              </div>
             </div>
           </div>
-          <div className="space-y-2">
-            <p className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] ml-1">End Date</p>
-            <div className="relative">
-              <input 
-                type="date" 
-                value={endDate} 
-                onChange={(e) => setEndDate(e.target.value)} 
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 text-sm font-bold outline-none transition focus:border-[var(--accent)]" 
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-3 bg-[var(--accent-soft)]/30 p-4 sm:p-3 rounded-2xl sm:col-span-2 lg:col-span-1 mt-2 sm:mt-0">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-white shadow-lg">
-              <CalendarDays size={20} />
-            </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-tighter text-[var(--accent)]">Data Range Active</p>
-              <p className="text-xs font-medium text-[var(--text)]">Showing insights between selected dates</p>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Printable Wrapper */}
       <div id="report-content" className="space-y-8 p-1">
@@ -404,7 +406,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                 <Download size={14} /> Export CSV
               </button>
             </div>
-            <div className="erp-table-container hidden md:block">
+            <div className="erp-table-container hidden lg:block">
               <table className="erp-table">
                 <thead>
                   <tr>
@@ -447,7 +449,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
               </table>
             </div>
 
-            <div className="block md:hidden mt-4 h-[50vh] -mx-4 px-4">
+            <div className="block lg:hidden mt-4 h-[50vh] -mx-4 px-4">
               <Virtuoso
                 data={filteredInventory}
                 overscan={200}
@@ -507,7 +509,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                 <Download size={14} /> Export CSV
               </button>
             </div>
-            <div className="erp-table-container hidden md:block">
+            <div className="erp-table-container hidden lg:block">
               <table className="erp-table">
                 <thead>
                   <tr>
@@ -544,7 +546,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
               </table>
             </div>
 
-            <div className="block md:hidden mt-4 h-[50vh] -mx-4 px-4">
+            <div className="block lg:hidden mt-4 h-[50vh] -mx-4 px-4">
               <Virtuoso
                 data={filteredSales}
                 overscan={200}
@@ -584,7 +586,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
             </div>
 
             {totalSalesPages > 1 && (
-              <div className="hidden md:flex mt-6 items-center justify-between border-t border-[var(--border)] pt-4">
+              <div className="hidden lg:flex mt-6 items-center justify-between border-t border-[var(--border)] pt-4">
                 <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Page {salesPage} of {totalSalesPages}</span>
                 <div className="flex gap-2">
                   <button
@@ -617,7 +619,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                 <Download size={14} /> Export CSV
               </button>
             </div>
-            <div className="erp-table-container hidden md:block">
+            <div className="erp-table-container hidden lg:block">
               <table className="erp-table">
                 <thead>
                   <tr>
@@ -661,7 +663,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
               </table>
             </div>
 
-            <div className="block md:hidden mt-4 h-[50vh] -mx-4 px-4">
+            <div className="block lg:hidden mt-4 h-[50vh] -mx-4 px-4">
               <Virtuoso
                 data={filteredOrders}
                 overscan={200}
@@ -703,7 +705,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
             </div>
 
             {totalOrdersPages > 1 && (
-              <div className="hidden md:flex mt-6 items-center justify-between border-t border-[var(--border)] pt-4">
+              <div className="hidden lg:flex mt-6 items-center justify-between border-t border-[var(--border)] pt-4">
                 <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Page {ordersPage} of {totalOrdersPages}</span>
                 <div className="flex gap-2">
                   <button
@@ -738,7 +740,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                 <Download size={14} /> Export CSV
               </button>
             </div>
-            <div className="erp-table-container hidden md:block">
+            <div className="erp-table-container hidden lg:block">
               <table className="erp-table">
                 <thead>
                   <tr>
@@ -775,7 +777,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
               </table>
             </div>
 
-            <div className="block md:hidden mt-4 h-[50vh] -mx-4 px-4">
+            <div className="block lg:hidden mt-4 h-[50vh] -mx-4 px-4">
               <Virtuoso
                 data={filteredIncome}
                 overscan={200}
@@ -815,7 +817,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
             </div>
 
             {totalIncomePages > 1 && (
-              <div className="hidden md:flex mt-6 items-center justify-between border-t border-[var(--border)] pt-4">
+              <div className="hidden lg:flex mt-6 items-center justify-between border-t border-[var(--border)] pt-4">
                 <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Page {incomePage} of {totalIncomePages}</span>
                 <div className="flex gap-2">
                   <button
@@ -848,7 +850,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
                 <Download size={14} /> Export CSV
               </button>
             </div>
-            <div className="erp-table-container hidden md:block">
+            <div className="erp-table-container hidden lg:block">
               <table className="erp-table">
                 <thead>
                   <tr>
@@ -885,7 +887,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
               </table>
             </div>
 
-            <div className="block md:hidden mt-4 h-[50vh] -mx-4 px-4">
+            <div className="block lg:hidden mt-4 h-[50vh] -mx-4 px-4">
               <Virtuoso
                 data={filteredExpense}
                 overscan={200}
@@ -925,7 +927,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
             </div>
 
             {totalExpensePages > 1 && (
-              <div className="hidden md:flex mt-6 items-center justify-between border-t border-[var(--border)] pt-4">
+              <div className="hidden lg:flex mt-6 items-center justify-between border-t border-[var(--border)] pt-4">
                 <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Page {expensePage} of {totalExpensePages}</span>
                 <div className="flex gap-2">
                   <button

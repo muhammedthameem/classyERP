@@ -823,27 +823,11 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
 
       </div>
 
-      {/* Data Table */}
-      <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur overflow-hidden">
-        <div className="mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <h2 className="text-xl font-semibold flex items-center gap-2 shrink-0"><Users size={20} /> Added Staff ({staffList.length})</h2>
-          <div className="flex flex-wrap sm:flex-nowrap w-full lg:w-auto items-center gap-3 justify-start lg:justify-end">
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <input
-                type="month"
-                className="h-11 w-full sm:w-auto rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm font-medium outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
-                value={tableMonthFilter}
-                onChange={(e) => setTableMonthFilter(e.target.value)}
-                title="Filter Total Paid by Month"
-              />
-              <button
-                onClick={() => setTableMonthFilter('')}
-                className={`h-11 whitespace-nowrap rounded-xl border border-[var(--border)] px-4 text-sm font-semibold transition ${!tableMonthFilter ? 'bg-[var(--accent)] text-white' : 'bg-[var(--surface-strong)] hover:bg-[var(--soft)]'}`}
-              >
-                All Time
-              </button>
-            </div>
-            <label className="flex h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm focus-within:border-[var(--accent)] transition-colors w-full sm:max-w-xs">
+      {/* Search & Filter Card */}
+      <div className="mb-6 flex flex-col gap-4 bg-[var(--surface)] p-4 rounded-[24px] border border-[var(--border)] shadow-[var(--shadow)]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="w-full lg:max-w-md flex-1">
+            <label className="flex h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm focus-within:border-[var(--accent)] transition-colors">
               <Search size={18} />
               <input
                 className="w-full bg-transparent outline-none placeholder:text-stone-400 font-medium text-[var(--text)]"
@@ -854,9 +838,33 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
               />
             </label>
           </div>
+          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-4 w-full lg:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <input
+                type="month"
+                className="h-11 w-full sm:w-auto rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm font-medium outline-none transition focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10"
+                value={tableMonthFilter}
+                onChange={(e) => setTableMonthFilter(e.target.value)}
+                title="Filter Total Paid by Month"
+              />
+              <button
+                onClick={() => setTableMonthFilter('')}
+                className={`h-11 whitespace-nowrap rounded-xl border border-[var(--border)] px-4 text-sm font-semibold transition ${!tableMonthFilter ? 'bg-[var(--accent)] text-white shadow-md' : 'bg-[var(--surface-strong)] hover:bg-[var(--soft)] text-[var(--text)]'}`}
+              >
+                All Time
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Data Table */}
+      <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur overflow-hidden">
+        <div className="mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <h2 className="text-xl font-semibold flex items-center gap-2 shrink-0"><Users size={20} /> Added Staff ({staffList.length})</h2>
         </div>
 
-        <div className="erp-table-container hidden md:block" ref={tableContainerRef}>
+        <div className="erp-table-container hidden lg:block" ref={tableContainerRef}>
           <table className="erp-table">
             <thead>
               <tr>
@@ -950,7 +958,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
           </table>
         </div>
 
-        <div className="block md:hidden mt-4 h-[65vh] -mx-4 px-4">
+        <div className="block lg:hidden mt-4 h-[65vh] -mx-4 px-4">
           <Virtuoso
             data={sortedStaff}
             overscan={200}

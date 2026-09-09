@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Search, Eye, Pencil, Trash2, ChevronDown } from 'lucide-react'
+import { Search, Eye, Pencil, Trash2, ChevronDown, Plus } from 'lucide-react'
 import { Virtuoso } from 'react-virtuoso'
 import supabase from '../../supabase'
 
@@ -353,35 +353,44 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
         </div>
       )}
 
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-semibold">View Users</h1>
           <p className="mt-2 text-sm text-[var(--muted)]">Manage your team members and roles</p>
         </div>
-        <div className="flex gap-3">
-          <label className="flex h-11 items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm shadow-sm transition-colors focus-within:border-[var(--accent)]">
-            <Search size={16} className="text-[var(--muted)]" />
-            <input
-              className="w-full bg-transparent outline-none placeholder:text-[var(--muted)]"
-              placeholder="Search users..."
-              type="search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </label>
-          {currentUser?.role === 'Admin' && (
-            <button
-              onClick={() => setCurrentPage('create-user')}
-              className="flex items-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-95"
-            >
-              + Add New
-            </button>
-          )}
+      </div>
+
+      <div className="mb-6 flex flex-col gap-4 bg-[var(--surface)] p-4 rounded-[24px] border border-[var(--border)] shadow-[var(--shadow)]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="w-full lg:max-w-md flex-1">
+            <label className="flex h-11 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 text-sm text-[var(--muted)] shadow-sm focus-within:border-[var(--accent)] transition-colors">
+              <Search size={18} />
+              <input
+                className="w-full bg-transparent outline-none placeholder:text-[var(--muted)] font-medium"
+                placeholder="Search users..."
+                type="search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </label>
+          </div>
+          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-4 w-full lg:w-auto">
+            {currentUser?.role === 'Admin' && (
+              <button
+                onClick={() => setCurrentPage('create-user')}
+                className="flex w-full sm:w-auto h-11 items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95 active:scale-95 whitespace-nowrap"
+              >
+                <Plus size={18} />
+                <span className="hidden sm:inline">Add New User</span>
+                <span className="sm:hidden">Add User</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
-        <div className="erp-table-container hidden md:block">
+        <div className="erp-table-container hidden lg:block">
           <table className="erp-table">
             <thead>
               <tr>
@@ -489,7 +498,7 @@ function ViewUsersPage({ themeStyle, setCurrentPage, users, setUsers, designatio
           </table>
         </div>
 
-        <div className="block md:hidden mt-4 h-[65vh] -mx-4 px-4">
+        <div className="block lg:hidden mt-4 h-[65vh] -mx-4 px-4">
           <Virtuoso
             data={filteredUsers}
             overscan={200}

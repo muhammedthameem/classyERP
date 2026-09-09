@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { ChevronDown, Package, Search, Settings, UsersRound, Trash2, Image as ImageIcon, List } from 'lucide-react'
 import supabase from '../../supabase'
+import { compressImage } from '../../utils/imageCompression'
 
 function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, setClients, saveClient, currentUser, productTypes = [], setProductTypes, saveConfig }) {
   const [personalDetails, setPersonalDetails] = useState(() => {
@@ -120,11 +121,12 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
     if (photoFile) {
       setIsUploading(true);
       try {
-        const fileExt = photoFile.name.split('.').pop();
+        const compressedPhoto = await compressImage(photoFile);
+        const fileExt = compressedPhoto.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
         const { error } = await supabase.storage
           .from('measurements')
-          .upload(fileName, photoFile);
+          .upload(fileName, compressedPhoto);
           
         if (error) throw error;
         
@@ -385,7 +387,7 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
                         type="text"
                         value={topMeasurements.length}
                         onChange={(e) => setTopMeasurements({ ...topMeasurements, length: e.target.value })}
-                        placeholder="Length"
+                        placeholder="Length" inputMode="decimal"
                       />
                     </div>
                     <div></div>
@@ -417,7 +419,7 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
                           type="text"
                           value={topMeasurements[`${field.key}Length`]}
                           onChange={(e) => setTopMeasurements({ ...topMeasurements, [`${field.key}Length`]: e.target.value })}
-                          placeholder="Length"
+                          placeholder="Length" inputMode="decimal"
                         />
                       </div>
                       <div className="measurement-input-group">
@@ -427,7 +429,7 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
                           type="text"
                           value={topMeasurements[`${field.key}Round`]}
                           onChange={(e) => setTopMeasurements({ ...topMeasurements, [`${field.key}Round`]: e.target.value })}
-                          placeholder="Round"
+                          placeholder="Round" inputMode="decimal"
                         />
                       </div>
                     </div>
@@ -459,7 +461,7 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
                         type="text"
                         value={bottomMeasurements.length}
                         onChange={(e) => setBottomMeasurements({ ...bottomMeasurements, length: e.target.value })}
-                        placeholder="Length"
+                        placeholder="Length" inputMode="decimal"
                       />
                     </div>
                     <div></div>
@@ -482,7 +484,7 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
                           type="text"
                           value={bottomMeasurements[`${field.key}Length`]}
                           onChange={(e) => setBottomMeasurements({ ...bottomMeasurements, [`${field.key}Length`]: e.target.value })}
-                          placeholder="Length"
+                          placeholder="Length" inputMode="decimal"
                         />
                       </div>
                       <div className="measurement-input-group">
@@ -492,7 +494,7 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
                           type="text"
                           value={bottomMeasurements[`${field.key}Round`]}
                           onChange={(e) => setBottomMeasurements({ ...bottomMeasurements, [`${field.key}Round`]: e.target.value })}
-                          placeholder="Round"
+                          placeholder="Round" inputMode="decimal"
                         />
                       </div>
                     </div>

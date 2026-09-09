@@ -3,6 +3,7 @@ import { ChevronDown, Search, Settings, ShoppingBag, Pencil, Trash2, Plus, Packa
 import { formatDateDDMMYY, getIndianDate, DEFAULT_WORKFLOWS } from '../../utils/constants'
 import CustomDatePicker from '../../components/CustomDatePicker'
 import supabase from '../../supabase'
+import { compressImage } from '../../utils/imageCompression'
 
 function AddOrderPage({ 
   themeStyle, setCurrentPage, showGlobalToast, 
@@ -1545,11 +1546,12 @@ function AddOrderPage({
               <label className="flex flex-col items-center justify-center w-full h-24 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-strong)] hover:bg-[var(--soft)] transition cursor-pointer">
                 <Plus size={24} className="text-[var(--muted)] mb-1" />
                 <p className="text-[10px] font-bold text-[var(--muted)] uppercase">Upload Reference</p>
-                <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
                   if (e.target.files && e.target.files[0]) {
+                    const compressedFile = await compressImage(e.target.files[0]);
                     const reader = new FileReader();
                     reader.onload = (event) => setPhotoPreview(event.target.result);
-                    reader.readAsDataURL(e.target.files[0]);
+                    reader.readAsDataURL(compressedFile);
                   }
                 }} />
               </label>

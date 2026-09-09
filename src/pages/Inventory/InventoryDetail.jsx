@@ -52,42 +52,73 @@ function InventoryDetailPage({ themeStyle, item, setCurrentPage, setSelectedInve
 
 
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-[var(--surface)] p-5 sm:p-6 rounded-[24px] border border-[var(--border)] shadow-sm">
-        <div className="text-center sm:text-left">
-          <h1 className="text-2xl font-bold">{mode === 'view' ? 'Inventory Details' : 'Edit Inventory Item'}</h1>
-          <p className="text-sm text-[var(--muted)]">{formData.productName} (ID: {formData.productId})</p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div>
+          <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-[var(--accent)] mb-1">
+            <Package size={16} /> Item Profile
+          </p>
+          <h1 className="text-h1">{mode === 'view' ? 'Inventory Details' : 'Edit Inventory Item'}</h1>
+          <p className="text-para text-[var(--muted)] mt-2">{formData.productName} (ID: {formData.productId})</p>
         </div>
-        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 w-full sm:w-auto">
-          <button
-            onClick={() => setCurrentPage('create-inventory')}
-            className="col-span-2 sm:col-span-1 flex justify-center items-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95"
-          >
-            <Package size={18} /> Add New Item
-          </button>
-          <button
-            onClick={() => setItemToDelete(true)}
-            className="flex justify-center items-center gap-1.5 sm:gap-2 rounded-xl border border-red-500/30 bg-red-50 px-3 sm:px-4 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-600 hover:text-white"
-          >
-            <Trash2 size={16} className="sm:w-[18px] sm:h-[18px]" /> Delete
-          </button>
-          {mode === 'view' ? (
-            <button
-              onClick={() => setMode('edit')}
-              className="flex justify-center items-center gap-1.5 sm:gap-2 rounded-xl bg-[var(--accent-soft)] px-3 sm:px-4 py-2.5 text-sm font-bold text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white"
-            >
-              <Pencil size={16} className="sm:w-[18px] sm:h-[18px]" /> Edit
-            </button>
-          ) : (
-            <button
-              onClick={() => {
-                setFormData(item); // Reset to original values
-                setMode('view');
-              }}
-              className="flex justify-center items-center gap-1.5 sm:gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 sm:px-4 py-2.5 text-sm font-bold transition hover:bg-[var(--soft)]"
-            >
-              Cancel
-            </button>
-          )}
+      </div>
+
+      <div className="mb-6 flex flex-col gap-4 bg-[var(--surface)] p-4 rounded-[24px] border border-[var(--border)] shadow-[var(--shadow)]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="hidden lg:block text-[var(--muted)] text-sm font-medium ml-2">
+            Manage item details and stock levels
+          </div>
+          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-4 w-full lg:w-auto">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 w-full sm:w-auto">
+              <button
+                onClick={() => {
+                  setCurrentPage('view-inventory');
+                  setSelectedInventoryItem(null);
+                }}
+                className="col-span-2 sm:col-span-1 flex justify-center items-center gap-2 rounded-xl bg-[var(--surface-strong)] border border-[var(--border)] px-4 py-2.5 text-sm font-bold text-[var(--text)] transition hover:bg-[var(--soft)]"
+              >
+                <ChevronLeft size={18} /> Back
+              </button>
+              <button
+                onClick={() => setCurrentPage('create-inventory')}
+                className="col-span-2 sm:col-span-1 flex justify-center items-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95"
+              >
+                <Package size={18} /> Add New Item
+              </button>
+              <button
+                onClick={() => setItemToDelete(true)}
+                className="flex justify-center items-center gap-1.5 sm:gap-2 rounded-xl border border-red-500/30 bg-red-50 px-3 sm:px-4 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-600 hover:text-white"
+              >
+                <Trash2 size={16} className="sm:w-[18px] sm:h-[18px]" /> Delete
+              </button>
+              {mode === 'view' ? (
+                <button
+                  onClick={() => setMode('edit')}
+                  className="flex justify-center items-center gap-1.5 sm:gap-2 rounded-xl bg-[var(--accent-soft)] px-3 sm:px-4 py-2.5 text-sm font-bold text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white"
+                >
+                  <Pencil size={16} className="sm:w-[18px] sm:h-[18px]" /> Edit
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      setFormData(item);
+                      setMode('view');
+                    }}
+                    className="flex justify-center items-center gap-1.5 sm:gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 sm:px-4 py-2.5 text-sm font-bold transition hover:bg-[var(--soft)]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUpdate}
+                    className="flex justify-center items-center gap-1.5 sm:gap-2 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition hover:brightness-95"
+                    type="button"
+                  >
+                    Save Changes
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

@@ -1036,7 +1036,7 @@ function Dashboard({
                   }`}
                 onClick={(e) => {
                   if (hasSubmenu) {
-                    if (isSidebarCollapsed) {
+                    if (isSidebarCollapsed && !isMobileSidebarOpen) {
                       const rect = e.currentTarget.getBoundingClientRect()
                       setFlyoutMenu(flyoutMenu?.label === label ? null : { top: rect.top, label, submenu })
                     } else {
@@ -1045,6 +1045,7 @@ function Dashboard({
                   } else {
                     setCurrentPage(id)
                     setFlyoutMenu(null)
+                    setIsMobileSidebarOpen(false)
                   }
                 }}
                 title={isSidebarCollapsed ? label : undefined}
@@ -1053,7 +1054,7 @@ function Dashboard({
                 <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg transition-colors ${activeSidebarPage === id || (hasSubmenu && submenu.some(s => s.id === activeSidebarPage)) ? 'bg-[var(--surface-strong)] shadow-sm text-[var(--accent)]' : 'bg-transparent group-hover:bg-[var(--surface-strong)] text-[var(--muted)] group-hover:text-[var(--text)]'}`}>
                   <Icon size={18} />
                 </span>
-                {!isSidebarCollapsed && (
+                {(!isSidebarCollapsed || isMobileSidebarOpen) && (
                   <>
                     <span className="flex-1">{label}</span>
                     {hasSubmenu && (
@@ -1065,7 +1066,7 @@ function Dashboard({
                   </>
                 )}
               </button>
-              {hasSubmenu && !isSidebarCollapsed && (
+              {hasSubmenu && (!isSidebarCollapsed || isMobileSidebarOpen) && (
                 <div
                   className={`ml-12 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${expandedSubmenu === label ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}
                 >
@@ -1074,7 +1075,10 @@ function Dashboard({
                       className={`flex w-full items-center gap-3 rounded-lg px-4 py-2 text-left text-sm transition hover:bg-[var(--soft)] hover:text-[var(--text)] ${activeSidebarPage === subItem.id ? 'text-[var(--accent)] font-semibold' : 'text-[var(--muted)]'
                         }`}
                       key={subItem.label}
-                      onClick={() => setCurrentPage(subItem.id)}
+                      onClick={() => {
+                        setCurrentPage(subItem.id)
+                        setIsMobileSidebarOpen(false)
+                      }}
                       type="button"
                     >
                       {subItem.label}

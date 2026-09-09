@@ -98,6 +98,7 @@ function CreateDesignPage({ themeStyle, setCurrentPage, showGlobalToast, editing
   const [startX, setStartX] = useState(0);
   const [startY, setStartY] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [isMobileToolsOpen, setIsMobileToolsOpen] = useState(false);
 
   // Advanced Gradients
   const [gradientStops, setGradientStops] = useState([
@@ -619,26 +620,55 @@ function CreateDesignPage({ themeStyle, setCurrentPage, showGlobalToast, editing
 
   return (
     <div className="animate-in fade-in duration-300 pb-20 lg:pb-0" style={themeStyle}>
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <h1 className="text-h1 flex items-center gap-3 text-[var(--text)]">
             <Palette className="text-[var(--accent)]" size={28} />
             {editingDesign ? 'Edit Bridal Design' : 'Create Design'}
           </h1>
-          <p className="text-para text-[var(--muted)] mt-1">Use Marquee to move drawing parts, Eraser, and multi-stop Gradients.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => { setEditingDesign(null); setCurrentPage('design-library'); }} className="flex items-center gap-2 rounded-xl bg-[var(--surface-strong)] px-4 py-2.5 text-sm font-semibold text-[var(--muted)] border border-[var(--border)] transition-all hover:bg-[var(--soft)] hover:text-[var(--text)]">
-            <ImageIcon size={18} /> Library
-          </button>
-          <button onClick={() => setShowSaveModal(true)} className="flex items-center gap-2 rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:bg-[var(--jewel)] hover:shadow-xl">
-            <Save size={18} /> Save Design
-          </button>
+          <p className="text-para text-[var(--muted)] mt-2">Use Marquee to move drawing parts, Eraser, and multi-stop Gradients.</p>
         </div>
       </div>
 
-      <div className="flex flex-col-reverse lg:grid lg:grid-cols-[300px_1fr] xl:grid-cols-[340px_1fr] gap-6">
-        <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow)] backdrop-blur lg:sticky lg:top-24 h-fit z-10 flex flex-col gap-6">
+      <div className="mb-6 flex flex-col gap-4 bg-[var(--surface)] p-4 rounded-[24px] border border-[var(--border)] shadow-[var(--shadow)]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="hidden lg:block text-[var(--muted)] text-sm font-medium ml-2">
+            Design Controls
+          </div>
+          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-4 w-full lg:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button onClick={() => { setEditingDesign(null); setCurrentPage('design-library'); }} className="flex flex-1 sm:flex-none justify-center items-center gap-2 rounded-xl bg-[var(--surface-strong)] px-4 h-11 text-sm font-semibold text-[var(--muted)] border border-[var(--border)] transition-all hover:bg-[var(--soft)] hover:text-[var(--text)] whitespace-nowrap">
+                <ImageIcon size={18} /> Library
+              </button>
+              <button onClick={() => setShowSaveModal(true)} className="flex flex-1 sm:flex-none justify-center items-center gap-2 rounded-xl bg-[var(--accent)] px-6 h-11 text-sm font-bold text-white shadow-lg transition-all hover:brightness-95 hover:shadow-[var(--accent)]/20 whitespace-nowrap">
+                <Save size={18} /> Save Design
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col-reverse lg:grid lg:grid-cols-[300px_1fr] xl:grid-cols-[340px_1fr] gap-6 relative">
+        {/* Mobile Tools Toggle Button */}
+        <button 
+          className={`lg:hidden fixed z-[60] top-32 transition-all duration-300 rounded-r-xl bg-[var(--surface-strong)] p-3 shadow-lg border border-[var(--border)] border-l-0 flex flex-col items-center gap-1 ${isMobileToolsOpen ? 'left-72' : 'left-0'}`}
+          onClick={() => setIsMobileToolsOpen(!isMobileToolsOpen)}
+        >
+          {isMobileToolsOpen ? <X size={20} className="text-[var(--text)]" /> : <PenTool size={20} className="text-[var(--text)]" />}
+          <span className="text-[10px] font-bold text-[var(--text)]">{isMobileToolsOpen ? 'Close' : 'Tools'}</span>
+        </button>
+
+        {/* Tools Panel */}
+        <div className={`
+          fixed top-0 left-0 h-full z-50 w-72 overflow-y-auto transition-transform duration-300
+          lg:static lg:w-auto lg:h-fit lg:overflow-visible lg:transform-none lg:z-10
+          rounded-r-[24px] lg:rounded-[24px] border-r lg:border border-[var(--border)] bg-[var(--surface)] p-5 shadow-2xl lg:shadow-[var(--shadow)] backdrop-blur lg:sticky lg:top-24 flex flex-col gap-6
+          ${isMobileToolsOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}>
+          <div className="lg:hidden flex items-center justify-between mb-2">
+            <h2 className="text-lg font-bold">Drawing Tools</h2>
+            <button onClick={() => setIsMobileToolsOpen(false)} className="p-2 rounded-full bg-[var(--surface-strong)]"><X size={16} /></button>
+          </div>
 
           <div>
             <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--muted)] hidden lg:block">Drawing Tools</h3>
