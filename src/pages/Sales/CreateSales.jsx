@@ -3,6 +3,7 @@ import { Package, Search, TrendingUp, UsersRound, Trash2, Download, ShoppingCart
 import html2pdf from 'html2pdf.js'
 import { generateReceiptHtmlString } from '../../utils/pdfHelper'
 import supabase from '../../supabase'
+import { encryptId } from '../../utils/security'
 import { orders } from '../../utils/constants'
 import CustomDatePicker from '../../components/CustomDatePicker'
 
@@ -627,7 +628,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
         .getPublicUrl(fileName);
 
       const appUrlObj = new URL('https://erp.classycouture.co.in');
-      appUrlObj.pathname = `/bill/${showReceipt.saleId}`;
+      appUrlObj.pathname = `/bill/${encryptId(showReceipt.saleId)}`;
       const finalAppUrl = appUrlObj.toString();
       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
       let message = `*✨ INVOICE: ${showReceipt.saleId} ✨*\n`;
@@ -656,7 +657,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     } catch (err) {
       console.error('WhatsApp Share Error:', err);
       const appUrlObj = new URL('https://erp.classycouture.co.in');
-      appUrlObj.pathname = `/bill/${showReceipt.saleId}`;
+      appUrlObj.pathname = `/bill/${encryptId(showReceipt.saleId)}`;
       const finalAppUrl = appUrlObj.toString();
       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
       let message = `*✨ INVOICE: ${showReceipt.saleId} ✨*\n`;
@@ -707,7 +708,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     message += `Thank you for shopping!%0a`;
     message += `Your elegance is our priority.%0a`;
     message += `Please visit again for more unique designs.%0a%0a`;
-    message += `Digital Receipt: https://erp.classycouture.co.in/bill/${showReceipt.saleId}`;
+    message += `Digital Receipt: https://erp.classycouture.co.in/bill/${encryptId(showReceipt.saleId)}`;
 
     const phone = showReceipt.client.phone ? showReceipt.client.phone.replace(/[^0-9]/g, '') : '';
     window.location.href = `sms:${phone}?body=${message}`;

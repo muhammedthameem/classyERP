@@ -5,6 +5,7 @@ import { Virtuoso } from 'react-virtuoso'
 import { formatDateDDMMYY, getIndianDate, orders as dummyOrders, DEFAULT_WORKFLOWS, PRODUCTION_STAGES, calculateProgress, calculateRisk } from '../../utils/constants'
 import { sendWhatsApp } from "../../utils/whatsapp";
 import supabase from '../../supabase'
+import { encryptId } from '../../utils/security'
 import UndoToast from '../../components/UndoToast'
 
 function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClientDetailMode, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory, clients, saveOrder, deleteOrder, cloudLoaded }) {
@@ -661,7 +662,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
       let formattedPhone = String(phoneToUse).replace(/\D/g, '');
       if (formattedPhone.length === 10) formattedPhone = '91' + formattedPhone;
 
-      const receiptUrl = `https://erp.classycouture.co.in/?bill=${viewOrder.id}`;
+      const receiptUrl = `https://erp.classycouture.co.in/?bill=${encryptId(viewOrder.id)}`;
       const msg = `Hello ${viewOrder.clientName || 'Valued Client'},\n\nThank you for choosing Classy Couture! Your order receipt has been generated.\n\nYou can view and download your digital receipt here:\n${receiptUrl}\n\nPlease let us know if you have any questions!`;
 
       const whatsappUrl = formattedPhone

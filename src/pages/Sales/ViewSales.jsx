@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, Search, TrendingUp, Eye, Trash2, Download, Plus, ChevronDown } from 'lucide-react'
+import supabase from '../../supabase'
+import { encryptId } from '../../utils/security'
+import { ChevronLeft, ChevronRight, Search, TrendingUp, Eye, Trash2, Download, Plus, ChevronDown, X, Filter, Share2, MapPin, Printer, Tag, CalendarDays, ClipboardList, Info, MessageSquare, Send, CircleDollarSign, CheckCircle2 } from 'lucide-react'
 import { Virtuoso } from 'react-virtuoso'
 import html2pdf from 'html2pdf.js'
 import { generateReceiptHtmlString } from '../../utils/pdfHelper'
 import { orders } from '../../utils/constants'
 import UndoToast from '../../components/UndoToast'
 
-import supabase from '../../supabase'
 
 function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUser, highlightSaleId, setHighlightSaleId, sales, setSales, inventory, setInventory, orders, setOrders, cloudLoaded }) {
   const rowRefs = useRef({});
@@ -597,7 +598,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                         .getPublicUrl(fileName);
 
                       const appUrlObj = new URL('https://erp.classycouture.co.in');
-                      appUrlObj.searchParams.set('bill', viewSale.saleId);
+                      appUrlObj.searchParams.set('bill', encryptId(viewSale.saleId));
                       const finalAppUrl = appUrlObj.toString();
 
                       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
@@ -626,7 +627,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                     } catch (err) {
                       console.error('WhatsApp Share Error:', err);
                       const appUrlObj = new URL('https://erp.classycouture.co.in');
-                      appUrlObj.searchParams.set('bill', viewSale.saleId);
+                      appUrlObj.searchParams.set('bill', encryptId(viewSale.saleId));
                       const finalAppUrl = appUrlObj.toString();
                       // Fallback: Send message WITH APP link even if PDF upload fails
                       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";

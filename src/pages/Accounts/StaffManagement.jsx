@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Users, Pencil, Trash2, Search, Plus, Save, X, Download, FileText, ChevronUp, ChevronDown } from 'lucide-react'
+import { encryptId } from '../../utils/security'
+import { Users, Pencil, Trash2, Search, Plus, Save, X, Download, FileText, ChevronUp, ChevronDown, UserPlus, CreditCard, Clock, AlertTriangle, Printer, FileDown, Upload, CheckCircle2, CalendarDays, RefreshCw } from 'lucide-react'
 import { Virtuoso } from 'react-virtuoso'
 import html2pdf from 'html2pdf.js'
 import UndoToast from '../../components/UndoToast'
@@ -297,7 +298,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
         const phone = staff.phone.replace(/\D/g, '');
         if (phone) {
           const appUrlObj = new URL('https://erp.classycouture.co.in');
-          appUrlObj.searchParams.set('payslip', fileName);
+          appUrlObj.searchParams.set('payslip', encryptId(fileName));
           const finalAppUrl = appUrlObj.toString();
 
           const formattedPhone = phone.length === 10 ? `91${phone}` : phone;

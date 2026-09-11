@@ -9,6 +9,7 @@ import supabase from './supabase'
 import IOSInstallPrompt from './components/IOSInstallPrompt';
 import PwaUpdateModal from './components/PwaUpdateModal';
 import PushPermissionModal from './components/PushPermissionModal';
+import { decryptId } from './utils/security';
 
 const idb = {
   db: null,
@@ -384,13 +385,14 @@ function App() {
       if (match && match[1]) id = decodeURIComponent(match[1]);
     }
 
-    return id?.trim() || null;
+    return id ? decryptId(id.trim()) : null;
   };
 
   const getInitialPayslipId = () => {
     if (typeof window === 'undefined') return null;
     const searchParams = new URLSearchParams(window.location.search);
-    return searchParams.get('payslip');
+    const id = searchParams.get('payslip');
+    return id ? decryptId(id) : null;
   };
 
   const [activeBillId, setActiveBillId] = useState(getInitialBillId);
