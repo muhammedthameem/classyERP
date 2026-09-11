@@ -596,7 +596,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                         .from('receipts')
                         .getPublicUrl(fileName);
 
-                      const appUrlObj = new URL(window.location.origin);
+                      const appUrlObj = new URL('https://erp.classycouture.co.in');
                       appUrlObj.searchParams.set('bill', viewSale.saleId);
                       const finalAppUrl = appUrlObj.toString();
 
@@ -625,7 +625,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
                       window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`, '_blank');
                     } catch (err) {
                       console.error('WhatsApp Share Error:', err);
-                      const appUrlObj = new URL(window.location.origin);
+                      const appUrlObj = new URL('https://erp.classycouture.co.in');
                       appUrlObj.searchParams.set('bill', viewSale.saleId);
                       const finalAppUrl = appUrlObj.toString();
                       // Fallback: Send message WITH APP link even if PDF upload fails

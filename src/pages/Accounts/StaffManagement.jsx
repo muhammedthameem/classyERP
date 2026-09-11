@@ -296,7 +296,7 @@ function StaffManagementPage({ themeStyle, setCurrentPage, showGlobalToast, staf
         // Open WhatsApp
         const phone = staff.phone.replace(/\D/g, '');
         if (phone) {
-          const appUrlObj = new URL(window.location.origin);
+          const appUrlObj = new URL('https://erp.classycouture.co.in');
           appUrlObj.searchParams.set('payslip', fileName);
           const finalAppUrl = appUrlObj.toString();
 

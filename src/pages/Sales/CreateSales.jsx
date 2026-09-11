@@ -626,7 +626,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
         .from('receipts')
         .getPublicUrl(fileName);
 
-      const appUrlObj = new URL(window.location.origin);
+      const appUrlObj = new URL('https://erp.classycouture.co.in');
       appUrlObj.pathname = `/bill/${showReceipt.saleId}`;
       const finalAppUrl = appUrlObj.toString();
       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
@@ -655,7 +655,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
       window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
     } catch (err) {
       console.error('WhatsApp Share Error:', err);
-      const appUrlObj = new URL(window.location.origin);
+      const appUrlObj = new URL('https://erp.classycouture.co.in');
       appUrlObj.pathname = `/bill/${showReceipt.saleId}`;
       const finalAppUrl = appUrlObj.toString();
       const greeting = "Thank you for choosing Classy Couture! Your elegance is our priority.";
@@ -707,7 +707,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
     message += `Thank you for shopping!%0a`;
     message += `Your elegance is our priority.%0a`;
     message += `Please visit again for more unique designs.%0a%0a`;
-    message += `Digital Receipt: ${window.location.origin}/bill/${showReceipt.saleId}`;
+    message += `Digital Receipt: https://erp.classycouture.co.in/bill/${showReceipt.saleId}`;
 
     const phone = showReceipt.client.phone ? showReceipt.client.phone.replace(/[^0-9]/g, '') : '';
     window.location.href = `sms:${phone}?body=${message}`;
