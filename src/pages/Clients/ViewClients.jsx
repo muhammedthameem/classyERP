@@ -435,7 +435,7 @@ function ViewClientsPage({ themeStyle, setCurrentPage, setSelectedClient, setCli
 
         <div className="block lg:hidden mt-4 h-[65vh] -mx-4 px-4">
           <Virtuoso
-            data={filteredClients}
+            data={sortedClients}
             overscan={200}
             itemContent={(index, client) => {
               const isExpanded = expandedMobileId === client.id;

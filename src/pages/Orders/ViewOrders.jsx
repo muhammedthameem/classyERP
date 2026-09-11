@@ -46,7 +46,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
   const undoTimeoutRef = useRef(null)
   const pendingSaves = useRef({})
   const [viewOrder, setViewOrder] = useState(null)
-  const [sortConfig, setSortConfig] = useState({ key: 'updatedAt', direction: 'desc' })
+  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'desc' })
   const [dateFilter, setDateFilter] = useState('All') // All, Today, Tomorrow, Week, Custom
   const [customDate, setCustomDate] = useState(getIndianDate())
   const [showWaPopup, setShowWaPopup] = useState(false)

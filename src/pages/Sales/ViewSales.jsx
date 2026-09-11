@@ -325,7 +325,7 @@ function ViewSalesPage({ themeStyle, setCurrentPage, showGlobalToast, currentUse
 
         <div className="block lg:hidden mt-4 h-[65vh] -mx-4 px-4">
           <Virtuoso
-            data={filteredSales}
+            data={sortedSales}
             overscan={200}
             itemContent={(index, sale) => {
               const isExpanded = expandedMobileId === sale.id;
