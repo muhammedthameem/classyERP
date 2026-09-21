@@ -10,8 +10,13 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
   const [showPassword, setShowPassword] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [isAppInstalled, setIsAppInstalled] = useState(false)
+  const [isWebAuthnSupported, setIsWebAuthnSupported] = useState(true)
 
   useEffect(() => {
+    if (!window.PublicKeyCredential) {
+      setIsWebAuthnSupported(false)
+    }
+
     // Check if already in standalone mode
     if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
       setIsAppInstalled(true)
@@ -106,6 +111,44 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
       setMessage(error.message === 'Invalid login credentials' ? 'Invalid email or password.' : error.message);
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  const handlePasskeyLogin = async () => {
+    setMessage('')
+    setIsLoading(true)
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signInWithPasskey()
+      if (authError) throw authError
+
+      const userEmail = authData.user.email;
+      
+      const { data: userData, error: userError } = await supabase
+        .from('erp_users')
+        .select('*')
+        .eq('id', userEmail)
+        .single();
+
+      if (userData) {
+        onLogin({
+          id: userData.data.id,
+          email: userData.data.email,
+          name: userData.data.name,
+          role: userData.data.designation || 'Staff'
+        })
+      } else {
+        onLogin({
+          id: authData.user.id,
+          email: authData.user.email,
+          name: authData.user.email.split('@')[0],
+          role: 'Admin'
+        })
+      }
+    } catch (error) {
+      console.error("Passkey Login Error:", error);
+      setMessage(error.message || 'Biometric login failed. Please ensure you have registered this device in Account Settings.');
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -268,6 +311,25 @@ function LoginScreen({ onLogin, users: cloudUsers }) {
                     ? 'Login to Dashboard'
                     : 'Send Reset Request'}
               </button>
+
+              {mode === 'login' && isWebAuthnSupported && (
+                <div className="mt-4">
+                  <div className="relative flex items-center py-2">
+                    <div className="flex-grow border-t border-[var(--border)]"></div>
+                    <span className="flex-shrink-0 mx-4 text-[var(--muted)] text-xs font-bold uppercase tracking-wider">or</span>
+                    <div className="flex-grow border-t border-[var(--border)]"></div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handlePasskeyLogin}
+                    disabled={isLoading}
+                    className="mt-2 flex w-full items-center justify-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4 font-bold text-[var(--text)] transition hover:bg-[var(--soft)] active:scale-[0.98]"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 0 0-10 10c0 5.5 4.5 10 10 10s10-4.5 10-10A10 10 0 0 0 12 2Z"/><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/><path d="M4.3 18.5A10 10 0 0 1 12 16c2.8 0 5.3 1.1 7.2 2.9"/></svg>
+                    Sign in with Face ID / Fingerprint
+                  </button>
+                </div>
+              )}
 
               {mode === 'forgot' && (
                 <button

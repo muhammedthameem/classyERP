@@ -276,26 +276,26 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
       <div className="w-full max-w-xl rounded-[32px] border border-[var(--border)] bg-[var(--surface-strong)] p-0 shadow-[var(--shadow)] relative max-h-[90vh] overflow-hidden text-[var(--text)] flex flex-col">
 
         {/* Header */}
-        <div className="p-8 pb-4 flex items-center justify-between border-b border-[var(--border)]">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-2xl bg-[var(--accent)] grid place-items-center shadow-lg shadow-[var(--accent)]/20">
-              <User size={24} className="text-white" />
+        <div className="p-5 sm:p-8 pb-4 flex items-center justify-between border-b border-[var(--border)]">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-[var(--accent)] grid place-items-center shadow-lg shadow-[var(--accent)]/20 shrink-0">
+              <User size={20} className="text-white sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h2 className="text-xl font-bold tracking-tight text-[var(--text)]">Account Center</h2>
-              <p className="text-[var(--muted)] text-xs">Manage your personal business profile</p>
+              <h2 className="text-lg sm:text-xl font-bold tracking-tight text-[var(--text)]">Account Center</h2>
+              <p className="text-[var(--muted)] text-[10px] sm:text-xs">Manage your personal business profile</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-[var(--soft)] transition text-[var(--muted)]"
+            className="p-2 rounded-full hover:bg-[var(--soft)] transition text-[var(--muted)] shrink-0"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex px-8 gap-8 border-b border-[var(--border)] bg-[var(--surface)]">
+        <div className="flex px-5 sm:px-8 gap-6 sm:gap-8 border-b border-[var(--border)] bg-[var(--surface)] overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('profile')}
             className={`py-4 text-sm font-semibold transition-all relative whitespace-nowrap ${activeTab === 'profile' ? 'text-[var(--text)]' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
@@ -320,7 +320,7 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
         </div>
 
         {/* Content Area */}
-        <div className="px-8 pt-8 overflow-y-auto flex-1">
+        <div className="px-5 sm:px-8 pt-6 sm:pt-8 overflow-y-auto flex-1">
           {activeTab === 'profile' ? (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -428,7 +428,7 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
                   </div>
                 )}
 
-                <div className="flex gap-4 pt-2">
+                <div className="flex flex-col sm:flex-row gap-4 pt-2">
                   <button
                     type="button"
                     onClick={() => setActiveTab('profile')}
@@ -555,7 +555,7 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
                   Download a secure snapshot of your entire database (Orders, Clients, Sales, Inventory, etc.) to your local computer.
                 </p>
 
-                <div className="flex gap-4 mb-4">
+                <div className="flex flex-col sm:flex-row gap-4 mb-4">
                   <label className="flex items-center gap-2 text-sm text-[var(--text)] cursor-pointer">
                     <input type="radio" checked={exportMode === 'full'} onChange={() => setExportMode('full')} className="accent-[var(--accent)]" />
                     Full Backup
@@ -567,7 +567,7 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
                 </div>
 
                 {exportMode === 'custom' && (
-                  <div className="flex gap-4 mb-4">
+                  <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <div className="flex-1">
                       <label className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest block mb-1">Start Date</label>
                       <input type="date" value={exportStartDate} onChange={(e) => setExportStartDate(e.target.value)} className="w-full bg-[var(--surface-strong)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text)] outline-none focus:border-[var(--accent)]" />
