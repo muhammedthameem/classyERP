@@ -189,7 +189,7 @@ function AccountDetailsModal({ fullUser, onClose, onChanged, onLogout, themeStyl
       }
       deviceName = `${deviceName} (${new Date().toLocaleDateString()})`
 
-      const { data, error } = await supabase.auth.passkey.register({
+      const { data, error } = await supabase.auth.registerPasskey({
         name: deviceName
       })
       if (error) throw error
