@@ -488,15 +488,20 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
             const splitInserts = [];
             for (const [method, amount] of Object.entries(splitPayments)) {
               if (parseFloat(amount) > 0) {
+                const accId = 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
                 splitInserts.push({
-                  id: 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-                  type: 'Income',
-                  date: saleDate,
-                  category: 'Sales',
-                  amount: parseFloat(amount),
-                  payment_mode: method,
-                  reference: `Sale #${newSale.saleId}`,
-                  notes: `Auto-generated from completed sale for ${newSale.client.name} (Split - ${method})`
+                  id: accId,
+                  data: {
+                    id: accId,
+                    type: 'Income',
+                    date: saleDate,
+                    category: 'Sales',
+                    amount: parseFloat(amount),
+                    payment_mode: method,
+                    reference: `Sale #${newSale.saleId}`,
+                    notes: `Auto-generated from completed sale for ${newSale.client.name} (Split - ${method})`,
+                    created_at: new Date().toISOString()
+                  }
                 });
               }
             }
@@ -504,15 +509,20 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
               await supabase.from('erp_accounts').insert(splitInserts);
             }
           } else {
+            const accId = 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
             await supabase.from('erp_accounts').insert([{
-              id: 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-              type: 'Income',
-              date: saleDate,
-              category: 'Sales',
-              amount: balanceAmount,
-              payment_mode: paymentMode,
-              reference: `Sale #${newSale.saleId}`,
-              notes: `Auto-generated from completed sale for ${newSale.client.name}`
+              id: accId,
+              data: {
+                id: accId,
+                type: 'Income',
+                date: saleDate,
+                category: 'Sales',
+                amount: balanceAmount,
+                payment_mode: paymentMode,
+                reference: `Sale #${newSale.saleId}`,
+                notes: `Auto-generated from completed sale for ${newSale.client.name}`,
+                created_at: new Date().toISOString()
+              }
             }]);
           }
         } catch (err) {

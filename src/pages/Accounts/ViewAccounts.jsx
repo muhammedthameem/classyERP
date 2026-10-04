@@ -102,22 +102,12 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
   const fetchAccounts = async () => {
     setIsLoading(true)
     try {
-      let { data, error } = await supabase
-        .from('erp_accounts')
-        .select('*')
-        .order('date', { ascending: false })
-        .order('created_at', { ascending: false })
-
-      if (error && (error.code === '42703' || error.message?.includes('date'))) {
-        const fallback = await supabase.from('erp_accounts').select('*');
-        if (!fallback.error) {
-          data = (fallback.data || []).map(item => item.data || item);
-          error = null;
-        }
-      }
-
+      const { data, error } = await supabase.from('erp_accounts').select('*');
       if (error) throw error;
-      setAccounts(data || [])
+      const parsed = (data || [])
+        .map(item => item.data || item)
+        .sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at));
+      setAccounts(parsed);
 
       // Fetch Initial Cash Balance
       const { data: configData } = await supabase.from('erp_config').select('data').eq('id', 'initialCashBalance').maybeSingle()
@@ -142,13 +132,14 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
 
     const channel = supabase.channel('erp_accounts_view')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'erp_accounts' }, (payload) => {
+        const item = payload.new?.data || payload.new;
         if (payload.eventType === 'INSERT') {
           setAccounts(prev => {
-            if (prev.some(a => a.id === payload.new.id)) return prev;
-            return [payload.new, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date));
+            if (prev.some(a => a.id === item.id)) return prev;
+            return [item, ...prev].sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at));
           });
         } else if (payload.eventType === 'UPDATE') {
-          setAccounts(prev => prev.map(acc => acc.id === payload.new.id ? payload.new : acc).sort((a, b) => new Date(b.date) - new Date(a.date)));
+          setAccounts(prev => prev.map(acc => acc.id === item.id ? item : acc).sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at)));
         } else if (payload.eventType === 'DELETE') {
           setAccounts(prev => prev.filter(acc => acc.id !== payload.old.id));
         }
@@ -205,9 +196,9 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
     setIsUpdatingRecord(true);
     try {
       const { id, type, date, category, amount, payment_mode, reference, notes } = editModalData;
+      const updatedItem = { id, type, date, category, amount: parseFloat(amount), payment_mode, reference, notes };
       const { error } = await supabase.from('erp_accounts')
-        .update({ type, date, category, amount: parseFloat(amount), payment_mode, reference, notes })
-        .eq('id', id);
+        .upsert([{ id: id.toString(), data: updatedItem }]);
 
       if (error) throw error;
 

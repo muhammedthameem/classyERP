@@ -28,20 +28,11 @@ function AddIncomePage({ themeStyle, setCurrentPage, showGlobalToast, incomeCate
   useEffect(() => {
     const fetchLinkedSales = async () => {
       try {
-        let { data, error } = await supabase
-          .from('erp_accounts')
-          .select('reference')
-          .eq('type', 'Income')
-
-        if (error && (error.code === '42703' || error.message?.includes('type'))) {
-          // Columns not added yet in erp_accounts
-          data = [];
-          error = null;
-        }
-
+        const { data, error } = await supabase.from('erp_accounts').select('*');
         if (!error && data) {
-          const sIds = data.filter(d => d.reference?.startsWith('Sale #')).map(d => d.reference.replace('Sale #', ''));
-          const oIds = data.filter(d => d.reference?.startsWith('Order Advance #')).map(d => d.reference.replace('Order Advance #', ''));
+          const list = data.map(d => d.data || d);
+          const sIds = list.filter(d => d.type === 'Income' && d.reference?.startsWith('Sale #')).map(d => d.reference.replace('Sale #', ''));
+          const oIds = list.filter(d => d.type === 'Income' && d.reference?.startsWith('Order Advance #')).map(d => d.reference.replace('Order Advance #', ''));
           setLinkedSaleIds(sIds);
           setLinkedAdvanceIds(oIds);
         }
@@ -74,18 +65,25 @@ function AddIncomePage({ themeStyle, setCurrentPage, showGlobalToast, incomeCate
          finalNotes = `Advance for Order (${formData.reference})${finalNotes ? ' | ' + finalNotes : ''}`;
       }
 
+      const newId = 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+      const record = {
+        id: newId,
+        type: 'Income',
+        date: formData.date,
+        category: formData.category,
+        amount: parseFloat(formData.amount),
+        payment_mode: formData.payment_mode,
+        reference: formData.linked_sale_id ? `Sale #${formData.linked_sale_id}` : (formData.linked_order_id ? `Order Advance #${formData.linked_order_id}` : formData.reference),
+        notes: finalNotes,
+        created_at: new Date().toISOString()
+      };
+
       const { data, error } = await supabase
         .from('erp_accounts')
         .insert([{
-          id: 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-          type: 'Income',
-          date: formData.date,
-          category: formData.category,
-          amount: parseFloat(formData.amount),
-          payment_mode: formData.payment_mode,
-          reference: formData.linked_sale_id ? `Sale #${formData.linked_sale_id}` : (formData.linked_order_id ? `Order Advance #${formData.linked_order_id}` : formData.reference),
-          notes: finalNotes
-        }])
+          id: newId,
+          data: record
+        }]);
 
       if (error) throw error;
 

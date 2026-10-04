@@ -89,18 +89,25 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
     }
 
     try {
+      const newId = 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+      const record = {
+        id: newId,
+        type: 'Expense',
+        date: formData.date,
+        category: formData.category,
+        amount: parseFloat(formData.amount),
+        payment_mode: formData.payment_mode,
+        reference: formData.linked_inventory_id ? `Inventory #${formData.linked_inventory_id}` : formData.reference,
+        notes: finalNotes,
+        created_at: new Date().toISOString()
+      };
+
       const { data, error } = await supabase
         .from('erp_accounts')
         .insert([{
-          id: 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-          type: 'Expense',
-          date: formData.date,
-          category: formData.category,
-          amount: parseFloat(formData.amount),
-          payment_mode: formData.payment_mode,
-          reference: formData.linked_inventory_id ? `Inventory #${formData.linked_inventory_id}` : formData.reference,
-          notes: finalNotes
-        }])
+          id: newId,
+          data: record
+        }]);
 
       if (error) throw error;
 

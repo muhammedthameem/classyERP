@@ -25,7 +25,7 @@ function ReportsPage({ themeStyle, showGlobalToast, sales, orders, clients, inve
       try {
         const { data, error } = await supabase.from('erp_accounts').select('*');
         if (error) throw error;
-        setAccounts(data || []);
+        setAccounts((data || []).map(item => item.data || item));
       } catch (err) {
         console.error("Error fetching accounts:", err);
       } finally {

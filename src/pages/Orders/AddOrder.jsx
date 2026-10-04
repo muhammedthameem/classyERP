@@ -340,16 +340,23 @@ function AddOrderPage({
     }
 
     // Instant Accounts Sync for Advances
-    const advanceAccounts = newOrders.filter(o => o.advance > 0).map(o => ({
-      id: 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-      type: 'Income',
-      date: o.orderDate || getIndianDate(),
-      category: 'Order Advance',
-      amount: o.advance,
-      payment_mode: o.paymentMode || 'Cash',
-      reference: `Order Advance #${o.id}`,
-      notes: `Advance for ${o.product} (${clientName})`
-    }));
+    const advanceAccounts = newOrders.filter(o => o.advance > 0).map(o => {
+      const accId = 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+      return {
+        id: accId,
+        data: {
+          id: accId,
+          type: 'Income',
+          date: o.orderDate || getIndianDate(),
+          category: 'Order Advance',
+          amount: o.advance,
+          payment_mode: o.paymentMode || 'Cash',
+          reference: `Order Advance #${o.id}`,
+          notes: `Advance for ${o.product} (${clientName})`,
+          created_at: new Date().toISOString()
+        }
+      };
+    });
 
     if (advanceAccounts.length > 0) {
       supabase.from('erp_accounts').insert(advanceAccounts).then(({error}) => {

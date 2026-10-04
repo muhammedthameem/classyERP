@@ -1394,28 +1394,28 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                 // Sync advance update to Accounts
                 const advanceAmount = parseFloat(finalOrder.advance) || 0;
                 const ref = `Order Advance #${finalOrder.id}`;
-                if (advanceAmount > 0) {
-                  const { data: existing } = await supabase.from('erp_accounts').select('id').eq('reference', ref).single();
-                  if (existing) {
-                    await supabase.from('erp_accounts').update({
-                      amount: advanceAmount,
-                      payment_mode: finalOrder.paymentMode || 'Cash',
-                      date: finalOrder.orderDate || getIndianDate()
-                    }).eq('id', existing.id);
-                  } else {
-                    await supabase.from('erp_accounts').insert([{
-                      id: 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                try {
+                  const { data: allAccs } = await supabase.from('erp_accounts').select('*');
+                  const existing = (allAccs || []).find(a => (a.data?.reference === ref) || (a.reference === ref));
+                  if (advanceAmount > 0) {
+                    const accId = existing ? existing.id : ('acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7));
+                    const record = {
+                      id: accId,
                       type: 'Income',
                       date: finalOrder.orderDate || getIndianDate(),
                       category: 'Order Advance',
                       amount: advanceAmount,
                       payment_mode: finalOrder.paymentMode || 'Cash',
                       reference: ref,
-                      notes: `Advance for ${finalOrder.product} (${finalOrder.clientName})`
-                    }]);
+                      notes: `Advance for ${finalOrder.product} (${finalOrder.clientName})`,
+                      created_at: existing?.data?.created_at || existing?.created_at || new Date().toISOString()
+                    };
+                    await supabase.from('erp_accounts').upsert([{ id: accId.toString(), data: record }]);
+                  } else if (existing) {
+                    await supabase.from('erp_accounts').delete().eq('id', existing.id);
                   }
-                } else {
-                  await supabase.from('erp_accounts').delete().eq('reference', ref);
+                } catch (accErr) {
+                  console.warn("Advance account sync warning:", accErr);
                 }
 
                 setEditOrder(null)
