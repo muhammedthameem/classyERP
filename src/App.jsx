@@ -91,10 +91,30 @@ function App() {
           return; // Skip mass download if already synced this session. Data is loaded from localStorage.
         }
 
+        const fetchOrdersSafe = async () => {
+          const res = await supabase.from('erp_orders').select('*');
+          if (!res.error) return res;
+          try {
+            const { count } = await supabase.from('erp_orders').select('*', { count: 'exact', head: true });
+            const total = count || 0;
+            const chunkSize = 50;
+            let allData = [];
+            for (let from = 0; from < total; from += chunkSize) {
+              const to = Math.min(from + chunkSize - 1, total - 1);
+              const chunkRes = await supabase.from('erp_orders').select('*').range(from, to);
+              if (chunkRes.error) throw chunkRes.error;
+              if (chunkRes.data) allData = allData.concat(chunkRes.data);
+            }
+            return { data: allData, error: null };
+          } catch {
+            return res;
+          }
+        };
+
         const [u, c, o, s, i, a, cfg] = await Promise.all([
           supabase.from('erp_users').select('*'),
           supabase.from('erp_clients').select('*'),
-          supabase.from('erp_orders').select('*'),
+          fetchOrdersSafe(),
           supabase.from('erp_sales').select('*'),
           supabase.from('erp_inventory').select('*'),
           supabase.from('erp_activities').select('*').order('id', { ascending: false }).limit(100),

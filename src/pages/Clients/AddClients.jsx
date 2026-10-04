@@ -141,7 +141,7 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
           const base64 = await new Promise((resolve) => {
             const reader = new FileReader();
             reader.onloadend = () => resolve(reader.result);
-            reader.readAsDataURL(photoFile);
+            reader.readAsDataURL(compressedPhoto || photoFile);
           });
           photoUrl = base64;
           if (showGlobalToast) showGlobalToast('Storage Upload Failed', 'Falling back to local database storage for image.');

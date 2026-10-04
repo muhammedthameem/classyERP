@@ -102,11 +102,19 @@ function ViewAccountsPage({ themeStyle, setCurrentPage, showGlobalToast, current
   const fetchAccounts = async () => {
     setIsLoading(true)
     try {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('erp_accounts')
         .select('*')
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
+
+      if (error && (error.code === '42703' || error.message?.includes('date'))) {
+        const fallback = await supabase.from('erp_accounts').select('*');
+        if (!fallback.error) {
+          data = (fallback.data || []).map(item => item.data || item);
+          error = null;
+        }
+      }
 
       if (error) throw error;
       setAccounts(data || [])

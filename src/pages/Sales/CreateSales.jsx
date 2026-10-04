@@ -489,6 +489,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
             for (const [method, amount] of Object.entries(splitPayments)) {
               if (parseFloat(amount) > 0) {
                 splitInserts.push({
+                  id: 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
                   type: 'Income',
                   date: saleDate,
                   category: 'Sales',
@@ -504,6 +505,7 @@ function CreateSalesPage({ themeStyle, setCurrentPage, showGlobalToast, inventor
             }
           } else {
             await supabase.from('erp_accounts').insert([{
+              id: 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
               type: 'Income',
               date: saleDate,
               category: 'Sales',

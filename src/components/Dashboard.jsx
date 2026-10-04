@@ -268,7 +268,8 @@ function Dashboard({
           const paymentMode = sale.paymentMode || 'Cash';
           
           try {
-            await supabase.from('erp_accounts').insert([{
+            const { error: insertErr } = await supabase.from('erp_accounts').insert([{
+              id: 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
               type: 'Income',
               date: saleDate,
               category: 'Sales',
@@ -277,9 +278,18 @@ function Dashboard({
               reference: saleIdRef,
               notes: `Auto-migrated from past sale for ${clientName}`
             }]);
-            needsRefresh = true;
+            if (insertErr) {
+              if (insertErr.code === 'PGRST204' || insertErr.message?.includes('amount') || insertErr.message?.includes('schema cache')) {
+                console.warn("erp_accounts is missing required columns. Please run supabase/fix_accounts.sql in Supabase SQL editor.");
+                break;
+              }
+              console.warn("Migration auto-insert warning for sale", insertErr.message);
+            } else {
+              needsRefresh = true;
+            }
           } catch (err) {
             console.error("Migration auto-insert failed", err);
+            break;
           }
         }
       }
@@ -294,7 +304,8 @@ function Dashboard({
           const clientName = order.clientName || order.client || 'Unknown Client';
           
           try {
-            await supabase.from('erp_accounts').insert([{
+            const { error: insertErr } = await supabase.from('erp_accounts').insert([{
+              id: 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
               type: 'Income',
               date: orderDate,
               category: 'Order Advance',
@@ -303,9 +314,18 @@ function Dashboard({
               reference: orderIdRef,
               notes: `Auto-migrated advance for ${clientName}`
             }]);
-            needsRefresh = true;
+            if (insertErr) {
+              if (insertErr.code === 'PGRST204' || insertErr.message?.includes('amount') || insertErr.message?.includes('schema cache')) {
+                console.warn("erp_accounts is missing required columns. Please run supabase/fix_accounts.sql in Supabase SQL editor.");
+                break;
+              }
+              console.warn("Migration auto-insert warning for order", insertErr.message);
+            } else {
+              needsRefresh = true;
+            }
           } catch (err) {
             console.error("Migration auto-insert failed for order", err);
+            break;
           }
         }
       }

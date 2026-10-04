@@ -92,6 +92,7 @@ function AddExpensePage({ themeStyle, setCurrentPage, showGlobalToast, expenseCa
       const { data, error } = await supabase
         .from('erp_accounts')
         .insert([{
+          id: 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
           type: 'Expense',
           date: formData.date,
           category: formData.category,

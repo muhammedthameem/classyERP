@@ -341,6 +341,7 @@ function AddOrderPage({
 
     // Instant Accounts Sync for Advances
     const advanceAccounts = newOrders.filter(o => o.advance > 0).map(o => ({
+      id: 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
       type: 'Income',
       date: o.orderDate || getIndianDate(),
       category: 'Order Advance',
@@ -1443,14 +1444,23 @@ function AddOrderPage({
                                 type="file"
                                 className="hidden"
                                 accept="image/*"
-                                onChange={(e) => {
+                                onChange={async (e) => {
                                   const file = e.target.files[0];
                                   if (file) {
-                                    const reader = new FileReader();
-                                    reader.onloadend = () => {
-                                      updateOrderItem(idx, { materialPhoto: reader.result });
-                                    };
-                                    reader.readAsDataURL(file);
+                                    try {
+                                      const compressedFile = await compressImage(file);
+                                      const reader = new FileReader();
+                                      reader.onloadend = () => {
+                                        updateOrderItem(idx, { materialPhoto: reader.result });
+                                      };
+                                      reader.readAsDataURL(compressedFile);
+                                    } catch {
+                                      const reader = new FileReader();
+                                      reader.onloadend = () => {
+                                        updateOrderItem(idx, { materialPhoto: reader.result });
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
                                   }
                                 }}
                               />

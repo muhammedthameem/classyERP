@@ -7,6 +7,7 @@ import { sendWhatsApp } from "../../utils/whatsapp";
 import supabase from '../../supabase'
 import { encryptId } from '../../utils/security'
 import UndoToast from '../../components/UndoToast'
+import { compressImage } from '../../utils/imageCompression'
 
 function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClientDetailMode, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory, clients, saveOrder, deleteOrder, cloudLoaded }) {
   const rowRefs = useRef({});
@@ -1299,12 +1300,19 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                       type="file"
                       className="hidden"
                       accept="image/*"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (ev) => setEditOrder({ ...editOrder, photo: ev.target.result });
-                          reader.readAsDataURL(file);
+                          try {
+                            const compressedFile = await compressImage(file);
+                            const reader = new FileReader();
+                            reader.onload = (ev) => setEditOrder({ ...editOrder, photo: ev.target.result });
+                            reader.readAsDataURL(compressedFile);
+                          } catch {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => setEditOrder({ ...editOrder, photo: ev.target.result });
+                            reader.readAsDataURL(file);
+                          }
                         }
                       }}
                     />
@@ -1396,6 +1404,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                     }).eq('id', existing.id);
                   } else {
                     await supabase.from('erp_accounts').insert([{
+                      id: 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
                       type: 'Income',
                       date: finalOrder.orderDate || getIndianDate(),
                       category: 'Order Advance',

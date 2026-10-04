@@ -28,10 +28,16 @@ function AddIncomePage({ themeStyle, setCurrentPage, showGlobalToast, incomeCate
   useEffect(() => {
     const fetchLinkedSales = async () => {
       try {
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from('erp_accounts')
           .select('reference')
           .eq('type', 'Income')
+
+        if (error && (error.code === '42703' || error.message?.includes('type'))) {
+          // Columns not added yet in erp_accounts
+          data = [];
+          error = null;
+        }
 
         if (!error && data) {
           const sIds = data.filter(d => d.reference?.startsWith('Sale #')).map(d => d.reference.replace('Sale #', ''));
@@ -40,7 +46,7 @@ function AddIncomePage({ themeStyle, setCurrentPage, showGlobalToast, incomeCate
           setLinkedAdvanceIds(oIds);
         }
       } catch (err) {
-        console.error("Error fetching linked sales:", err);
+        console.warn("Could not fetch linked sales:", err);
       }
     };
     fetchLinkedSales();
@@ -71,6 +77,7 @@ function AddIncomePage({ themeStyle, setCurrentPage, showGlobalToast, incomeCate
       const { data, error } = await supabase
         .from('erp_accounts')
         .insert([{
+          id: 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
           type: 'Income',
           date: formData.date,
           category: formData.category,
