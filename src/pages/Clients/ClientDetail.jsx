@@ -3,6 +3,7 @@ import { ImageIcon, ChevronDown, ChevronLeft, Package, Search, Settings, Shoppin
 import { formatDateDDMMYY, formatDateTimeDDMMYY, products } from '../../utils/constants'
 import supabase from '../../supabase'
 import { compressImage } from '../../utils/imageCompression'
+import SketchBoard, { hasSketch } from '../../components/SketchBoard'
 
 function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClient, initialMode, setClientDetailMode, showGlobalToast, currentUser, clients, setClients, saveClient, deleteClient, productTypes = [], setProductTypes, saveConfig }) {
   const [clientsList, setClientsList] = useState([])
@@ -49,6 +50,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
   const [topMeasurements, setTopMeasurements] = useState(defaultTop)
   const [bottomMeasurements, setBottomMeasurements] = useState(defaultBottom)
   const [note, setNote] = useState('')
+  const [sketch, setSketch] = useState(null)
   const [photoFile, setPhotoFile] = useState(null)
   const [isUploading, setIsUploading] = useState(false)
 
@@ -82,12 +84,14 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
         setTopMeasurements({ ...defaultTop, ...current.topMeasurements })
         setBottomMeasurements({ ...defaultBottom, ...current.bottomMeasurements })
         setNote(current.note || '')
+        setSketch(current.sketch || null)
       } else if (!isAddingMeasurement) {
         setProduct('')
         setProductSearch('')
         setTopMeasurements(defaultTop)
         setBottomMeasurements(defaultBottom)
         setNote('')
+        setSketch(null)
       } else {
         // Clear for new measurement
         setProduct('')
@@ -95,6 +99,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
         setTopMeasurements(defaultTop)
         setBottomMeasurements(defaultBottom)
         setNote('')
+        setSketch(null)
       }
     }
   }, [client, selectedMeasurementIndex, initialMode, isEditingClient, isAddingMeasurement])
@@ -160,7 +165,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
     if (isAddingMeasurement && client.measurements?.length > 0) {
       const existingMatch = client.measurements.find(m => m.product?.toLowerCase() === product.toLowerCase().trim());
       if (existingMatch) {
-        setPendingMeasurementData({ product, topMeasurements, bottomMeasurements, note });
+        setPendingMeasurementData({ product, topMeasurements, bottomMeasurements, note, sketch });
         setShowMergePopup(true);
         return; // Halt save process
       }
@@ -197,7 +202,7 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
       }
     }
 
-    executeSaveMeasurement({ product, topMeasurements, bottomMeasurements, note, photoUrl: uploadedPhotoUrl });
+    executeSaveMeasurement({ product, topMeasurements, bottomMeasurements, note, sketch, photoUrl: uploadedPhotoUrl });
   }
 
   const handleMergeMeasurement = () => {
@@ -208,7 +213,8 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
         product: oldMeasurement.product,
         topMeasurements: { ...oldMeasurement.topMeasurements, ...pendingMeasurementData.topMeasurements },
         bottomMeasurements: { ...oldMeasurement.bottomMeasurements, ...pendingMeasurementData.bottomMeasurements },
-        note: pendingMeasurementData.note ? pendingMeasurementData.note : oldMeasurement.note
+        note: pendingMeasurementData.note ? pendingMeasurementData.note : oldMeasurement.note,
+        sketch: hasSketch(pendingMeasurementData.sketch) ? pendingMeasurementData.sketch : oldMeasurement.sketch
       };
       
       const newMeasurements = [...client.measurements];
@@ -320,7 +326,8 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
           product: measurementToSave.product,
           topMeasurements: measurementToSave.topMeasurements,
           bottomMeasurements: measurementToSave.bottomMeasurements,
-          note: measurementToSave.note
+          note: measurementToSave.note,
+          sketch: measurementToSave.sketch || null
         }
         if (measurementToSave.photoUrl !== undefined) {
           updatedClient.measurements[selectedMeasurementIndex].photoUrl = measurementToSave.photoUrl;
@@ -924,6 +931,15 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
               </div>
             )}
 
+            {hasSketch(currentMeasurement.sketch) && (
+              <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur mb-6">
+                <h2 className="text-h2 mb-4 flex items-center gap-2">
+                  <Pencil size={20} /> Pattern Sketch
+                </h2>
+                <SketchBoard value={currentMeasurement.sketch} readOnly />
+              </section>
+            )}
+
             {currentMeasurement.note && (
               <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur">
                 <h2 className="text-h2 mb-4 flex items-center gap-2">
@@ -1168,6 +1184,15 @@ function ClientDetailPage({ themeStyle, client, setCurrentPage, setSelectedClien
             </section>
 
             
+            {/* Pattern Sketch Section */}
+            <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur mb-6">
+              <h2 className="mb-1 flex items-center gap-2 text-xl font-semibold">
+                <Pencil size={20} /> Pattern Sketch
+              </h2>
+              <p className="mb-4 text-xs text-[var(--muted)]">Sketch the pattern / design reference on the board. Saved as a tiny vector, no image upload.</p>
+              <SketchBoard value={sketch} onChange={setSketch} />
+            </section>
+
             {/* Photo Upload Section */}
             <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 shadow-[var(--shadow)] backdrop-blur mb-6">
               <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold">

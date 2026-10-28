@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { ChevronDown, Package, Search, Settings, UsersRound, Trash2, Image as ImageIcon, List } from 'lucide-react'
 import supabase from '../../supabase'
 import { compressImage } from '../../utils/imageCompression'
+import SketchBoard, { hasSketch } from '../../components/SketchBoard'
 
 function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, setClients, saveClient, currentUser, productTypes = [], setProductTypes, saveConfig }) {
   const [personalDetails, setPersonalDetails] = useState(() => {
@@ -78,6 +79,7 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
     crotchRound: ''
   })
   const [note, setNote] = useState('')
+  const [sketch, setSketch] = useState(null)
 
   // Safety check for non-admin or uninitialized users
   if (!clients) return <div className="p-10 text-center">Loading clients...</div>;
@@ -89,7 +91,8 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
       personalDetails.mobile || 
       product || 
       note || 
-      photoFile;
+      photoFile ||
+      hasSketch(sketch);
 
     if (hasData) {
       if (window.confirm('You have unsaved changes. Are you sure you want to cancel and discard them?')) {
@@ -159,6 +162,7 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
       topMeasurements,
       bottomMeasurements,
       note,
+      sketch,
       photoUrl,
       createdAt: new Date().toISOString()
     }
@@ -227,6 +231,7 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
       crotchLength: '', crotchRound: ''
     })
     setNote('')
+    setSketch(null)
     setPhotoFile(null)
   }
 
@@ -503,6 +508,15 @@ function AddClientsPage({ themeStyle, setCurrentPage, showGlobalToast, clients, 
               </div>
             )}
           </div>
+        </section>
+
+        {/* Pattern Sketch Section */}
+        <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
+          <h2 className="mb-1 flex items-center gap-2 text-xl font-semibold">
+            <Package size={20} /> Pattern Sketch
+          </h2>
+          <p className="mb-4 text-xs text-[var(--muted)]">Sketch the pattern / design reference on the board. Saved as a tiny vector, no image upload.</p>
+          <SketchBoard value={sketch} onChange={setSketch} />
         </section>
 
         {/* Note & Photo Section */}
