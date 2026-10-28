@@ -4,6 +4,7 @@ import { formatDateDDMMYY, getIndianDate, DEFAULT_WORKFLOWS } from '../../utils/
 import CustomDatePicker from '../../components/CustomDatePicker'
 import supabase from '../../supabase'
 import { compressImage } from '../../utils/imageCompression'
+import { SketchThumb, hasSketch } from '../../components/SketchBoard'
 
 function AddOrderPage({ 
   themeStyle, setCurrentPage, showGlobalToast, 
@@ -120,6 +121,15 @@ function AddOrderPage({
   const [dropdownLimit, setDropdownLimit] = useState(15)
 
   const [zoomedPhoto, setZoomedPhoto] = useState(null)
+
+  // Saved sketchboard drawing from the selected client's measurement for this product
+  const getClientSketch = (prodName) => {
+    if (!prodName || !clientName) return null
+    const c = (clients || []).find(cl => cl.name === clientName)
+    const key = prodName.toLowerCase().trim()
+    const m = c?.measurements?.find(ms => (ms.product || '').toLowerCase().trim() === key)
+    return hasSketch(m?.sketch) ? m.sketch : null
+  }
 
   useEffect(() => {
     setClientsList(clients)
@@ -1529,14 +1539,31 @@ function AddOrderPage({
                       </div>
                     )}
                   </div>
-                  {item.measurementPhotoUrl && (
-                    <div className="col-span-1 md:col-span-2">
-                       <span className="mb-2 block text-sm font-medium text-[var(--text)]">Measurement Photo</span>
-                       <button type="button" onClick={() => setZoomedPhoto(item.measurementPhotoUrl)} className="block w-24 h-24 border border-[var(--border)] rounded-xl overflow-hidden shadow-sm transition hover:scale-105">
-                         <img src={item.measurementPhotoUrl} alt="Measurement" className="w-full h-full object-cover" />
-                       </button>
-                    </div>
-                  )}
+                  {(() => {
+                    const itemSketch = getClientSketch(item.product);
+                    if (!item.measurementPhotoUrl && !itemSketch) return null;
+                    return (
+                      <div className="col-span-1 md:col-span-2">
+                        <span className="mb-2 block text-sm font-medium text-[var(--text)]">Client References</span>
+                        <div className="flex flex-wrap items-end gap-3">
+                          {item.measurementPhotoUrl && (
+                            <div className="flex flex-col items-center gap-1">
+                              <button type="button" onClick={() => setZoomedPhoto(item.measurementPhotoUrl)} title="Measurement photo – click to zoom" className="block w-24 h-24 border border-[var(--border)] rounded-xl overflow-hidden shadow-sm transition hover:scale-105 cursor-zoom-in">
+                                <img src={item.measurementPhotoUrl} alt="Measurement" className="w-full h-full object-cover" />
+                              </button>
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)]">Photo</span>
+                            </div>
+                          )}
+                          {itemSketch && (
+                            <div className="flex flex-col items-center gap-1">
+                              <SketchThumb value={itemSketch} size={96} title={`${item.product} sketch`} />
+                              <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)]"><Pencil size={10} /> Sketch</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
               </div>

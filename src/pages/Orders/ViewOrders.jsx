@@ -8,6 +8,7 @@ import supabase from '../../supabase'
 import { encryptId } from '../../utils/security'
 import UndoToast from '../../components/UndoToast'
 import { compressImage } from '../../utils/imageCompression'
+import { SketchThumb, hasSketch } from '../../components/SketchBoard'
 
 function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClientDetailMode, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory, clients, saveOrder, deleteOrder, cloudLoaded }) {
   const rowRefs = useRef({});
@@ -896,6 +897,18 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                     <img src={viewOrder.measurementPhotoUrl} alt="Meas" className="h-24 w-24 rounded-xl object-cover border border-[var(--border)] cursor-pointer hover:opacity-80 transition" onClick={() => setImagePopup(viewOrder.measurementPhotoUrl)} />
                   </div>
                 )}
+
+                {(() => {
+                  const clientObj = (clients || []).find(c => c.name?.toLowerCase().trim() === viewOrder.clientName?.toLowerCase().trim());
+                  const m = clientObj?.measurements?.find(ms => ms.product?.toLowerCase().trim() === viewOrder.product?.toLowerCase().trim());
+                  if (!hasSketch(m?.sketch)) return null;
+                  return (
+                    <div>
+                      <p className="text-sm font-medium text-[var(--muted)] mb-1">Pattern Sketch</p>
+                      <SketchThumb value={m.sketch} size={96} title={`${viewOrder.product} sketch`} />
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="col-span-2 bg-[var(--soft)] p-5 rounded-2xl border border-[var(--border)] shadow-inner">

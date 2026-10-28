@@ -70,6 +70,25 @@ function SketchZoomModal({ strokes, onClose }) {
   )
 }
 
+// Compact thumbnail (small footprint) – click opens the full zoom viewer.
+export function SketchThumb({ value, size = 96, title = 'Pattern Sketch', className = '' }) {
+  const [open, setOpen] = useState(false)
+  if (!hasSketch(value)) return null
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} title={`${title} – click to zoom`}
+        className={`group relative shrink-0 overflow-hidden rounded-xl border border-[var(--border)] bg-white shadow-sm transition hover:scale-105 hover:border-[var(--accent)] hover:shadow-md cursor-zoom-in ${className}`}
+        style={{ height: size, width: Math.round(size * W / H) }}>
+        <SketchSvg strokes={value.s} style={{ width: '100%', height: '100%' }} />
+        <span className="absolute inset-0 grid place-items-center bg-black/0 text-white opacity-0 transition group-hover:bg-black/30 group-hover:opacity-100">
+          <ZoomIn size={18} />
+        </span>
+      </button>
+      {open && <SketchZoomModal strokes={value.s} onClose={() => setOpen(false)} />}
+    </>
+  )
+}
+
 function SketchBoard({ value, onChange, readOnly = false, className = '' }) {
   const [zoomOpen, setZoomOpen] = useState(false)
   const svgRef = useRef(null)
