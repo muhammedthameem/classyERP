@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ChevronDown, Search, Settings, ShoppingBag, Pencil, Trash2, Plus, Package, Info, Calendar, UsersRound, CheckCircle, X, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { ChevronDown, Search, Settings, ShoppingBag, Pencil, Trash2, Plus, Package, Info, Calendar, UsersRound, CheckCircle, CheckCircle2, X, ChevronsLeft, ChevronsRight, Printer } from 'lucide-react'
 import { formatDateDDMMYY, getIndianDate, DEFAULT_WORKFLOWS } from '../../utils/constants'
 import CustomDatePicker from '../../components/CustomDatePicker'
 import supabase from '../../supabase'
 import { compressImage } from '../../utils/imageCompression'
 import { SketchThumb, hasSketch } from '../../components/SketchBoard'
+import ThermalTagModal from '../../components/ThermalTagModal'
+import { printOrderThermalTag } from '../../utils/thermalPrinter'
 
 function AddOrderPage({ 
   themeStyle, setCurrentPage, showGlobalToast, 
@@ -26,6 +28,8 @@ function AddOrderPage({
   // Global order metadata
   const [photoPreview, setPhotoPreview] = useState(null)
   const [notes, setNotes] = useState('')
+  const [createdOrdersSummary, setCreatedOrdersSummary] = useState(null)
+  const [thermalTagOrder, setThermalTagOrder] = useState(null)
   
   // Use Global Limits from Prop
   const dailyOrderLimit = orderLimits?.global || 999;
@@ -376,6 +380,13 @@ function AddOrderPage({
 
     if (showGlobalToast) showGlobalToast('Success', `${orderItems.length} product(s) added for ${clientName}`);
 
+    // Save newly created orders to prompt for thermal tag printing
+    setCreatedOrdersSummary({
+      orders: newOrders,
+      clientName,
+      client: (clients || []).find(c => (c.name || '').toLowerCase() === (clientName || '').toLowerCase())
+    });
+
     // Reset form
     setClientName('')
     setOrderItems([{
@@ -399,7 +410,6 @@ function AddOrderPage({
     }])
     setPhotoPreview(null)
     setNotes('')
-    setCurrentPage('view-orders')
   }
 
   const allProductTypes = Array.from(new Set([
@@ -1691,6 +1701,116 @@ function AddOrderPage({
           </div>
         </section>
       </form>
+
+      {/* Post-Order Creation Success & Thermal Tag Print Dialog */}
+      {createdOrdersSummary && (
+        <div className="fixed inset-0 z-[2200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-3xl border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 mb-3">
+              <CheckCircle2 size={32} />
+            </div>
+            <h3 className="text-xl font-black text-[var(--text)]">Order Booked Successfully!</h3>
+            <p className="text-xs text-[var(--muted)] mt-1 font-medium">
+              Client: <span className="font-bold text-[var(--text)]">{createdOrdersSummary.clientName}</span>
+            </p>
+
+            {/* Target Delivery Date (Highlighted box) */}
+            <div className="my-4 p-3.5 rounded-2xl bg-black text-white text-left border-2 border-black shadow-md">
+              <div className="text-[10px] font-black uppercase tracking-wider text-white/80">★★★ TARGET DELIVERY DATE ★★★</div>
+              <div className="text-2xl font-black text-white mt-0.5">
+                {createdOrdersSummary.orders[0]?.deliveryDate ? formatDateDDMMYY(createdOrdersSummary.orders[0].deliveryDate) : 'Not Specified'}
+              </div>
+              <div className="text-xs text-white/90 mt-1 flex items-center justify-between font-bold">
+                <span>Order #{createdOrdersSummary.orders.map(o => o.id).join(', #')}</span>
+                <span>{createdOrdersSummary.orders.length} item(s)</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-[var(--muted)] mb-4 font-medium">
+              Print the order tag sticker now to attach to the fabric package for cutting and stitching workflow.
+            </p>
+
+            <div className="space-y-2">
+              {createdOrdersSummary.orders.length === 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setThermalTagOrder(createdOrdersSummary.orders[0])}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-extrabold text-sm shadow-lg shadow-indigo-500/25 transition cursor-pointer active:scale-95"
+                >
+                  <Printer size={18} />
+                  <span>Print Order Tag</span>
+                </button>
+              ) : (
+                <div className="space-y-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      createdOrdersSummary.orders.forEach((ord, i) => {
+                        setTimeout(() => {
+                          printOrderThermalTag(ord, createdOrdersSummary.client, { format: '80mm' });
+                        }, i * 600);
+                      });
+                      if (showGlobalToast) showGlobalToast('Printing Tags', `Sent ${createdOrdersSummary.orders.length} order tags to printer`);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-extrabold text-sm shadow-lg shadow-indigo-500/25 transition cursor-pointer active:scale-95"
+                  >
+                    <Printer size={18} />
+                    <span>Print All {createdOrdersSummary.orders.length} Order Tags</span>
+                  </button>
+
+                  <div className="max-h-36 overflow-y-auto space-y-1.5 p-2 bg-[var(--soft)] rounded-xl border border-[var(--border)] text-left">
+                    {createdOrdersSummary.orders.map(o => (
+                      <div key={o.id} className="flex items-center justify-between text-xs py-1 px-1.5 bg-[var(--surface-strong)] rounded-lg">
+                        <span className="font-bold truncate max-w-[180px]">{o.product} (#{o.id})</span>
+                        <button
+                          type="button"
+                          onClick={() => setThermalTagOrder(o)}
+                          className="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Printer size={10} /> Print
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreatedOrdersSummary(null);
+                    setCurrentPage('view-orders');
+                  }}
+                  className="py-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--soft)] text-[var(--text)] font-bold text-xs transition cursor-pointer"
+                >
+                  View Orders List
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreatedOrdersSummary(null);
+                  }}
+                  className="py-2.5 rounded-xl bg-[var(--soft)] hover:bg-[var(--surface)] text-[var(--text)] font-bold text-xs transition cursor-pointer"
+                >
+                  + Book Another
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {thermalTagOrder && (
+        <ThermalTagModal
+          order={thermalTagOrder}
+          client={(clients || []).find(c => (c.name || '').toLowerCase() === (thermalTagOrder.clientName || '').toLowerCase())}
+          onClose={() => setThermalTagOrder(null)}
+          onPrintSuccess={() => {
+            if (showGlobalToast) showGlobalToast('Print Ready', `Order tag for #${thermalTagOrder.orderId || thermalTagOrder.id} sent to printer`);
+          }}
+        />
+      )}
     </div>
   )
 }

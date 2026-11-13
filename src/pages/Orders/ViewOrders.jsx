@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2, Plus, X, Printer, Calendar, AlertCircle, XCircle, ZoomIn } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, CircleDollarSign, ClipboardList, Search, Eye, Pencil, Trash2, CheckCircle, Clock, Play, Pause, CheckCircle2, Plus, X, Printer, Calendar, AlertCircle, XCircle, ZoomIn, Sparkles, Zap, Activity, SlidersHorizontal, Flame } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
 import { Virtuoso } from 'react-virtuoso'
 import { formatDateDDMMYY, getIndianDate, orders as dummyOrders, DEFAULT_WORKFLOWS, PRODUCTION_STAGES, calculateProgress, calculateRisk } from '../../utils/constants'
@@ -9,6 +9,8 @@ import { encryptId } from '../../utils/security'
 import UndoToast from '../../components/UndoToast'
 import { compressImage } from '../../utils/imageCompression'
 import { SketchThumb, hasSketch } from '../../components/SketchBoard'
+import ThermalTagModal from '../../components/ThermalTagModal'
+import { printOrderThermalTag } from '../../utils/thermalPrinter'
 
 function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClientDetailMode, showGlobalToast, currentUser, highlightOrderId, setHighlightOrderId, orders, setOrders, inventory, setInventory, clients, saveOrder, deleteOrder, cloudLoaded }) {
   const rowRefs = useRef({});
@@ -58,6 +60,82 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
   const [openStagePopoverId, setOpenStagePopoverId] = useState(null)
   const [expandedOrderId, setExpandedOrderId] = useState(null)
   const [mobileVisibleCount, setMobileVisibleCount] = useState(5)
+  const [thermalTagOrder, setThermalTagOrder] = useState(null)
+  const [aiSmartSort, setAiSmartSort] = useState(() => {
+    try {
+      return localStorage.getItem('erp_ai_smart_sort') === 'true'
+    } catch {
+      return false
+    }
+  })
+  const [aiFocusFilter, setAiFocusFilter] = useState(() => {
+    try {
+      return localStorage.getItem('erp_ai_focus_filter') === 'true'
+    } catch {
+      return false
+    }
+  })
+  const [tableDensity, setTableDensity] = useState(() => {
+    try {
+      return localStorage.getItem('erp_orders_table_density') || 'compact'
+    } catch {
+      return 'compact'
+    }
+  })
+
+  // Persist AI Smart Sort, Needs Attention filter, and Table Density across reloads, navigation, and app restarts
+  useEffect(() => {
+    try {
+      localStorage.setItem('erp_ai_smart_sort', aiSmartSort ? 'true' : 'false')
+    } catch (e) {
+      console.warn('Failed to save erp_ai_smart_sort', e)
+    }
+  }, [aiSmartSort])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('erp_ai_focus_filter', aiFocusFilter ? 'true' : 'false')
+    } catch (e) {
+      console.warn('Failed to save erp_ai_focus_filter', e)
+    }
+  }, [aiFocusFilter])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('erp_orders_table_density', tableDensity)
+    } catch (e) {
+      console.warn('Failed to save erp_orders_table_density', e)
+    }
+  }, [tableDensity])
+
+  const getAiDeliveryPrediction = useCallback((order) => {
+    if (order.status === 'Completed' || order.status === 'Sold') {
+      return { label: 'Delivered', color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' }
+    }
+    if (!order.deliveryDate) {
+      return { label: 'No Date', color: 'text-[var(--muted)] bg-[var(--soft)] border-[var(--border)]' }
+    }
+    const today = new Date(getIndianDate())
+    today.setHours(0, 0, 0, 0)
+    const delivery = new Date(order.deliveryDate)
+    delivery.setHours(0, 0, 0, 0)
+    const diffTime = delivery - today
+    const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+    if (daysLeft < 0) {
+      return { label: `${Math.abs(daysLeft)}d late`, color: 'text-rose-500 bg-rose-500/10 border-rose-500/25 font-black' }
+    }
+    if (daysLeft === 0) {
+      return { label: 'Today', color: 'text-amber-500 bg-amber-500/10 border-amber-500/25 font-black' }
+    }
+    if (daysLeft === 1) {
+      return { label: 'Tomorrow', color: 'text-amber-500 bg-amber-500/10 border-amber-500/25 font-bold' }
+    }
+    if (daysLeft <= 3) {
+      return { label: `${daysLeft}d left`, color: 'text-blue-500 bg-blue-500/10 border-blue-500/25' }
+    }
+    return { label: `${daysLeft}d left`, color: 'text-[var(--muted)] bg-[var(--soft)] border-[var(--border)]' }
+  }, [])
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -505,7 +583,54 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
   })
 
   const sortedOrders = useMemo(() => {
-    return [...filteredOrders].sort((a, b) => {
+    let list = [...filteredOrders];
+
+    if (aiFocusFilter) {
+      list = list.filter(o => {
+        if (o.status === 'Completed' || o.status === 'Sold') return false;
+        if (o.risk === 'Delayed' || o.risk === 'At Risk' || o.status === 'Hold') return true;
+        if (o.deliveryDate) {
+          const days = Math.ceil((new Date(o.deliveryDate) - new Date(getIndianDate())) / (1000 * 60 * 60 * 24));
+          if (days <= 2) return true;
+        }
+        return false;
+      });
+    }
+
+    if (aiSmartSort) {
+      return list.sort((a, b) => {
+        const isFinA = a.status === 'Closed' || a.status === 'Completed' || a.status === 'Sold';
+        const isFinB = b.status === 'Closed' || b.status === 'Completed' || b.status === 'Sold';
+        if (isFinA && !isFinB) return 1;
+        if (!isFinA && isFinB) return -1;
+
+        const getScore = (o) => {
+          let score = 0;
+          if (o.risk === 'Delayed') score += 1000;
+          if (o.risk === 'At Risk') score += 600;
+          if (o.status === 'Hold') score += 500;
+          if (o.priority === 'High') score += 300;
+          if (o.priority === 'Normal') score += 100;
+          if (o.deliveryDate) {
+            const days = Math.ceil((new Date(o.deliveryDate) - new Date(getIndianDate())) / (1000 * 60 * 60 * 24));
+            if (days < 0) score += 450;
+            else if (days === 0) score += 380;
+            else if (days === 1) score += 280;
+            else if (days <= 3) score += 180;
+          }
+          const prog = calculateProgress(o);
+          if (prog < 50) score += 80;
+          return score;
+        };
+
+        const scoreA = getScore(a);
+        const scoreB = getScore(b);
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        return (Number(b.id) || 0) - (Number(a.id) || 0);
+      });
+    }
+
+    return list.sort((a, b) => {
       // Keep 'Closed', 'Completed', and 'Sold' at the bottom regardless of sort
       const isFinishedA = a.status === 'Closed' || a.status === 'Completed' || a.status === 'Sold';
       const isFinishedB = b.status === 'Closed' || b.status === 'Completed' || b.status === 'Sold';
@@ -535,7 +660,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
       const idB = Number(b.id) || 0
       return idB - idA
     });
-  }, [filteredOrders, sortConfig]);
+  }, [filteredOrders, sortConfig, aiSmartSort, aiFocusFilter]);
 
   // Scroll to highlight logic
   useEffect(() => {
@@ -577,10 +702,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
 
         const index = currentSorted.findIndex(o => String(o.id) === String(highlightOrderId));
         if (index !== -1) {
-          const page = Math.floor(index / itemsPerPage) + 1;
-          setCurrentPageNum(page);
-
-          // Wait for pagination to render
+          // On desktop, all orders are visible (no pagination), so just scroll directly
           setTimeout(() => {
             const row = rowRefs.current[highlightOrderId] || rowRefs.current[String(highlightOrderId)] || rowRefs.current[Number(highlightOrderId)];
             if (row) {
@@ -590,7 +712,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                 if (setHighlightOrderId) setHighlightOrderId(null);
               }, 3000);
             }
-          }, 500);
+          }, 300);
         }
       }, 100);
     }
@@ -600,7 +722,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
   useEffect(() => {
     setCurrentPageNum(1)
     setMobileVisibleCount(5)
-  }, [searchQuery, activeFilter, dateFilter])
+  }, [searchQuery, activeFilter, dateFilter, aiFocusFilter])
 
   const totalPages = Math.ceil(sortedOrders.length / itemsPerPage)
 
@@ -634,6 +756,52 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
   const progressCount = displayOrders.filter(o => o.status === 'In Progress' || o.status === 'Start').length
   const holdCount = displayOrders.filter(o => o.status === 'Hold').length
   const closedCount = displayOrders.filter(o => o.status === 'Completed' || o.status === 'Sold').length
+
+  const aiStats = useMemo(() => {
+    const active = displayOrders.filter(o => o.status !== 'Completed' && o.status !== 'Sold');
+    const delayed = active.filter(o => o.risk === 'Delayed').length;
+    const atRisk = active.filter(o => o.risk === 'At Risk').length;
+    const dueSoon = active.filter(o => {
+      if (!o.deliveryDate) return false;
+      const days = Math.ceil((new Date(o.deliveryDate) - new Date(getIndianDate())) / (1000 * 60 * 60 * 24));
+      return days >= 0 && days <= 2;
+    }).length;
+    
+    const stageCounts = {};
+    active.forEach(o => {
+      const cur = o.currentStage || 'Not Started';
+      if (cur !== 'Finished') {
+        stageCounts[cur] = (stageCounts[cur] || 0) + 1;
+      }
+    });
+    let topStage = '';
+    let topCount = 0;
+    Object.entries(stageCounts).forEach(([st, cnt]) => {
+      if (cnt > topCount) {
+        topStage = st;
+        topCount = cnt;
+      }
+    });
+
+    const readyOrders = displayOrders.filter(o => o.status === 'Completed');
+    const pendingCollection = readyOrders.reduce((acc, o) => acc + Math.max(0, parseFloat(o.price || 0) - parseFloat(o.advance || 0)), 0);
+    const readyOrdersWithBalanceCount = readyOrders.filter(o => (parseFloat(o.price || 0) - parseFloat(o.advance || 0)) > 0).length;
+
+    const onTrackPct = active.length > 0 ? Math.round(((active.length - delayed - atRisk) / active.length) * 100) : 100;
+
+    return {
+      delayed,
+      atRisk,
+      dueSoon,
+      topStage,
+      topCount,
+      activeStageSummary: topCount > 0 ? `${topCount} in ${topStage}` : null,
+      pendingCollection,
+      readyOrdersWithBalanceCount,
+      onTrackPct,
+      criticalCount: delayed + atRisk + dueSoon
+    };
+  }, [displayOrders]);
 
   const handlePrintReceipt = () => {
     const originalElement = document.getElementById('receipt-content');
@@ -692,12 +860,29 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
       {viewOrder && (
         <div className="fixed inset-0 z-[2000] grid place-items-center bg-black/50 px-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-[24px] border border-[var(--border)] bg-[var(--surface-strong)] shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto">
-            <div className="absolute top-4 right-4 flex items-center gap-3">
-              <button className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--accent)] text-white hover:brightness-95 transition text-sm font-semibold shadow-sm" onClick={handlePrintReceipt}>
-                <Eye size={16} /> View Details
+            <div className="absolute top-4 right-4 flex items-center gap-2">
+              <button
+                type="button"
+                className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition text-xs font-bold shadow-sm cursor-pointer"
+                onClick={() => setThermalTagOrder(viewOrder)}
+                title="Print Order Tag (Sticky Label / Roll)"
+              >
+                <Printer size={15} /> Order Tag
               </button>
-              <button className="text-[var(--muted)] hover:text-[var(--text)] transition p-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg" onClick={() => setViewOrder(null)}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              <button
+                type="button"
+                className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--accent)] text-white hover:brightness-95 transition text-xs font-semibold shadow-sm cursor-pointer"
+                onClick={handlePrintReceipt}
+                title="Download A4 PDF Invoice & Send WhatsApp"
+              >
+                <Eye size={15} /> A4 Invoice
+              </button>
+              <button
+                type="button"
+                className="text-[var(--muted)] hover:text-[var(--text)] transition p-1.5 bg-[var(--surface)] border border-[var(--border)] rounded-lg cursor-pointer"
+                onClick={() => setViewOrder(null)}
+              >
+                <X size={16} />
               </button>
             </div>
             <div className="flex items-center gap-4 mb-6 mt-4">
@@ -1653,7 +1838,7 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
         </div>
       </div>
 
-      <section id="orders-table" className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur overflow-hidden">
+      <section id="orders-table" className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)] backdrop-blur">
         <div className="mb-4 flex items-center justify-between">
           <p className="text-sm font-semibold text-[var(--text)]">
             {filteredOrders.length} {filteredOrders.length === 1 ? 'order' : 'orders'} found
@@ -1663,100 +1848,271 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
             {activeFilter !== 'All' ? activeFilter : 'All Statuses'}
           </p>
         </div>
-        <div 
-          className={`erp-table-container overflow-x-auto min-h-[400px] hidden lg:block ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-          ref={tableContainerRef}
-          onMouseDown={handleMouseDown}
-          onMouseLeave={handleMouseLeave}
-          onMouseUp={handleMouseUp}
-          onMouseMove={handleMouseMove}
-        >
-          <table className="erp-table">
+
+        {/* Smart Studio Production & Health Bar */}
+        <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)]/80 backdrop-blur-md p-3 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {/* Left: Clear, Human-Friendly Operational Insights */}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              {/* Studio Assistant Label */}
+              <div className="flex items-center gap-2 pr-3 border-r border-[var(--border)]">
+                <div className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-xs">
+                  <Sparkles size={14} className="animate-pulse" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-[var(--text)] leading-tight">
+                    Studio Insights
+                  </span>
+                  <span className="text-[9px] text-[var(--muted)] font-medium leading-none">
+                    Live Workflow
+                  </span>
+                </div>
+              </div>
+
+              {/* Metric 1: On-Schedule Health */}
+              <div className="flex items-center gap-2 bg-[var(--surface)] px-2.5 py-1.5 rounded-xl border border-[var(--border)]/70">
+                <div className={`h-2 w-2 rounded-full shrink-0 ${aiStats.delayed > 0 ? 'bg-rose-500 animate-pulse' : aiStats.atRisk > 0 ? 'bg-amber-400' : 'bg-emerald-500'}`} />
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--muted)] leading-none">Delivery Schedule</span>
+                  <span className="text-xs font-black text-[var(--text)] leading-tight mt-0.5">
+                    {aiStats.onTrackPct}% On Track
+                  </span>
+                </div>
+              </div>
+
+              {/* Metric 2: Orders Needing Attention (Due Soon or Delayed) */}
+              {aiStats.criticalCount > 0 || aiFocusFilter ? (
+                <button
+                  type="button"
+                  onClick={() => setAiFocusFilter(!aiFocusFilter)}
+                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border transition cursor-pointer ${
+                    aiFocusFilter
+                      ? 'bg-amber-500 text-white border-amber-500 shadow-xs ring-2 ring-amber-400/40'
+                      : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20'
+                  }`}
+                  title={aiFocusFilter ? "Needs Attention filter is ON (Persisted). Click to turn off and show all orders" : "Click to view orders requiring action today"}
+                >
+                  <Flame size={13} className={aiFocusFilter ? 'text-white shrink-0 animate-pulse' : 'text-amber-500 shrink-0'} />
+                  <div className="flex flex-col text-left">
+                    <span className={`text-[9px] font-bold uppercase tracking-wider leading-none ${aiFocusFilter ? 'text-white/80' : 'text-amber-600/80 dark:text-amber-400/80'}`}>
+                      {aiFocusFilter ? 'Attention Filter ON' : 'Needs Attention'}
+                    </span>
+                    <span className="text-xs font-black leading-tight mt-0.5">
+                      {aiStats.criticalCount > 0
+                        ? `${aiStats.criticalCount} ${aiStats.criticalCount === 1 ? 'Order' : 'Orders'} ${aiFocusFilter ? '(Click to Reset)' : ''}`
+                        : '0 Orders (Click to Reset)'}
+                    </span>
+                  </div>
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 bg-emerald-500/10 px-2.5 py-1.5 rounded-xl border border-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                  <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-600/80 dark:text-emerald-400/80 leading-none">Deliveries</span>
+                    <span className="text-xs font-black leading-tight mt-0.5">
+                      All On Time
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Metric 3: Ready for Pickup & Pending Balance */}
+              {aiStats.pendingCollection > 0 && (
+                <div className="flex items-center gap-2 bg-emerald-500/10 px-2.5 py-1.5 rounded-xl border border-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                  <CircleDollarSign size={13} className="text-emerald-500 shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-600/80 dark:text-emerald-400/80 leading-none">Ready for Pickup</span>
+                    <span className="text-xs font-black leading-tight mt-0.5">
+                      ₹{aiStats.pendingCollection.toLocaleString('en-IN')} To Collect
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Metric 4: Stage Distribution (Clear & descriptive) */}
+              {aiStats.activeStageSummary && (
+                <div className="hidden xl:flex items-center gap-2 bg-[var(--surface)] px-2.5 py-1.5 rounded-xl border border-[var(--border)]/70 text-[var(--muted)]">
+                  <Clock size={13} className="text-[var(--muted)] shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--muted)] leading-none">Active Work</span>
+                    <span className="text-xs font-bold text-[var(--text)] leading-tight mt-0.5">
+                      {aiStats.activeStageSummary}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right: Intuitive Action Controls */}
+            <div className="flex items-center gap-2">
+              {/* Sort by Urgency Button */}
+              <button
+                type="button"
+                onClick={() => setAiSmartSort(!aiSmartSort)}
+                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition shadow-xs cursor-pointer ${
+                  aiSmartSort
+                    ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white ring-2 ring-indigo-400/50 shadow-indigo-500/25'
+                    : 'border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] hover:border-indigo-400/50'
+                }`}
+                title="Automatically prioritize orders by deadline, delay, and pending tasks"
+              >
+                <Zap size={13} className={aiSmartSort ? 'text-amber-300' : 'text-indigo-500'} />
+                <span>Sort by Urgency</span>
+                {aiSmartSort && <span className="text-[9px] bg-white/20 px-1 py-0.2 rounded-full uppercase">On</span>}
+              </button>
+
+              {/* View Density Toggle with clear label */}
+              <button
+                type="button"
+                onClick={() => setTableDensity(tableDensity === 'compact' ? 'relaxed' : 'compact')}
+                className="flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs font-bold text-[var(--muted)] hover:text-[var(--text)] transition cursor-pointer"
+                title={`Toggle row height (currently ${tableDensity})`}
+              >
+                <SlidersHorizontal size={12} />
+                <span className="capitalize">{tableDensity} View</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Futuristic AI Full-Width Table (Zero Horizontal Scroll) */}
+        <div className="w-full hidden lg:block overflow-x-auto scrollbar-none">
+          <table className="w-full table-fixed min-w-[880px] lg:min-w-0 border-collapse text-left">
+            <colgroup>
+              <col style={{ width: '19.5%' }} />
+              <col style={{ width: '7%' }} />
+              <col style={{ width: '5%' }} />
+              <col style={{ width: '17%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '15.5%' }} />
+              <col style={{ width: '9.5%' }} />
+              <col style={{ width: '10.5%' }} />
+            </colgroup>
             <thead>
-              <tr>
-                {[
-                  { key: 'id', label: 'Order ID' },
-                  { key: 'clientName', label: 'Client' },
-                  { key: 'priority', label: 'Priority' }
-                ].map(header => (
-                  <th
-                    key={header.key}
-                    className={`cursor-pointer transition hover:text-[var(--accent)] group ${header.key === 'clientName' ? 'md:sticky md:left-0 md:z-20 bg-[var(--surface-strong)] md:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]' : ''}`}
-                    onClick={() => {
-                      setSortConfig(prev => ({
-                        key: header.key,
-                        direction: prev.key === header.key && prev.direction === 'desc' ? 'asc' : 'desc'
-                      }))
-                    }}
-                  >
-                    <div className="flex items-center gap-1">
-                      {header.label}
-                      <span className={`transition-opacity ${sortConfig.key === header.key ? 'opacity-100' : 'opacity-20 group-hover:opacity-100'}`}>
-                        {sortConfig.key === header.key && sortConfig.direction === 'asc' ? '↑' : '↓'}
+              <tr className="border-b border-[var(--border)] bg-[var(--surface)] text-[10px] font-black uppercase tracking-wider text-[var(--muted)]">
+                <th className="py-2.5 px-2 select-none">
+                  <div className="flex items-center justify-between gap-1">
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 hover:text-[var(--accent)] transition-colors cursor-pointer"
+                      onClick={() => {
+                        setSortConfig(prev => ({
+                          key: 'clientName',
+                          direction: prev.key === 'clientName' && prev.direction === 'desc' ? 'asc' : 'desc'
+                        }))
+                        setAiSmartSort(false)
+                      }}
+                    >
+                      <span>Client & Order</span>
+                      <span className={`transition-opacity ${sortConfig.key === 'clientName' && !aiSmartSort ? 'opacity-100 text-[var(--accent)]' : 'opacity-20'}`}>
+                        {sortConfig.key === 'clientName' && sortConfig.direction === 'asc' ? '↑' : '↓'}
                       </span>
-                    </div>
-                  </th>
-                ))}
-                <th>Photo</th>
-                <th>Details</th>
+                    </button>
+                    <button
+                      type="button"
+                      className={`flex items-center gap-0.5 text-[9px] font-mono px-1.5 py-0.5 rounded border transition-colors cursor-pointer ${
+                        sortConfig.key === 'id' && !aiSmartSort
+                          ? 'border-[var(--accent)] text-[var(--accent)] bg-[var(--accent-soft)]'
+                          : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] bg-[var(--soft)]'
+                      }`}
+                      onClick={() => {
+                        setSortConfig(prev => ({
+                          key: 'id',
+                          direction: prev.key === 'id' && prev.direction === 'desc' ? 'asc' : 'desc'
+                        }))
+                        setAiSmartSort(false)
+                      }}
+                      title="Sort by Order ID"
+                    >
+                      <span>#ID</span>
+                      <span>{sortConfig.key === 'id' && !aiSmartSort ? (sortConfig.direction === 'asc' ? '↑' : '↓') : '↕'}</span>
+                    </button>
+                  </div>
+                </th>
                 <th
-                  className="cursor-pointer transition hover:text-[var(--accent)] group"
+                  className="py-2.5 px-2 cursor-pointer hover:text-[var(--accent)] transition-colors select-none"
+                  onClick={() => {
+                    setSortConfig(prev => ({
+                      key: 'priority',
+                      direction: prev.key === 'priority' && prev.direction === 'desc' ? 'asc' : 'desc'
+                    }))
+                    setAiSmartSort(false)
+                  }}
+                >
+                  <div className="flex items-center gap-1">
+                    Priority
+                    <span className={`transition-opacity ${sortConfig.key === 'priority' && !aiSmartSort ? 'opacity-100 text-[var(--accent)]' : 'opacity-20'}`}>
+                      {sortConfig.key === 'priority' && sortConfig.direction === 'asc' ? '↑' : '↓'}
+                    </span>
+                  </div>
+                </th>
+                <th className="py-2.5 px-1 text-center select-none">Photo</th>
+                <th className="py-2.5 px-2 select-none">Details</th>
+                <th
+                  className="py-2.5 px-2 cursor-pointer hover:text-[var(--accent)] transition-colors select-none"
                   onClick={() => {
                     setSortConfig(prev => ({
                       key: 'deliveryDate',
                       direction: prev.key === 'deliveryDate' && prev.direction === 'desc' ? 'asc' : 'desc'
                     }))
+                    setAiSmartSort(false)
                   }}
                 >
                   <div className="flex items-center gap-1">
                     Dates
-                    <span className={`transition-opacity ${sortConfig.key === 'deliveryDate' ? 'opacity-100' : 'opacity-20 group-hover:opacity-100'}`}>
+                    <span className={`transition-opacity ${sortConfig.key === 'deliveryDate' && !aiSmartSort ? 'opacity-100 text-[var(--accent)]' : 'opacity-20'}`}>
                       {sortConfig.key === 'deliveryDate' && sortConfig.direction === 'asc' ? '↑' : '↓'}
                     </span>
                   </div>
                 </th>
-                <th className="min-w-[140px]">Progress & Work</th>
-                <th className="min-w-[130px]">Status</th>
-                <th className="text-right">Actions</th>
+                <th className="py-2.5 px-2 select-none">Progress & Work</th>
+                <th className="py-2.5 px-2 select-none">Status</th>
+                <th className="py-2.5 px-2 text-right select-none">Actions</th>
               </tr>
             </thead>
             <tbody>
               {isDataLoading ? (
                 // Skeleton Table Rows
                 [1, 2, 3, 4, 5].map((i) => (
-                  <tr key={i}>
-                    <td><div className="skeleton h-5 w-16 rounded" /></td>
-                    <td><div className="skeleton h-5 w-32 rounded" /></td>
-                    <td><div className="skeleton h-10 w-10 rounded-lg" /></td>
-                    <td>
-                      <div className="skeleton h-5 w-32 rounded mb-1" />
-                      <div className="skeleton h-4 w-24 rounded" />
-                    </td>
-                    <td>
-                      <div className="skeleton h-4 w-24 rounded mb-1" />
-                      <div className="skeleton h-4 w-24 rounded" />
-                    </td>
-                    <td>
+                  <tr key={i} className="border-b border-[var(--border)]">
+                    <td className="py-2.5 px-2">
                       <div className="flex items-center gap-2">
-                        <div className="skeleton h-9 w-28 rounded-xl" />
-                        <div className="skeleton h-4 w-6 rounded" />
+                        <div className="skeleton h-8 w-8 rounded-xl shrink-0" />
+                        <div className="space-y-1 w-full">
+                          <div className="skeleton h-3.5 w-24 rounded" />
+                          <div className="skeleton h-3 w-16 rounded" />
+                        </div>
                       </div>
                     </td>
-                    <td className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <div className="skeleton h-8 w-8 rounded-lg" />
-                        <div className="skeleton h-8 w-8 rounded-lg" />
+                    <td className="py-2.5 px-2"><div className="skeleton h-4 w-16 rounded-full" /></td>
+                    <td className="py-2.5 px-1 text-center"><div className="skeleton h-8 w-8 rounded-lg mx-auto" /></td>
+                    <td className="py-2.5 px-2">
+                      <div className="skeleton h-4 w-28 rounded mb-1" />
+                      <div className="skeleton h-3 w-20 rounded" />
+                    </td>
+                    <td className="py-2.5 px-2">
+                      <div className="skeleton h-4 w-20 rounded mb-1" />
+                      <div className="skeleton h-3 w-14 rounded" />
+                    </td>
+                    <td className="py-2.5 px-2"><div className="skeleton h-7 w-full rounded-lg" /></td>
+                    <td className="py-2.5 px-2"><div className="skeleton h-7 w-full rounded-lg" /></td>
+                    <td className="py-2.5 px-2 text-right">
+                      <div className="flex justify-end gap-1">
+                        <div className="skeleton h-7 w-7 rounded-lg" />
+                        <div className="skeleton h-7 w-7 rounded-lg" />
                       </div>
                     </td>
                   </tr>
                 ))
-              ) : paginatedOrders.map((order, index) => {
+              ) : sortedOrders.map((order, index) => {
                 const progress = getProgress(order)
+                const cellPadding = tableDensity === 'compact' ? 'py-1.5 px-2' : 'py-3 px-2'
+
                 return (
                   <tr
                     key={order.id}
                     ref={el => rowRefs.current[order.id] = el}
-                    className={`group transition-all duration-1000 ${highlightOrderId === order.id ? 'ring-2 ring-[var(--accent)] ring-inset' : ''} ${order.status === 'Hold' ? '[&_td]:!text-orange-500 [&_span]:!text-orange-500 [&_p]:!text-orange-500 [&_button]:!text-orange-500 [&_select]:!text-orange-500 [&_select]:!border-orange-500/30' : ''}`}
+                    className={`group transition-all duration-300 hover:bg-[var(--soft)]/50 ${highlightOrderId === order.id ? 'ring-2 ring-[var(--accent)] ring-inset' : ''} ${order.status === 'Hold' ? '[&_td]:!text-orange-500 [&_span]:!text-orange-500 [&_p]:!text-orange-500 [&_button]:!text-orange-500 [&_select]:!text-orange-500 [&_select]:!border-orange-500/30' : ''}`}
                     style={{
                       background: progress > 0 ? `linear-gradient(to right, ${order.status === 'Completed' || order.status === 'Sold' ? 'rgba(34, 197, 94, 0.04)' :
                         order.status === 'Hold' ? 'rgba(249, 115, 22, 0.04)' :
@@ -1764,23 +2120,8 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                         } ${progress}%, transparent ${progress}%)` : undefined
                     }}
                   >
-                    <td className="font-medium text-[var(--text)]">#{order.id}</td>
-                    <td 
-                      className="md:sticky md:left-0 md:z-10 md:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
-                      style={{
-                        background: progress > 0 
-                          ? `linear-gradient(to right, ${
-                              order.status === 'Completed' || order.status === 'Sold' ? 'rgba(34, 197, 94, 0.04)' :
-                              order.status === 'Hold' ? 'rgba(249, 115, 22, 0.04)' :
-                              'color-mix(in srgb, var(--accent) 4%, transparent)'
-                            }, ${
-                              order.status === 'Completed' || order.status === 'Sold' ? 'rgba(34, 197, 94, 0.04)' :
-                              order.status === 'Hold' ? 'rgba(249, 115, 22, 0.04)' :
-                              'color-mix(in srgb, var(--accent) 4%, transparent)'
-                            }), var(--surface-strong)`
-                          : 'var(--surface-strong)'
-                      }}
-                    >
+                    {/* Col 1: Collapsed Unified Client & Order Identity */}
+                    <td className={`${cellPadding} border-b border-[var(--border)] align-middle`}>
                       <button
                         type="button"
                         onClick={() => {
@@ -1793,168 +2134,268 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                             showGlobalToast('Not Found', 'Client details could not be found.');
                           }
                         }}
-                        className="font-semibold text-[var(--accent)] hover:underline text-left break-words"
+                        className="flex items-center gap-2.5 group/client w-full text-left min-w-0"
+                        title={order.clientName}
                       >
-                        {order.clientName}
+                        <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[var(--surface-strong)] to-[var(--soft)] border border-[var(--border)] flex items-center justify-center text-xs font-black text-[var(--accent)] shrink-0 shadow-2xs group-hover/client:scale-105 transition-transform">
+                          {order.clientName?.charAt(0)?.toUpperCase() || 'C'}
+                        </div>
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <span className="font-bold text-xs text-[var(--text)] group-hover/client:text-[var(--accent)] group-hover/client:underline truncate block">
+                            {order.clientName}
+                          </span>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className={`inline-flex items-center gap-1 font-mono text-[10px] font-black px-1.5 py-0.2 rounded-md border tracking-tight shrink-0 ${
+                              order.risk === 'Delayed' ? 'bg-rose-500/10 text-rose-600 border-rose-500/30' :
+                              order.risk === 'At Risk' ? 'bg-amber-500/10 text-amber-600 border-amber-500/30' :
+                              order.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' :
+                              'bg-[var(--surface-strong)] text-[var(--muted)] border-[var(--border)]'
+                            }`}>
+                              <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                                order.risk === 'Delayed' ? 'bg-rose-500 animate-pulse' :
+                                order.risk === 'At Risk' ? 'bg-amber-400' :
+                                order.status === 'Completed' ? 'bg-emerald-500' :
+                                'bg-indigo-400'
+                              }`} />
+                              #{order.id}
+                            </span>
+                            {(() => {
+                              const clientObj = (clients || []).find(c => c.name?.toLowerCase().trim() === order.clientName?.toLowerCase().trim());
+                              const phone = clientObj?.mobile || order.clientPhone;
+                              return phone ? (
+                                <span className="text-[9px] text-[var(--muted)] font-mono truncate leading-none">
+                                  {phone}
+                                </span>
+                              ) : null;
+                            })()}
+                          </div>
+                        </div>
                       </button>
                     </td>
-                    <td>
-                      <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${
-                        order.priority === 'High' ? 'bg-red-100 text-red-700' :
-                        order.priority === 'Low' ? 'bg-gray-100 text-gray-700' :
-                        'bg-blue-100 text-blue-700'
+
+                    {/* Col 2: Priority */}
+                    <td className={`${cellPadding} border-b border-[var(--border)] align-middle`}>
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border ${
+                        order.priority === 'High' ? 'bg-rose-500/10 text-rose-600 border-rose-500/25' :
+                        order.priority === 'Low' ? 'bg-stone-500/10 text-stone-500 border-stone-500/20' :
+                        'bg-blue-500/10 text-blue-600 border-blue-500/25'
                       }`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${
+                          order.priority === 'High' ? 'bg-rose-500' : order.priority === 'Low' ? 'bg-stone-400' : 'bg-blue-500'
+                        }`}></span>
                         {order.priority || 'Normal'}
                       </span>
                     </td>
-                    <td>
+
+                    {/* Col 3: Photo */}
+                    <td className={`${cellPadding} border-b border-[var(--border)] align-middle text-center`}>
                       {order.photo ? (
-                        <img
-                          src={order.photo}
-                          alt="thumb"
-                          className="h-10 w-10 rounded-lg object-cover cursor-pointer border border-[var(--border)] transition hover:opacity-80"
-                          onClick={() => setImagePopup(order.photo)}
-                        />
+                        <div className="inline-block relative group/img cursor-pointer" onClick={() => setImagePopup(order.photo)}>
+                          <img
+                            src={order.photo}
+                            alt="thumb"
+                            className="h-8 w-8 rounded-lg object-cover border border-[var(--border)] shadow-2xs hover:ring-2 hover:ring-[var(--accent)] transition-all"
+                          />
+                          <div className="absolute inset-0 bg-black/30 rounded-lg opacity-0 group-hover/img:opacity-100 flex items-center justify-center text-white transition-opacity">
+                            <ZoomIn size={12} />
+                          </div>
+                        </div>
                       ) : (
-                        <div className="grid h-10 w-10 place-items-center rounded-lg bg-[var(--soft)] text-[var(--muted)]">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                        <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--soft)] text-[var(--muted)] border border-[var(--border)]/50">
+                          <Eye size={12} className="opacity-40" />
                         </div>
                       )}
                     </td>
-                    <td>
-                      <p className="text-[var(--text)] font-medium">{order.product}</p>
-                      <div className="flex flex-col gap-1 mt-1">
-                        <div className="flex gap-2 items-center text-xs">
-                          <span className="rounded bg-[var(--soft)] px-1.5 py-0.5 text-[var(--muted)]">{order.orderType}</span>
-                          <span className="font-semibold text-[var(--accent)]">₹{order.price}</span>
+
+                    {/* Col 4: Details */}
+                    <td className={`${cellPadding} border-b border-[var(--border)] align-middle`}>
+                      <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-xs text-[var(--text)] truncate" title={order.product}>
+                            {order.product}
+                          </span>
+                          {order.orderType && (
+                            <span className="shrink-0 text-[9px] font-semibold text-[var(--muted)] bg-[var(--soft)] px-1.5 py-0.2 rounded border border-[var(--border)]/50">
+                              {order.orderType}
+                            </span>
+                          )}
                         </div>
-                        {order.advance > 0 && (
-                          <div className="text-[10px] font-semibold text-green-600">
-                            Adv: ₹{order.advance} • Bal: ₹{(parseFloat(order.price || 0) - parseFloat(order.advance || 0)).toFixed(2)}
+                        <div className="flex items-center gap-2 mt-0.5 text-[11px]">
+                          <span className="font-black text-[var(--accent)]">₹{order.price}</span>
+                          {order.advance > 0 && (
+                            <span className="text-[10px] font-bold text-emerald-600 truncate">
+                              Adv ₹{order.advance} • Bal ₹{(parseFloat(order.price || 0) - parseFloat(order.advance || 0)).toFixed(0)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Col 5: Dates */}
+                    <td className={`${cellPadding} border-b border-[var(--border)] align-middle`}>
+                      {(() => {
+                        const aiPred = getAiDeliveryPrediction(order);
+                        return (
+                          <div className="flex flex-col gap-1 min-w-0">
+                            {/* Target Delivery Line */}
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider shrink-0">Due:</span>
+                              <span className="font-mono text-xs font-black text-[var(--text)] whitespace-nowrap">
+                                {order.deliveryDate ? formatDateDDMMYY(order.deliveryDate) : '—'}
+                              </span>
+                              <span className={`inline-flex items-center text-[9px] font-black px-1.5 py-0.2 rounded-md border tracking-tight shrink-0 whitespace-nowrap ${aiPred.color}`}>
+                                {aiPred.label}
+                              </span>
+                            </div>
+
+                            {/* Booked / Ordered Date Line */}
+                            <div className="flex items-center gap-1.5 text-[10px] text-[var(--muted)] min-w-0">
+                              <span className="text-[9px] font-semibold uppercase tracking-wider text-[var(--muted)]/70 shrink-0">Ord:</span>
+                              <span className="font-mono text-[10px] whitespace-nowrap">
+                                {order.orderDate ? formatDateDDMMYY(order.orderDate) : '—'}
+                              </span>
+                            </div>
                           </div>
-                        )}
-                      </div>
+                        );
+                      })()}
                     </td>
-                    <td>
-                      <div className="flex flex-col gap-1 text-xs">
-                        <span className="text-[var(--muted)]">Order: <span className="font-medium text-[var(--text)]">{formatDateDDMMYY(order.orderDate)}</span></span>
-                        <span className="text-[var(--muted)]">Delivery: <span className="font-medium text-[var(--text)]">{formatDateDDMMYY(order.deliveryDate)}</span></span>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="flex flex-col gap-1.5 min-w-[120px]">
+
+                    {/* Col 6: Progress & Work */}
+                    <td className={`${cellPadding} border-b border-[var(--border)] align-middle`}>
+                      <div className="flex flex-col gap-1 w-full">
                         <div className="flex items-center justify-between text-[10px] font-bold">
-                           <span className={order.risk === 'Delayed' ? 'text-red-500' : order.risk === 'At Risk' ? 'text-orange-500' : 'text-emerald-500'}>{order.risk || 'On Track'}</span>
-                           <span className="text-[var(--text)]">{progress}%</span>
+                          <span className={order.risk === 'Delayed' ? 'text-rose-500' : order.risk === 'At Risk' ? 'text-amber-500' : 'text-emerald-500'}>
+                            {order.risk || 'On Track'}
+                          </span>
+                          <span className="text-[var(--text)] font-mono">{progress}%</span>
                         </div>
-                        <div className="h-1.5 w-full bg-[var(--border)] rounded-full overflow-hidden">
-                           <div className={`h-full transition-all ${order.risk === 'Delayed' ? 'bg-red-500' : order.risk === 'At Risk' ? 'bg-orange-500' : 'bg-emerald-500'}`} style={{ width: `${progress}%` }}></div>
+                        <div className="h-1.5 w-full bg-[var(--border)]/60 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-500 ${
+                              order.risk === 'Delayed' ? 'bg-gradient-to-r from-rose-500 to-red-600' :
+                              order.risk === 'At Risk' ? 'bg-gradient-to-r from-amber-400 to-orange-500' :
+                              'bg-gradient-to-r from-emerald-400 to-teal-500'
+                            }`}
+                            style={{ width: `${progress}%` }}
+                          />
                         </div>
-                          <div className="relative mt-1 stage-popover-container">
-                            {order.status === 'Completed' ? (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  sessionStorage.setItem('erp_sales_init', JSON.stringify(order));
-                                  sessionStorage.setItem('erp_sales_back', 'view-orders');
-                                  if (setCurrentPage) setCurrentPage('create-sales');
-                                }}
-                                className="w-full flex items-center justify-center gap-1 rounded-lg border border-emerald-500 bg-emerald-500 text-white px-2 py-1 text-[10px] font-bold shadow-sm transition hover:brightness-95"
-                              >
-                                <CircleDollarSign size={12} /> Pay Now
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (order.status === 'Sold') return;
-                                  setOpenStagePopoverId(openStagePopoverId === order.id ? null : order.id);
-                                }}
-                                className={`w-full flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] px-2 py-1 text-[10px] font-bold outline-none transition ${order.status === 'Sold' ? 'cursor-not-allowed opacity-70 text-emerald-600 border-emerald-500/30' : 'cursor-pointer hover:border-[var(--accent)] text-[var(--accent)]'}`}
-                              >
-                                <span className="truncate pr-2">
-                                  {order.status === 'Sold' ? 'Completed' : 
-                                    (!order.productionTasks || order.productionTasks.every(t => t.status === 'Pending')) ? 'Not Started' :
-                                    (order.productionTasks.filter(t => t.status === 'In Progress').length > 0 
-                                      ? order.productionTasks.filter(t => t.status === 'In Progress').map(t => t.stage).join(', ') 
-                                      : (order.currentStage || 'Completed'))}
-                                </span>
-                                <ChevronDown size={12} className="flex-shrink-0" />
-                              </button>
-                            )}
-                            
-                            {openStagePopoverId === order.id && order.status !== 'Completed' && order.status !== 'Sold' && (
-                              <div className={`hidden sm:flex absolute ${index >= paginatedOrders.length - 2 && paginatedOrders.length > 3 ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 w-64 bg-[var(--surface-strong)] border border-[var(--border)] rounded-xl shadow-xl z-[100] p-2 text-xs flex-col gap-1 backdrop-blur-xl`}>
-                                {(order.workflow || DEFAULT_WORKFLOWS[order.product] || DEFAULT_WORKFLOWS['Default']).map(stage => {
-                                  const task = (order.productionTasks || []).find(t => t.stage === stage) || { status: 'Pending' };
-                                  let disableCompletedButton = false;
-                                  if (stage === 'Finished') {
-                                    const workflow = order.workflow || DEFAULT_WORKFLOWS[order.product] || DEFAULT_WORKFLOWS['Default'];
-                                    disableCompletedButton = workflow.some(s => {
-                                      if (s === 'Finished') return false;
-                                      const t = (order.productionTasks || []).find(pt => pt.stage === s);
-                                      if (s === 'Handwork') {
-                                        if (!t || t.status === 'Pending') return false;
-                                      }
-                                      return !t || t.status !== 'Completed';
-                                    });
-                                  }
-                                  return (
-                                    <div key={stage} className="flex items-center justify-between p-1.5 hover:bg-[var(--soft)] rounded-lg transition">
-                                      <div className="flex flex-col overflow-hidden pr-2">
-                                        <span className="font-medium text-[var(--text)] truncate max-w-[110px]" title={stage}>{stage}</span>
-                                        {task.startedAt && (
-                                          <span className="text-[9px] text-[var(--muted)] leading-tight mt-0.5">Start: {new Date(task.startedAt).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                                        )}
-                                        {task.completedAt && (
-                                          <span className="text-[9px] text-emerald-600 leading-tight">Done: {new Date(task.completedAt).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                                        )}
-                                      </div>
-                                      <div className="flex bg-[var(--surface-strong)] rounded-md border border-[var(--border)] overflow-hidden flex-shrink-0">
-                                          {stage !== 'Finished' && (
-                                            <>
-                                              <button 
-                                                title="Hold"
-                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'Hold'); }}
-                                                className={`p-1.5 transition ${task.status === 'Hold' ? 'bg-red-500/20 text-red-500' : 'text-[var(--muted)] hover:text-red-500'}`}
-                                              >
-                                                <Pause size={12} />
-                                              </button>
-                                              <button 
-                                                title="In Progress"
-                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'In Progress'); }}
-                                                className={`p-1.5 transition ${task.status === 'In Progress' ? 'bg-orange-500/20 text-orange-500' : 'text-[var(--muted)] hover:text-orange-500'}`}
-                                              >
-                                                <Play size={12} />
-                                              </button>
-                                            </>
-                                          )}
-                                          <button 
-                                            title={disableCompletedButton ? "Complete all other tasks first" : "Completed"}
-                                            onClick={(e) => { 
-                                              if (disableCompletedButton) return;
-                                              e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'Completed'); 
-                                            }}
-                                            className={`p-1.5 transition ${task.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-500' : disableCompletedButton ? 'text-[var(--muted)] opacity-50 cursor-not-allowed' : 'text-[var(--muted)] hover:text-emerald-500'}`}
-                                          >
-                                            <CheckCircle2 size={12} />
-                                          </button>
-                                        </div>
+                        {/* Stage Selector */}
+                        <div className="relative stage-popover-container">
+                          {order.status === 'Completed' ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                sessionStorage.setItem('erp_sales_init', JSON.stringify(order));
+                                sessionStorage.setItem('erp_sales_back', 'view-orders');
+                                if (setCurrentPage) setCurrentPage('create-sales');
+                              }}
+                              className="w-full flex items-center justify-center gap-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-0.5 text-[10px] font-bold shadow-2xs transition cursor-pointer"
+                            >
+                              <CircleDollarSign size={11} /> Pay Now
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (order.status === 'Sold') return;
+                                setOpenStagePopoverId(openStagePopoverId === order.id ? null : order.id);
+                              }}
+                              className={`w-full flex items-center justify-between rounded-md border border-[var(--border)] bg-[var(--surface-strong)] px-2 py-0.5 text-[10px] font-bold outline-none transition ${
+                                order.status === 'Sold' ? 'cursor-not-allowed opacity-70 text-emerald-600 border-emerald-500/30' : 'cursor-pointer hover:border-[var(--accent)] text-[var(--accent)]'
+                              }`}
+                            >
+                              <span className="truncate pr-1">
+                                {order.status === 'Sold' ? 'Completed' : 
+                                  (!order.productionTasks || order.productionTasks.every(t => t.status === 'Pending')) ? 'Not Started' :
+                                  (order.productionTasks.filter(t => t.status === 'In Progress').length > 0 
+                                    ? order.productionTasks.filter(t => t.status === 'In Progress').map(t => t.stage).join(', ') 
+                                    : (order.currentStage || 'Completed'))}
+                              </span>
+                              <ChevronDown size={11} className="shrink-0" />
+                            </button>
+                          )}
+
+                          {/* Stage Popover aligned right-0 so it expands inward without clipping */}
+                          {openStagePopoverId === order.id && order.status !== 'Completed' && order.status !== 'Sold' && (
+                            <div className={`hidden sm:flex absolute ${index >= sortedOrders.length - 2 && sortedOrders.length > 3 ? 'bottom-full mb-1' : 'top-full mt-1'} right-0 w-64 bg-[var(--surface-strong)] border border-[var(--border)] rounded-xl shadow-2xl z-[150] p-2 text-xs flex-col gap-1 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150`}>
+                              {(order.workflow || DEFAULT_WORKFLOWS[order.product] || DEFAULT_WORKFLOWS['Default']).map(stage => {
+                                const task = (order.productionTasks || []).find(t => t.stage === stage) || { status: 'Pending' };
+                                let disableCompletedButton = false;
+                                if (stage === 'Finished') {
+                                  const workflow = order.workflow || DEFAULT_WORKFLOWS[order.product] || DEFAULT_WORKFLOWS['Default'];
+                                  disableCompletedButton = workflow.some(s => {
+                                    if (s === 'Finished') return false;
+                                    const t = (order.productionTasks || []).find(pt => pt.stage === s);
+                                    if (s === 'Handwork') {
+                                      if (!t || t.status === 'Pending') return false;
+                                    }
+                                    return !t || t.status !== 'Completed';
+                                  });
+                                }
+                                return (
+                                  <div key={stage} className="flex items-center justify-between p-1.5 hover:bg-[var(--soft)] rounded-lg transition">
+                                    <div className="flex flex-col overflow-hidden pr-2">
+                                      <span className="font-medium text-[var(--text)] truncate max-w-[110px]" title={stage}>{stage}</span>
+                                      {task.startedAt && (
+                                        <span className="text-[9px] text-[var(--muted)] leading-tight mt-0.5">Start: {new Date(task.startedAt).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                      )}
+                                      {task.completedAt && (
+                                        <span className="text-[9px] text-emerald-600 leading-tight">Done: {new Date(task.completedAt).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                      )}
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
+                                    <div className="flex bg-[var(--surface-strong)] rounded-md border border-[var(--border)] overflow-hidden shrink-0">
+                                      {stage !== 'Finished' && (
+                                        <>
+                                          <button 
+                                            title="Hold"
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'Hold'); }}
+                                            className={`p-1.5 transition ${task.status === 'Hold' ? 'bg-red-500/20 text-red-500' : 'text-[var(--muted)] hover:text-red-500'}`}
+                                          >
+                                            <Pause size={12} />
+                                          </button>
+                                          <button 
+                                            title="In Progress"
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'In Progress'); }}
+                                            className={`p-1.5 transition ${task.status === 'In Progress' ? 'bg-orange-500/20 text-orange-500' : 'text-[var(--muted)] hover:text-orange-500'}`}
+                                          >
+                                            <Play size={12} />
+                                          </button>
+                                        </>
+                                      )}
+                                      <button 
+                                        title={disableCompletedButton ? "Complete all other tasks first" : "Completed"}
+                                        onClick={(e) => { 
+                                          if (disableCompletedButton) return;
+                                          e.preventDefault(); e.stopPropagation(); handleTaskStatusChange(order.id, stage, 'Completed'); 
+                                        }}
+                                        className={`p-1.5 transition ${task.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-500' : disableCompletedButton ? 'text-[var(--muted)] opacity-50 cursor-not-allowed' : 'text-[var(--muted)] hover:text-emerald-500'}`}
+                                      >
+                                        <CheckCircle2 size={12} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        <div className="relative group min-w-[130px]">
+
+                    {/* Col 7: Status */}
+                    <td className={`${cellPadding} border-b border-[var(--border)] align-middle`}>
+                      <div className="flex flex-col gap-0.5">
+                        <div className="relative group/status w-full">
                           <select
-                            className={`relative z-10 w-full appearance-none rounded-xl border bg-[var(--surface-strong)] px-3 py-2 pr-8 text-[11px] font-bold outline-none transition cursor-pointer active:scale-95 ${order.status === 'Completed' || order.status === 'Sold' ? 'text-green-600 border-green-500/30' : order.status === 'Hold' ? 'text-orange-500 border-orange-500/30' : 'text-[var(--text)] border-[var(--border)]'}`}
+                            className={`w-full appearance-none rounded-lg border bg-[var(--surface-strong)] px-2 py-1 pr-6 text-[10px] font-black outline-none transition cursor-pointer ${
+                              order.status === 'Completed' || order.status === 'Sold'
+                                ? 'text-emerald-600 border-emerald-500/30'
+                                : order.status === 'Hold'
+                                ? 'text-amber-500 border-amber-500/30'
+                                : 'text-[var(--text)] border-[var(--border)] hover:border-[var(--accent)]'
+                            }`}
                             value={order.status || 'Not Ready'}
                             onChange={(e) => handleStatusChange(order.id, e.target.value)}
                             disabled={order.status === 'Sold'}
@@ -1965,42 +2406,109 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
                             <option value="Completed" disabled>Completed</option>
                             <option value="Sold" disabled>Sold</option>
                           </select>
-                          <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--muted)] z-10">
-                            <ChevronDown size={14} />
+                          <div className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[var(--muted)]">
+                            <ChevronDown size={12} />
                           </div>
                         </div>
+                        {order.startDate && order.status !== 'Pending' && (
+                          <span className="text-[9px] text-[var(--muted)] leading-tight truncate">
+                            St: {formatDateDDMMYY(order.startDate)}
+                          </span>
+                        )}
+                        {(order.completedDate || order.closedDate) && (order.status === 'Completed' || order.status === 'Sold') && (
+                          <span className="text-[9px] text-emerald-600 font-semibold leading-tight truncate">
+                            ✓ {formatDateDDMMYY(order.completedDate || order.closedDate)}
+                          </span>
+                        )}
                       </div>
-                      {order.startDate && order.status !== 'Pending' && (
-                        <p className="text-[var(--muted)] mt-1.5 !text-[10px]">Started: {formatDateDDMMYY(order.startDate)}</p>
-                      )}
-                      {(order.completedDate || order.closedDate) && (order.status === 'Completed' || order.status === 'Sold') && (
-                        <p className="text-[var(--muted)] mt-0.5 !text-[10px]">Completed: {formatDateDDMMYY(order.completedDate || order.closedDate)}</p>
-                      )}
                     </td>
-                    <td className="text-right">
-                      <div className="flex justify-end gap-2 transition-opacity">
-                        <button className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white" title="View Order" onClick={() => setViewOrder(order)}>
-                          <Eye size={16} />
+
+                    {/* Col 8: Actions */}
+                    <td className={`${cellPadding} border-b border-[var(--border)] align-middle text-right`}>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          className="grid h-7 w-7 place-items-center rounded-lg bg-[var(--soft)] text-[var(--muted)] hover:bg-indigo-600 hover:text-white transition shadow-2xs cursor-pointer"
+                          title="Print Order Tag"
+                          onClick={() => setThermalTagOrder(order)}
+                        >
+                          <Printer size={13} />
                         </button>
-                        <button className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white" title="Edit Order" onClick={() => setEditOrder(order)}>
-                          <Pencil size={16} />
+                        <button
+                          type="button"
+                          className="grid h-7 w-7 place-items-center rounded-lg bg-[var(--soft)] text-[var(--muted)] hover:bg-[var(--accent)] hover:text-white transition shadow-2xs cursor-pointer"
+                          title="View Order"
+                          onClick={() => setViewOrder(order)}
+                        >
+                          <Eye size={13} />
                         </button>
-                        <button className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition hover:bg-[var(--accent)] hover:text-white" title="Delete Order" onClick={() => setOrderToDelete(order)}>
-                          <Trash2 size={16} />
+                        <button
+                          type="button"
+                          className="grid h-7 w-7 place-items-center rounded-lg bg-[var(--soft)] text-[var(--muted)] hover:bg-[var(--accent)] hover:text-white transition shadow-2xs cursor-pointer"
+                          title="Edit Order"
+                          onClick={() => setEditOrder(order)}
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          className="grid h-7 w-7 place-items-center rounded-lg bg-[var(--soft)] text-[var(--muted)] hover:bg-rose-500 hover:text-white transition shadow-2xs cursor-pointer"
+                          title="Delete Order"
+                          onClick={() => setOrderToDelete(order)}
+                        >
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </td>
                   </tr>
                 )
               })}
-              {paginatedOrders.length === 0 && !isDataLoading && (
+              {sortedOrders.length === 0 && !isDataLoading && (
                 <tr>
-                  <td colSpan="7" className="text-center text-[var(--muted)]">No orders found.</td>
+                  <td colSpan="8" className="text-center py-8 text-[var(--muted)] text-sm">
+                    No orders match your filter criteria.
+                  </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {/* Desktop Footer Metrics */}
+        {sortedOrders.length > 0 && !isDataLoading && (
+          <div className="mt-3 hidden lg:flex items-center justify-between text-xs text-[var(--muted)] px-1">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-[var(--text)]">Showing all {sortedOrders.length} {sortedOrders.length === 1 ? 'order' : 'orders'}</span>
+              {aiSmartSort && (
+                <button
+                  type="button"
+                  onClick={() => setAiSmartSort(false)}
+                  className="rounded-md bg-indigo-500/10 hover:bg-indigo-500/20 px-2 py-0.5 text-[10px] font-bold text-indigo-600 border border-indigo-500/20 flex items-center gap-1 cursor-pointer transition"
+                  title="Urgency Sort is ON. Click to turn off"
+                >
+                  <Zap size={11} /> Urgency Sort Active <span className="opacity-60 ml-0.5">✕</span>
+                </button>
+              )}
+              {aiFocusFilter && (
+                <button
+                  type="button"
+                  onClick={() => setAiFocusFilter(false)}
+                  className="rounded-md bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-600 border border-amber-500/20 flex items-center gap-1 cursor-pointer transition"
+                  title="Needs Attention filter is ON. Click to turn off"
+                >
+                  <Activity size={11} /> Urgent Focus Active <span className="opacity-60 ml-0.5">✕</span>
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-3 text-[11px]">
+              <span className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Zero Horizontal Scroll
+              </span>
+              <span className="text-[var(--border)]">•</span>
+              <span>Full-Screen Optimized</span>
+            </div>
+          </div>
+        )}
 
         {/* Mobile Accordion View */}
         <div className="block lg:hidden mt-4">
@@ -2282,6 +2790,14 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
 
                       <div className="flex gap-2 mt-1">
                         <div className="flex items-center gap-1 bg-[var(--surface)] p-1 rounded-lg border border-[var(--border)]/50 shadow-sm flex-1">
+                           <button
+                             title="Print Order Tag"
+                             className="flex-1 flex justify-center py-1.5 rounded-md bg-transparent text-[var(--muted)] hover:bg-indigo-500/10 hover:text-indigo-600 transition"
+                             onClick={() => setThermalTagOrder(order)}
+                           >
+                             <Printer size={14} />
+                           </button>
+                           <div className="w-px h-4 bg-[var(--border)]/50"></div>
                            <button title="View Details" className="flex-1 flex justify-center py-1.5 rounded-md bg-transparent text-[var(--muted)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] transition" onClick={() => setViewOrder(order)}>
                              <Eye size={14} />
                            </button>
@@ -2324,8 +2840,9 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
         </div>
 
 
+        {/* Desktop pagination removed — all orders shown in full table */}
         {totalPages > 1 && (
-          <div className="mt-4 hidden lg:flex items-center justify-between border-t border-[var(--border)] pt-4">
+          <div className="mt-4 hidden items-center justify-between border-t border-[var(--border)] pt-4">
             <span className="text-sm text-[var(--muted)]">Showing {(currentPageNum - 1) * itemsPerPage + 1} to {Math.min(currentPageNum * itemsPerPage, filteredOrders.length)} of {filteredOrders.length}</span>
             <div className="flex gap-2">
               <button
@@ -2436,6 +2953,17 @@ function ViewOrdersPage({ themeStyle, setCurrentPage, setSelectedClient, setClie
             <img src={imagePopup} alt="Reference" className="max-h-[80vh] max-w-[90vw] rounded-2xl object-contain shadow-2xl border-4 border-white" onClick={(e) => e.stopPropagation()} />
           </div>
         </div>
+      )}
+
+      {thermalTagOrder && (
+        <ThermalTagModal
+          order={thermalTagOrder}
+          client={(clients || []).find(c => (c.name || '').toLowerCase() === (thermalTagOrder.clientName || '').toLowerCase())}
+          onClose={() => setThermalTagOrder(null)}
+          onPrintSuccess={() => {
+            if (showGlobalToast) showGlobalToast('Print Ready', `Order tag for #${thermalTagOrder.orderId || thermalTagOrder.id} sent to printer`);
+          }}
+        />
       )}
     </div>
   )
